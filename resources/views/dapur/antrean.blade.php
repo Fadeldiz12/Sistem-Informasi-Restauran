@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Pemakaian Bahan Baku (FIFO) · SIM Resto</title>
+<title>Antrean Tiket Pesanan · SIM Resto</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Raleway:wght@600;700;800&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -209,7 +209,7 @@
   <aside class="side"><div class="side-in">
     <div class="brand"><span class="mk">R</span><div><b>SIM RESTO</b><small>PANEL DAPUR</small></div></div>
     <div class="nav-lbl">Menu utama</div>
-    <a class="nav" href="{{ route('dapur.antrian') }}" title="Antrian Pesanan"><svg class="ic"><use href="#i-receipt"/></svg><span>Antrian Pesanan</span><span class="bd">8</span></a><a class="nav" href="{{ route('dapur.stok') }}" title="Stok & ROP"><svg class="ic"><use href="#i-box"/></svg><span>Stok & ROP</span><span class="bd">3</span></a><a class="nav on" href="{{ route('dapur.pemakaian') }}" title="Pemakaian FIFO"><svg class="ic"><use href="#i-refresh"/></svg><span>Pemakaian FIFO</span></a>
+    <a class="nav on" href="{{ route('dapur.antrean') }}" title="Antrean Tiket"><svg class="ic"><use href="#i-receipt"/></svg><span>Antrean Tiket</span><span class="bd">5</span></a><a class="nav" href="{{ route('dapur.bahan-baku') }}" title="Bahan Baku"><svg class="ic"><use href="#i-box"/></svg><span>Bahan Baku</span><span class="bd">3</span></a>
     <div class="spacer"></div>
     <div class="hours"><small>JAM OPERASIONAL</small><b>10.00 – 22.00</b><span>Senin, 2 November 2026</span></div>
     <a class="nav" href="#" title="Bantuan"><svg class="ic"><use href="#i-help"/></svg><span>Bantuan</span></a>
@@ -218,35 +218,46 @@
 
   <main class="main">
     <div class="topbar">
-      <div><div class="crumb">Dapur / Pemakaian FIFO</div><h1>Pemakaian Bahan Baku (FIFO)</h1><div class="sub">Catat pemakaian bahan baku dengan metode First In First Out</div></div>
+      <div><div class="crumb">Dapur / Antrean Tiket</div><h1>Antrean Tiket Pesanan</h1><div class="sub">Siapkan pesanan sesuai urutan antrean (FIFO) dan perbarui status masakan</div></div>
       <div class="tb-right">
         <label class="search"><svg class="ic"><use href="#i-search"/></svg><input placeholder="Cari…"></label>
         <button class="icon-btn" aria-label="Notifikasi"><svg class="ic"><use href="#i-bell"/></svg><span class="dot">3</span></button>
         <a class="me" href="#"><span class="av m">HW</span><span>Hendra Wijaya</span></a>
       </div>
     </div>
-
-    <div class="grid split" style="grid-template-columns:minmax(300px,.42fr) minmax(0,1fr);align-items:start">
-      <div class="card"><div class="card-head"><div><h2>Catat Pemakaian</h2><p>Stok dikurangi dari batch dengan tanggal masuk paling awal</p></div></div>
-        <div style="display:grid;gap:16px">
-          <div class="field"><label>Bahan baku</label><div class="in"><svg class="ic"><use href="#i-box"/></svg><select><option selected>Keju Mozzarella</option><option>Daging Beef Pepperoni</option><option>Saus Tomat</option><option>Tepung Terigu</option><option>Pasta Penne</option><option>Daging Sapi Giling</option><option>Kentang Beku</option><option>Selada Romaine</option><option>Lemon</option><option>Cokelat Batang</option></select></div></div>
-          <div class="field"><label>Jumlah dipakai</label><div class="in"><svg class="ic"><use href="#i-minus"/></svg><input id="use" type="number" step="0.1" value="2.5"><span class="suf">kg</span></div></div>
-          <div class="field"><label>Keperluan</label><div class="in"><svg class="ic"><use href="#i-receipt"/></svg><input value="Produksi pizza shift siang"></div></div>
-        </div>
-        <div id="warn" class="note" style="margin-top:14px;display:none"><svg class="ic"><use href="#i-alert"/></svg><span>Stok tidak mencukupi untuk jumlah ini.</span></div>
-        <button class="btn lg" style="width:100%;margin-top:18px" onclick="toast('Pemakaian dicatat · stok & ROP diperbarui')"><svg class="ic"><use href="#i-check"/></svg>Simpan Pemakaian</button></div>
+<div class="card f" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:14px 20px;border-radius:18px;margin-bottom:18px"><svg class="ic" style="width:22px;height:22px"><use href="#i-alert"/></svg><span style="flex:1;font:600 14px var(--f-accent)">Notifikasi stok kritis: Keju Mozzarella, Daging Beef Pepperoni, Saus Tomat berada pada atau di bawah ROP. Segera lakukan pemesanan ulang.</span><a class="btn cr sm" href="{{ route('dapur.bahan-baku') }}">Lihat bahan baku</a></div>
+    <style>
+      .tk { display: flex; gap: 12px; align-items: flex-start; width: 100%; text-align: left; padding: 14px; border-radius: 18px; box-shadow: inset 0 0 0 1.3px var(--m15); margin-bottom: 8px; }
+      .tk:hover { box-shadow: inset 0 0 0 1.5px var(--m); }
+      .tk.on { background: var(--m); color: var(--cr); box-shadow: none; } .tk.on .pill.st { background: var(--cr); color: var(--m); }
+      .fifo { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: var(--bl); color: var(--m); font: 700 13px var(--f-title); flex: none; }
+      .tk.on .fifo { background: var(--cr); }
+      .sp { display: grid; grid-template-columns: repeat(3, 1fr); }
+      .sp div { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; font: 700 13px var(--f-accent); position: relative; }
+      .sp div::before { content: ''; position: absolute; top: 20px; left: -50%; width: 100%; height: 2.5px; background: var(--m15); }
+      .sp div:first-child::before { display: none; } .sp .d::before, .sp .n::before { background: var(--m); }
+      .sp i { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; background: var(--cr); box-shadow: inset 0 0 0 1.6px var(--m); position: relative; z-index: 1; font-style: normal; }
+      .sp .d i { background: var(--m); color: var(--cr); box-shadow: none; } .sp .n i { background: var(--bl); box-shadow: 0 0 0 6px rgba(178,194,210,.45), inset 0 0 0 1.6px var(--m); }
+    </style>
+    <div class="grid split" style="grid-template-columns:minmax(300px,.4fr) minmax(0,1fr);align-items:start">
+      <div class="card" style="padding:16px"><div class="card-head" style="margin-bottom:6px"><h2>Antrean Tiket</h2><span class="pill m" id="cnt">5</span></div>
+        <p style="font-size:12.5px;opacity:.7;margin-bottom:12px;display:flex;gap:6px;align-items:center"><svg class="ic" style="width:14px;height:14px"><use href="#i-refresh"/></svg>FIFO · urut dari waktu masuk paling awal, tiket baru ditambahkan di akhir</p>
+        <div id="q"><button class="tk on" data-i="0"><span class="fifo">#1</span><div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b style="font:700 16px var(--f-title)">T-0146</b><span class="pill st m" style="font-size:10.5px;padding:3px 9px">Sedang Dimasak</span></div><div style="font-size:12.5px;opacity:.8;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">1× Pizza Margherita, 1× Chicken Wings BBQ, 2× Choco Brownie Ice Cream</div><div style="display:flex;gap:10px;font-size:12px;opacity:.75;margin-top:6px"><span style="display:flex;gap:4px;align-items:center"><svg class="ic" style="width:12px;height:12px"><use href="#i-clock"/></svg>Masuk 11:02</span><span>· Delivery</span></div></div></button><button class="tk" data-i="1"><span class="fifo">#2</span><div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b style="font:700 16px var(--f-title)">T-0147</b><span class="pill st m" style="font-size:10.5px;padding:3px 9px">Sedang Dimasak</span></div><div style="font-size:12.5px;opacity:.8;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">1× Pizza Margherita, 1× Caesar Salad</div><div style="display:flex;gap:10px;font-size:12px;opacity:.75;margin-top:6px"><span style="display:flex;gap:4px;align-items:center"><svg class="ic" style="width:12px;height:12px"><use href="#i-clock"/></svg>Masuk 11:05</span><span>· Dine In · Meja 12</span></div></div></button><button class="tk" data-i="2"><span class="fifo">#3</span><div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b style="font:700 16px var(--f-title)">T-0149</b><span class="pill st b" style="font-size:10.5px;padding:3px 9px">Diterima</span></div><div style="font-size:12.5px;opacity:.8;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">2× Pizza Beef Pepperoni, 1× Kentang Goreng</div><div style="display:flex;gap:10px;font-size:12px;opacity:.75;margin-top:6px"><span style="display:flex;gap:4px;align-items:center"><svg class="ic" style="width:12px;height:12px"><use href="#i-clock"/></svg>Masuk 11:16</span><span>· Dine In · Meja 07</span></div></div></button><button class="tk" data-i="3"><span class="fifo">#4</span><div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b style="font:700 16px var(--f-title)">T-0150</b><span class="pill st b" style="font-size:10.5px;padding:3px 9px">Diterima</span></div><div style="font-size:12.5px;opacity:.8;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">1× Penne Bolognese, 2× Lemon Iced Tea</div><div style="display:flex;gap:10px;font-size:12px;opacity:.75;margin-top:6px"><span style="display:flex;gap:4px;align-items:center"><svg class="ic" style="width:12px;height:12px"><use href="#i-clock"/></svg>Masuk 11:18</span><span>· Take Away</span></div></div></button><button class="tk" data-i="4"><span class="fifo">#5</span><div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b style="font:700 16px var(--f-title)">T-0151</b><span class="pill st b" style="font-size:10.5px;padding:3px 9px">Diterima</span></div><div style="font-size:12.5px;opacity:.8;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">1× Classic Beef Burger</div><div style="display:flex;gap:10px;font-size:12px;opacity:.75;margin-top:6px"><span style="display:flex;gap:4px;align-items:center"><svg class="ic" style="width:12px;height:12px"><use href="#i-clock"/></svg>Masuk 11:19</span><span>· Delivery</span></div></div></button></div>
+        <button class="btn o sm" id="sim" style="width:100%;margin-top:6px"><svg class="ic" style="width:15px;height:15px"><use href="#i-plus"/></svg>Simulasi tiket baru masuk</button></div>
       <div class="grid" style="align-content:start">
-        <div class="card"><div class="card-head"><div><h2>Pengurangan per Batch (FIFO)</h2><p>Keju Mozzarella · diurutkan dari tanggal masuk paling awal</p></div><span class="pill m">FIFO</span></div>
-          <div id="batches" style="display:grid;gap:10px"></div>
-          <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:16px">
-            <div class="card p" style="padding:14px"><div class="eyebrow" style="font-size:10px">Stok sebelum</div><div style="font:700 22px var(--f-title);margin-top:4px">6,5 kg</div></div>
-            <div class="card f" style="padding:14px"><div class="eyebrow" style="font-size:10px">Stok sesudah</div><div id="after" style="font:700 22px var(--f-title);margin-top:4px">4 kg</div></div>
-            <div class="card b" style="padding:14px"><div class="eyebrow" style="font-size:10px">ROP</div><div style="font:700 22px var(--f-title);margin-top:4px">8,4 kg</div></div></div>
-          <div class="note" id="ropNote" style="margin-top:12px"><svg class="ic"><use href="#i-bell"/></svg><span>Stok sesudah pemakaian ≤ ROP. Notifikasi stok kritis tetap ditampilkan.</span></div></div>
+        <div class="card stripes" style="padding:26px;box-shadow:none">
+          <div class="stamp-out"><div class="stamp" style="padding:26px 28px">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap"><div><div class="eyebrow">Detail tiket pesanan</div><div id="dNo" style="font:700 46px/1 var(--f-title);margin-top:8px">T-0146</div></div>
+              <div style="display:grid;gap:8px;justify-items:end"><span class="pill m" id="dLay">Delivery</span><span class="pill b" id="dPos">FIFO #1</span></div></div>
+            <div id="dMeta" style="font-size:13px;opacity:.75;margin:12px 0 14px"></div>
+            <div id="dItems" style="border-top:1.5px dashed var(--m60);padding-top:8px"></div>
+            <div id="dNote" class="note" style="margin-top:12px;background:var(--bl)"></div></div></div></div>
+        <div class="card"><div class="card-head"><h2>Status Masakan</h2><span class="pill" id="dSt">Sedang Dimasak</span></div>
+          <div class="sp" id="sp"><div><i><svg class="ic" style="width:18px;height:18px"><use href="#i-check"/></svg></i>Diterima</div><div><i><svg class="ic" style="width:18px;height:18px"><use href="#i-flame"/></svg></i>Sedang Dimasak</div><div><i><svg class="ic" style="width:18px;height:18px"><use href="#i-bell"/></svg></i>Siap</div></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:22px"><button class="btn lg o" id="bStart"><svg class="ic"><use href="#i-flame"/></svg>Mulai Masak</button><button class="btn lg" id="bDone"><svg class="ic"><use href="#i-check"/></svg>Selesai · Siap</button></div>
+          <div class="note" style="margin-top:14px"><svg class="ic"><use href="#i-bell"/></svg><span>Saat ditandai Siap: notifikasi ke kasir dan pelanggan; jika Delivery, tugas pengiriman masuk antrean kurir (FIFO).</span></div></div>
       </div>
     </div>
-    <div class="card" style="margin-top:18px"><div class="card-head"><h2>Riwayat Pemakaian</h2></div>
-      <div class="tbl-wrap"><table><thead><tr><th>Waktu</th><th>Bahan baku</th><th>Jumlah</th><th>Diambil dari batch</th></tr></thead><tbody><tr><td>02 Nov 2026 10:15</td><td><b>Tepung Terigu</b></td><td>3 kg</td><td style='opacity:.8'>BT-0398 (3 kg)</td></tr><tr><td>02 Nov 2026 09:40</td><td><b>Keju Mozzarella</b></td><td>1,5 kg</td><td style='opacity:.8'>BT-0405 (1,0 kg) · BT-0412 (0,5 kg)</td></tr><tr><td>01 Nov 2026 20:05</td><td><b>Saus Tomat</b></td><td>2 liter</td><td style='opacity:.8'>BT-0401 (2 liter)</td></tr><tr><td>01 Nov 2026 15:30</td><td><b>Daging Beef Pepperoni</b></td><td>1,2 kg</td><td style='opacity:.8'>BT-0409 (1,2 kg)</td></tr></tbody></table></div></div>
   </main>
 </div>
 
@@ -309,22 +320,27 @@
   /* tombol simpan di dialog */
   document.querySelectorAll('[data-save]').forEach(b => b.addEventListener('click', () => { const ov = b.closest('.ovl'); if (ov) ov.classList.remove('on'); toast(b.dataset.save); }));
 
-  const B = [["BT-0412", "20 Okt 2026", 1.5], ["BT-0418", "26 Okt 2026", 2.0], ["BT-0425", "01 Nov 2026", 3.0]];
-  const fmt = x => (Math.round(x * 100) / 100).toLocaleString('id-ID');
-  function fifo() {
-    let need = +use.value || 0, total = B.reduce((a, b) => a + b[2], 0), h = '';
-    warn.style.display = need > total ? '' : 'none';
-    B.forEach((b, i) => {
-      const take = Math.min(b[2], Math.max(need, 0)); need -= take; const left = b[2] - take;
-      h += `<div style="display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 14px;border-radius:16px;${take > 0 ? 'background:var(--m);color:var(--cr)' : 'box-shadow:inset 0 0 0 1.2px var(--m15)'}">
-        <b style="font:700 18px var(--f-title)">${i + 1}</b><div><b style="font:600 14px var(--f-title)">${b[0]}</b><div style="font-size:12.5px;opacity:.8">Masuk ${b[1]} · sisa ${fmt(b[2])} kg</div>
-        <div style="height:6px;border-radius:3px;background:${take > 0 ? 'rgba(248,245,230,.3)' : 'var(--m15)'};margin-top:6px"><i style="display:block;height:100%;border-radius:3px;width:${left / b[2] * 100}%;background:${take > 0 ? 'var(--cr)' : 'var(--m)'}"></i></div></div>
-        <div style="text-align:right"><b style="font:700 15px var(--f-title)">${take > 0 ? '−' + fmt(take) + ' kg' : '—'}</b><div style="font-size:12px;opacity:.8">sisa ${fmt(left)} kg</div></div></div>`;
-    });
-    batches.innerHTML = h; const after = Math.max(total - (+use.value || 0), 0); document.getElementById('after').textContent = fmt(after) + ' kg';
-    ropNote.style.display = after <= 8.4 ? '' : 'none';
+  let T = [["T-0146", "ORD-0146", "11:02", "Delivery", [[1, "Pizza Margherita"], [1, "Chicken Wings BBQ"], [2, "Choco Brownie Ice Cream"]], "Wings pedas", "Sedang Dimasak"], ["T-0147", "ORD-0147", "11:05", "Dine In \u00b7 Meja 12", [[1, "Pizza Margherita"], [1, "Caesar Salad"]], "", "Sedang Dimasak"], ["T-0149", "ORD-0149", "11:16", "Dine In \u00b7 Meja 07", [[2, "Pizza Beef Pepperoni"], [1, "Kentang Goreng"]], "Pizza potong 12", "Diterima"], ["T-0150", "ORD-0150", "11:18", "Take Away", [[1, "Penne Bolognese"], [2, "Lemon Iced Tea"]], "", "Diterima"], ["T-0151", "ORD-0151", "11:19", "Delivery", [[1, "Classic Beef Burger"]], "Tanpa acar", "Diterima"]], cur = 0;
+  function show(i) {
+    cur = i; const t = T[i]; document.querySelectorAll('.tk').forEach(x => x.classList.toggle('on', +x.dataset.i === i));
+    dNo.textContent = t[0]; dLay.textContent = t[3]; dPos.textContent = 'FIFO #' + (i + 1);
+    dMeta.textContent = t[1] + ' · masuk ' + t[2] + ' · dari kasir';
+    dItems.innerHTML = t[4].map(x => `<div style="display:flex;gap:14px;align-items:baseline;padding:8px 0;border-bottom:1px solid var(--m15)"><b style="font:700 26px var(--f-title);min-width:42px">${x[0]}×</b><b style="font:600 17px var(--f-title)">${x[1]}</b></div>`).join('');
+    dNote.style.display = t[5] ? '' : 'none'; dNote.innerHTML = '<span>Catatan: ' + t[5] + '</span>';
+    dSt.textContent = t[6];
+    const idx = { 'Diterima': 0, 'Sedang Dimasak': 1, 'Siap': 2 }[t[6]];
+    sp.querySelectorAll('div').forEach((d, k) => d.className = k < idx ? 'd' : (k === idx ? 'n' : ''));
+    bStart.disabled = idx !== 0; bStart.style.opacity = idx === 0 ? 1 : .45; bDone.disabled = idx !== 1; bDone.style.opacity = idx === 1 ? 1 : .45;
   }
-  use.addEventListener('input', fifo); fifo();
+  function render() {
+    q.innerHTML = T.map((t, i) => `<button class="tk" data-i="${i}"><span class="fifo">#${i + 1}</span><div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b style="font:700 16px var(--f-title)">${t[0]}</b><span class="pill st ${t[6] === 'Sedang Dimasak' ? 'm' : 'b'}" style="font-size:10.5px;padding:3px 9px">${t[6]}</span></div><div style="font-size:12.5px;opacity:.8;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t[4].map(x => x[0] + '× ' + x[1]).join(', ')}</div><div style="font-size:12px;opacity:.75;margin-top:6px">Masuk ${t[2]} · ${t[3]}</div></div></button>`).join('');
+    cnt.textContent = T.length; if (T.length) show(Math.min(cur, T.length - 1));
+  }
+  q.addEventListener('click', e => { const b = e.target.closest('.tk'); if (b) show(+b.dataset.i); });
+  bStart.addEventListener('click', () => { T[cur][6] = 'Sedang Dimasak'; render(); toast('Status: Sedang Dimasak'); });
+  bDone.addEventListener('click', () => { const t = T.splice(cur, 1)[0]; render(); toast(t[0] + ' siap · notifikasi ke kasir & pelanggan' + (t[3].startsWith('Delivery') ? ' · tugas kurir dibuat' : '')); });
+  sim.addEventListener('click', () => { T.push(['T-0154', 'ORD-0154', '11:24', 'Take Away', [[1, 'Pizza Margherita']], '', 'Diterima']); render(); toast('Tiket baru ditambahkan di akhir antrean'); });
+  show(0);
 </script>
 </body>
 </html>

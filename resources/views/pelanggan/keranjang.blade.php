@@ -185,11 +185,13 @@
   <symbol id="i-cash" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.8"/></symbol>
   <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v4h16v-4"/></symbol>
   <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></symbol>
+  <symbol id="i-logout" viewBox="0 0 24 24"><path d="M15 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4"/><path d="M10 17l-5-5 5-5M5 12h11"/></symbol>
   <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></symbol>
 </svg>
 <div class="topbar"><div class="wrap">
-  <span><svg class="ic"><use href="#i-clock"/></svg>Buka hari ini 10.00 – 22.00 · Gratis ongkir radius 3 km</span>
-  <nav><a href="#"><svg class="ic"><use href="#i-receipt"/></svg>Lacak Pesanan</a><a href="#"><svg class="ic"><use href="#i-help"/></svg>Bantuan</a></nav>
+  <span><svg class="ic"><use href="#i-clock"/></svg>Buka hari ini 10.00 – 22.00 · Delivery tersedia untuk Zona A, B, C</span>
+  <nav><a href="{{ route('pelanggan.tracking') }}"><svg class="ic"><use href="#i-receipt"/></svg>Lacak Pesanan</a><a href="#"><svg class="ic"><use href="#i-help"/></svg>Bantuan</a></nav>
 </div></div>
 <header><div class="wrap">
   <a class="logo" href="{{ route('pelanggan.beranda') }}"><b>SIM RESTO</b><small>PIZZA &amp; PASTA HOUSE</small></a>
@@ -267,19 +269,20 @@
         <div class="sum-body">
           <div class="eyebrow" style="margin-bottom:12px">Ringkasan sementara</div>
           <div class="sum-row"><span>Subtotal (<span id="sumQty">5</span> item)</span><b id="sumSub">Rp 236.000</b></div>
-                    <div class="sum-row"><span class="mut">Ongkos kirim</span><span class="mut">gratis ≤ 3 km</span></div>
+          <div class="sum-row"><span class="mut">Pajak 10% &amp; biaya layanan 5%</span><span class="mut">dihitung di checkout</span></div>
+          <div class="sum-row"><span class="mut">Ongkos kirim</span><span class="mut">sesuai zona</span></div>
           <div class="field" style="margin:14px 0 10px"><label>Kode promo</label>
             <div class="promo-in"><div class="in"><svg class="ic"><use href="#i-tag"/></svg><input placeholder="Masukkan kode"></div><button class="btn b">Pakai</button></div></div>
         </div>
         <div class="sum-total">
           <div class="t"><span class="eyebrow" style="opacity:.8">Subtotal</span><b id="sumBig">Rp 236.000</b></div>
           <a class="btn cr blk" href="{{ route('pelanggan.checkout') }}">Lanjut ke Checkout <svg class="ic"><use href="#i-arr"/></svg></a>
-          <small>Pilih makan di tempat, ambil sendiri, atau diantar di langkah berikutnya</small>
+          <small>Pilih Dine In, Take Away, atau Delivery di langkah berikutnya</small>
         </div>
       </div>
       <div class="card soft" style="padding:16px 18px">
         <div class="eyebrow" style="font-size:10.5px;margin-bottom:10px">Layanan tersedia</div>
-        <div class="svc"><span><svg class="ic"><use href="#i-dine"/></svg>Makan di tempat</span><span><svg class="ic"><use href="#i-bag"/></svg>Ambil sendiri</span><span><svg class="ic"><use href="#i-truck"/></svg>Delivery</span></div>
+        <div class="svc"><span><svg class="ic"><use href="#i-dine"/></svg>Dine In</span><span><svg class="ic"><use href="#i-bag"/></svg>Take Away</span><span><svg class="ic"><use href="#i-truck"/></svg>Delivery</span></div>
       </div>
     </aside>
   </div>

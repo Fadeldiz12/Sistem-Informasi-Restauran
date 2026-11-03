@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Laporan & Rekapitulasi · SIM Resto</title>
+<title>Laporan Keuangan · SIM Resto</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Raleway:wght@600;700;800&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -209,7 +209,7 @@
   <aside class="side"><div class="side-in">
     <div class="brand"><span class="mk">R</span><div><b>SIM RESTO</b><small>PANEL OWNER</small></div></div>
     <div class="nav-lbl">Menu utama</div>
-    <a class="nav on" href="{{ route('owner.laporan') }}" title="Laporan"><svg class="ic"><use href="#i-chart"/></svg><span>Laporan</span></a><a class="nav" href="{{ route('owner.pengeluaran') }}" title="Pengeluaran"><svg class="ic"><use href="#i-wallet"/></svg><span>Pengeluaran</span></a><a class="nav" href="{{ route('owner.pegawai') }}" title="Data Pegawai"><svg class="ic"><use href="#i-users"/></svg><span>Data Pegawai</span><span class="bd">18</span></a>
+    <a class="nav" href="{{ route('owner.dashboard') }}" title="Dashboard Penjualan"><svg class="ic"><use href="#i-chart"/></svg><span>Dashboard Penjualan</span></a><a class="nav on" href="{{ route('owner.laporan') }}" title="Laporan Keuangan"><svg class="ic"><use href="#i-file"/></svg><span>Laporan Keuangan</span></a><a class="nav" href="{{ route('owner.pengeluaran') }}" title="Pengeluaran Operasional"><svg class="ic"><use href="#i-wallet"/></svg><span>Pengeluaran Operasional</span></a>
     <div class="spacer"></div>
     <div class="hours"><small>JAM OPERASIONAL</small><b>10.00 – 22.00</b><span>Senin, 2 November 2026</span></div>
     <a class="nav" href="#" title="Bantuan"><svg class="ic"><use href="#i-help"/></svg><span>Bantuan</span></a>
@@ -218,7 +218,7 @@
 
   <main class="main">
     <div class="topbar">
-      <div><div class="crumb">Owner / Laporan</div><h1>Laporan & Rekapitulasi</h1><div class="sub">Ringkasan penjualan, pengeluaran, laba, dan laporan yang dapat diunduh</div></div>
+      <div><div class="crumb">Owner / Laporan Keuangan</div><h1>Laporan Keuangan</h1><div class="sub">Pendapatan, pengeluaran, dan laba berdasarkan periode</div></div>
       <div class="tb-right">
         <label class="search"><svg class="ic"><use href="#i-search"/></svg><input placeholder="Cari…"></label>
         <button class="icon-btn" aria-label="Notifikasi"><svg class="ic"><use href="#i-bell"/></svg><span class="dot">3</span></button>
@@ -226,21 +226,17 @@
       </div>
     </div>
 
-    <div class="grid g4">
-      <div class="card stat f"><div class="top"><span class="eyebrow">Penjualan</span><span class="ico"><svg class="ic"><use href="#i-cash"/></svg></span></div><div class="v">Rp 311,8 jt</div><div class="t">Oktober – minggu 1 November</div></div>
-      <div class="card stat b"><div class="top"><span class="eyebrow">Pengeluaran</span><span class="ico"><svg class="ic"><use href="#i-wallet"/></svg></span></div><div class="v">Rp 109,7 jt</div><div class="t">Bahan baku, gaji, utilitas</div></div>
-      <div class="card stat "><div class="top"><span class="eyebrow">Laba</span><span class="ico"><svg class="ic"><use href="#i-chart"/></svg></span></div><div class="v">Rp 202,1 jt</div><div class="t">Margin 64,8%</div></div>
-      <div class="card stat p"><div class="top"><span class="eyebrow">Jumlah pesanan</span><span class="ico"><svg class="ic"><use href="#i-receipt"/></svg></span></div><div class="v">3.214</div><div class="t">Makan di tempat 46% · antar 31%</div></div>
-    </div>
-    <div class="grid split" style="grid-template-columns:minmax(0,1.5fr) minmax(280px,1fr);margin-top:18px;align-items:start">
-      <div class="card"><div class="card-head"><div><h2>Grafik Penjualan per Minggu</h2><p>dalam juta rupiah</p></div><span class="pill m">↑ 8% minggu ini</span></div><svg viewBox="0 0 640 240" style="width:100%;display:block"><line x1="44" x2="640" y1="212" y2="212" stroke="#97173A" stroke-opacity=".12"/><text x="36" y="216" font-family="Open Sans" font-size="11" fill="#97173A" opacity=".6" text-anchor="end">0</text><line x1="44" x2="640" y1="164" y2="164" stroke="#97173A" stroke-opacity=".12"/><text x="36" y="168" font-family="Open Sans" font-size="11" fill="#97173A" opacity=".6" text-anchor="end">20</text><line x1="44" x2="640" y1="117" y2="117" stroke="#97173A" stroke-opacity=".12"/><text x="36" y="121" font-family="Open Sans" font-size="11" fill="#97173A" opacity=".6" text-anchor="end">40</text><line x1="44" x2="640" y1="70" y2="70" stroke="#97173A" stroke-opacity=".12"/><text x="36" y="74" font-family="Open Sans" font-size="11" fill="#97173A" opacity=".6" text-anchor="end">60</text><line x1="44" x2="640" y1="22" y2="22" stroke="#97173A" stroke-opacity=".12"/><text x="36" y="26" font-family="Open Sans" font-size="11" fill="#97173A" opacity=".6" text-anchor="end">80</text><rect x="50" y="83" width="70" height="129" rx="12" fill="#B2C2D2"/><text x="85" y="77" font-family="Poppins" font-weight="700" font-size="13" fill="#97173A" text-anchor="middle">54,2 jt</text><text x="85" y="232" font-family="Raleway" font-weight="700" font-size="12" fill="#97173A" text-anchor="middle">Mg 1 Okt</text><rect x="180" y="72" width="70" height="140" rx="12" fill="#B2C2D2"/><text x="215" y="66" font-family="Poppins" font-weight="700" font-size="13" fill="#97173A" text-anchor="middle">58,9 jt</text><text x="215" y="232" font-family="Raleway" font-weight="700" font-size="12" fill="#97173A" text-anchor="middle">Mg 2 Okt</text><rect x="310" y="66" width="70" height="146" rx="12" fill="#B2C2D2"/><text x="345" y="60" font-family="Poppins" font-weight="700" font-size="13" fill="#97173A" text-anchor="middle">61,4 jt</text><text x="345" y="232" font-family="Raleway" font-weight="700" font-size="12" fill="#97173A" text-anchor="middle">Mg 3 Okt</text><rect x="440" y="55" width="70" height="157" rx="12" fill="#B2C2D2"/><text x="475" y="49" font-family="Poppins" font-weight="700" font-size="13" fill="#97173A" text-anchor="middle">66 jt</text><text x="475" y="232" font-family="Raleway" font-weight="700" font-size="12" fill="#97173A" text-anchor="middle">Mg 4 Okt</text><rect x="570" y="43" width="70" height="169" rx="12" fill="#97173A"/><text x="605" y="37" font-family="Poppins" font-weight="700" font-size="13" fill="#97173A" text-anchor="middle">71,3 jt</text><text x="605" y="232" font-family="Raleway" font-weight="700" font-size="12" fill="#97173A" text-anchor="middle">Mg 1 Nov</text></svg></div>
-      <div class="card"><div class="card-head"><div><h2>Unduh Laporan</h2><p>Pilih jenis dan periode laporan</p></div></div>
-        <div class="field"><label>Jenis laporan</label><div class="seg" id="jenis"><button class="on" data-r="penjualan">Penjualan</button><button data-r="keuangan">Keuangan</button><button data-r="persediaan">Persediaan</button></div></div>
-        <div class="fgrid" style="margin-top:14px"><div class="field "><label>Dari</label><div class="in"><svg class="ic"><use href="#i-cal"/></svg><input type="text" value="01/10/2026" placeholder=""></div></div><div class="field "><label>Sampai</label><div class="in"><svg class="ic"><use href="#i-cal"/></svg><input type="text" value="07/11/2026" placeholder=""></div></div></div>
-        <button class="btn lg" style="width:100%;margin-top:18px" onclick="toast('Laporan PDF sedang diunduh')"><svg class="ic"><use href="#i-download"/></svg>Unduh PDF</button></div>
-    </div>
-    <div class="card" style="margin-top:18px"><div class="card-head"><div><h2 id="rTitle">Laporan Penjualan</h2><p>1 Oktober – 7 November 2026</p></div><button class="btn o sm" onclick="toast('Laporan PDF sedang diunduh')"><svg class="ic" style="width:15px;height:15px"><use href="#i-file"/></svg>PDF</button></div>
-      <div class="tbl-wrap"><table><thead><tr id="rHead"></tr></thead><tbody id="rBody"></tbody></table></div></div>
+    <div class="card" style="padding:18px 20px;background-image:linear-gradient(var(--m08) 1px,transparent 1px),linear-gradient(90deg,var(--m08) 1px,transparent 1px);background-size:24px 24px">
+      <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap">
+        <div style="width:200px"><div class="field "><label>Dari tanggal</label><div class="in"><svg class="ic"><use href="#i-cal"/></svg><input type="text" value="26/10/2026" placeholder=""></div></div></div><div style="width:200px"><div class="field "><label>Sampai tanggal</label><div class="in"><svg class="ic"><use href="#i-cal"/></svg><input type="text" value="01/11/2026" placeholder=""></div></div></div>
+        <div class="field"><label>Periode cepat</label><div class="chips"><button>Hari ini</button><button class="on">7 hari</button><button>Bulan ini</button></div></div>
+        <div style="flex:1"></div><button class="btn lg" onclick="toast('Laporan diperbarui')"><svg class="ic"><use href="#i-search"/></svg>Tampilkan</button></div></div>
+    <div class="grid g3" style="margin-top:18px"><div class="card stat f"><div class="top"><span class="eyebrow">Total pendapatan</span><span class="ico"><svg class="ic"><use href="#i-cash"/></svg></span></div><div class="v">Rp 257,5 jt</div><div class="t">Dari pembayaran berstatus Lunas</div></div><div class="card stat b"><div class="top"><span class="eyebrow">Total pengeluaran</span><span class="ico"><svg class="ic"><use href="#i-wallet"/></svg></span></div><div class="v">Rp 34,3 jt</div><div class="t">Pengeluaran operasional</div></div>
+      <div class="stamp-out"><div class="stamp" style="padding:22px;height:100%"><div style="display:flex;justify-content:space-between"><span class="eyebrow">Laba</span><svg class="ic"><use href="#i-chart"/></svg></div><div style="font:700 clamp(24px,2.2vw,32px) var(--f-title);margin:12px 0 6px">Rp 223,2 jt</div><div style="font-size:12.5px;opacity:.72">Pendapatan − pengeluaran</div></div></div></div>
+    <div class="card" style="margin-top:18px"><div class="card-head"><div><h2>Laporan Keuangan · 26 Okt – 1 Nov 2026</h2><p>Rincian per tanggal</p></div>
+        <div style="display:flex;gap:8px"><button class="btn o" onclick="toast('Laporan PDF diunduh')"><svg class="ic"><use href="#i-file"/></svg>Unduh PDF</button><button class="btn" onclick="toast('Laporan Excel diunduh')"><svg class="ic"><use href="#i-download"/></svg>Unduh Excel</button></div></div>
+      <div class="tbl-wrap"><table><thead><tr><th>Tanggal</th><th>Pendapatan</th><th>Pengeluaran</th><th>Laba</th></tr></thead><tbody><tr><td><b>26 Okt 2026</b></td><td>Rp 31.250.000</td><td>Rp 4.100.000</td><td><b>Rp 27.150.000</b></td></tr><tr><td><b>27 Okt 2026</b></td><td>Rp 29.800.000</td><td>Rp 2.650.000</td><td><b>Rp 27.150.000</b></td></tr><tr><td><b>28 Okt 2026</b></td><td>Rp 33.400.000</td><td>Rp 5.900.000</td><td><b>Rp 27.500.000</b></td></tr><tr><td><b>29 Okt 2026</b></td><td>Rp 30.100.000</td><td>Rp 3.250.000</td><td><b>Rp 26.850.000</b></td></tr><tr><td><b>30 Okt 2026</b></td><td>Rp 41.900.000</td><td>Rp 7.800.000</td><td><b>Rp 34.100.000</b></td></tr><tr><td><b>31 Okt 2026</b></td><td>Rp 46.300.000</td><td>Rp 4.400.000</td><td><b>Rp 41.900.000</b></td></tr><tr><td><b>01 Nov 2026</b></td><td>Rp 44.750.000</td><td>Rp 6.200.000</td><td><b>Rp 38.550.000</b></td></tr><tr style="background:var(--m);color:var(--cr)"><td style="border-radius:14px 0 0 14px;font-weight:800;border:none">TOTAL</td><td style="font-weight:800;border:none">Rp 257.500.000</td><td style="font-weight:800;border:none">Rp 34.300.000</td><td style="border-radius:0 14px 14px 0;font-weight:800;border:none">Rp 223.200.000</td></tr></tbody></table></div>
+      <div class="note" style="margin-top:14px"><svg class="ic"><use href="#i-info"/></svg><span>Jika tidak ada data pada periode yang dipilih, sistem menampilkan pesan dan owner dapat memilih periode lain.</span></div></div>
   </main>
 </div>
 
@@ -303,10 +299,6 @@
   /* tombol simpan di dialog */
   document.querySelectorAll('[data-save]').forEach(b => b.addEventListener('click', () => { const ov = b.closest('.ovl'); if (ov) ov.classList.remove('on'); toast(b.dataset.save); }));
 
-  const R = {"penjualan": [["Menu", "Terjual", "Pendapatan", "Kontribusi"], [["Pizza Beef Pepperoni", "312 porsi", "Rp 34.008.000", "21%"], ["Pizza Margherita", "248 porsi", "Rp 22.072.000", "14%"], ["Penne Bolognese", "231 porsi", "Rp 13.629.000", "9%"], ["Classic Beef Burger", "205 porsi", "Rp 11.275.000", "7%"], ["Lemon Iced Tea", "640 porsi", "Rp 11.520.000", "7%"]]], "keuangan": [["Periode", "Pendapatan", "Pengeluaran", "Laba"], [["Mg 1 Okt", "Rp 54.200.000", "Rp 19.800.000", "Rp 34.400.000"], ["Mg 2 Okt", "Rp 58.900.000", "Rp 21.300.000", "Rp 37.600.000"], ["Mg 3 Okt", "Rp 61.400.000", "Rp 20.900.000", "Rp 40.500.000"], ["Mg 4 Okt", "Rp 66.000.000", "Rp 23.100.000", "Rp 42.900.000"], ["Mg 1 Nov", "Rp 71.300.000", "Rp 24.600.000", "Rp 46.700.000"]]], "persediaan": [["Bahan baku", "Stok masuk", "Pemakaian", "Sisa \u00b7 status"], [["Keju Mozzarella", "28,8 kg", "22,4 kg", "6,5 kg \u00b7 Kritis"], ["Daging Beef Pepperoni", "16,2 kg", "12,6 kg", "4 kg \u00b7 Kritis"], ["Saus Tomat", "22,5 liter", "17,5 liter", "5 liter \u00b7 Kritis"], ["Tepung Terigu", "54 kg", "42 kg", "42 kg \u00b7 Aman"], ["Pasta Penne", "21,6 kg", "16,8 kg", "18 kg \u00b7 Aman"], ["Daging Sapi Giling", "19,8 kg", "15,4 kg", "12,5 kg \u00b7 Aman"]]]}, names = { penjualan: 'Laporan Penjualan', keuangan: 'Laporan Keuangan', persediaan: 'Laporan Persediaan' };
-  function show(k) { const [h, rows] = R[k]; rTitle.textContent = names[k];
-    rHead.innerHTML = h.map(x => `<th>${x}</th>`).join(''); rBody.innerHTML = rows.map(r => '<tr>' + r.map((c, i) => `<td>${i === 0 ? '<b>' + c + '</b>' : c}</td>`).join('') + '</tr>').join(''); }
-  jenis.addEventListener('click', e => { const b = e.target.closest('button'); if (b) show(b.dataset.r); }); show('penjualan');
 </script>
 </body>
 </html>

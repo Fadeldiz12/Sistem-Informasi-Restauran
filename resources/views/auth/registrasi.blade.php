@@ -203,7 +203,7 @@
     <form class="form reg" action="{{ route('registrasi.submit') }}" method="post">
       @csrf
       <h1>Buat Akun Baru</h1>
-      <p class="lead">Daftar untuk memesan menu, memilih metode pengambilan, dan melacak pesananmu.</p>
+      <p class="lead">Daftar untuk memesan menu, memilih jenis layanan, dan melacak pesananmu.</p>
       <div class="row2">
         <label class="field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg><input name="nama" placeholder="Nama lengkap" required></label>
         <label class="field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h4l2 5-2.5 1.5a11 11 0 0 0 6 6L16 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 5a2 2 0 0 1 2-2z"/></svg><input name="hp" placeholder="Nomor HP" required></label>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Input Pesanan Dine-in · SIM Resto</title>
+<title>Konfirmasi Pesanan Online · SIM Resto</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Raleway:wght@600;700;800&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -209,7 +209,7 @@
   <aside class="side"><div class="side-in">
     <div class="brand"><span class="mk">R</span><div><b>SIM RESTO</b><small>PANEL KASIR</small></div></div>
     <div class="nav-lbl">Menu utama</div>
-    <a class="nav" href="{{ route('kasir.pesanan') }}" title="Pesanan Masuk"><svg class="ic"><use href="#i-bell"/></svg><span>Pesanan Masuk</span><span class="bd">5</span></a><a class="nav on" href="{{ route('kasir.dinein') }}" title="Input Dine-in"><svg class="ic"><use href="#i-dine"/></svg><span>Input Dine-in</span></a>
+    <a class="nav" href="{{ route('kasir.dashboard') }}" title="Dashboard"><svg class="ic"><use href="#i-grid"/></svg><span>Dashboard</span></a><a class="nav" href="{{ route('kasir.input') }}" title="Input Pesanan"><svg class="ic"><use href="#i-plus"/></svg><span>Input Pesanan</span></a><a class="nav on" href="{{ route('kasir.online') }}" title="Pesanan Online"><svg class="ic"><use href="#i-bell"/></svg><span>Pesanan Online</span><span class="bd">6</span></a><a class="nav" href="{{ route('kasir.pembayaran') }}" title="Pembayaran"><svg class="ic"><use href="#i-wallet"/></svg><span>Pembayaran</span><span class="bd">4</span></a>
     <div class="spacer"></div>
     <div class="hours"><small>JAM OPERASIONAL</small><b>10.00 – 22.00</b><span>Senin, 2 November 2026</span></div>
     <a class="nav" href="#" title="Bantuan"><svg class="ic"><use href="#i-help"/></svg><span>Bantuan</span></a>
@@ -218,7 +218,7 @@
 
   <main class="main">
     <div class="topbar">
-      <div><div class="crumb">Kasir / Input Dine-in</div><h1>Input Pesanan Dine-in</h1><div class="sub">Catat pesanan makan di tempat berdasarkan nomor meja</div></div>
+      <div><div class="crumb">Kasir / Pesanan Online</div><h1>Konfirmasi Pesanan Online</h1><div class="sub">Periksa kesesuaian pesanan lalu konfirmasi atau tolak</div></div>
       <div class="tb-right">
         <label class="search"><svg class="ic"><use href="#i-search"/></svg><input placeholder="Cari…"></label>
         <button class="icon-btn" aria-label="Notifikasi"><svg class="ic"><use href="#i-bell"/></svg><span class="dot">3</span></button>
@@ -227,50 +227,40 @@
     </div>
 
     <style>
-      .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
-      .mi { border-radius: 18px; overflow: hidden; box-shadow: inset 0 0 0 1.3px var(--m15); background: var(--cr); transition: .15s; }
-      .mi:hover { box-shadow: inset 0 0 0 1.5px var(--m); }
-      .mi .ph { position: relative; height: 96px; } .mi .ph img { width: 100%; height: 100%; object-fit: cover; }
-      .mi .plus { width: 26px; height: 26px; border-radius: 50%; background: var(--m); color: var(--cr); display: grid; place-items: center; }
-      .mi.out { opacity: .5; cursor: not-allowed; }
-      .tables { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; }
-      .tables button { height: 38px; border-radius: 10px; box-shadow: inset 0 0 0 1.3px var(--m); font: 700 13px var(--f-title); }
-      .tables button.busy { background: var(--pp); box-shadow: none; opacity: .55; }
-      .tables button.on { background: var(--m); color: var(--cr); box-shadow: none; }
-      .oi { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 10px; padding: 12px 0; border-bottom: 1px solid var(--m15); }
-      .qty { display: inline-flex; align-items: center; height: 32px; border-radius: 999px; box-shadow: inset 0 0 0 1.3px var(--m); }
-      .qty button { width: 30px; height: 100%; display: grid; place-items: center; } .qty b { min-width: 20px; text-align: center; font: 700 13px var(--f-title); }
+      .qi { display: block; width: 100%; text-align: left; padding: 14px; border-radius: 16px; margin-bottom: 8px; box-shadow: inset 0 0 0 1.2px var(--m15); }
+      .qi:hover { box-shadow: inset 0 0 0 1.5px var(--m); } .qi.on { background: var(--m); color: var(--cr); box-shadow: none; }
     </style>
-    <div class="grid split" style="grid-template-columns:minmax(0,1fr) minmax(340px,.42fr);align-items:start">
-      <div class="card"><div class="card-head"><div class="chips"><button class="on">Semua</button><button>Pizza</button><button>Pasta</button><button>Burger</button><button>Camilan</button><button>Salad</button><button>Minuman</button><button>Dessert</button></div><label class="search"><svg class="ic"><use href="#i-search"/></svg><input placeholder="Cari menu…"></label></div>
-        <div class="menu-grid" id="mg"><button class="mi" data-n="Pizza Beef Pepperoni" data-p="109000" ><div class="ph"><img src="https://images.unsplash.com/photo-1534308983496-4fabb1a015ee?w=300&q=70" alt=""></div>
-      <div style="padding:10px 12px 12px;text-align:left"><b style="font:600 13.5px/1.3 var(--f-title);display:block;min-height:35px">Pizza Beef Pepperoni</b><div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px"><span style="font:700 13px var(--f-title)">Rp 109.000</span><span class="plus"><svg class="ic" style="width:15px;height:15px"><use href="#i-plus"/></svg></span></div></div></button><button class="mi" data-n="Pizza Margherita" data-p="89000" ><div class="ph"><img src="https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=300&q=70" alt=""></div>
-      <div style="padding:10px 12px 12px;text-align:left"><b style="font:600 13.5px/1.3 var(--f-title);display:block;min-height:35px">Pizza Margherita</b><div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px"><span style="font:700 13px var(--f-title)">Rp 89.000</span><span class="plus"><svg class="ic" style="width:15px;height:15px"><use href="#i-plus"/></svg></span></div></div></button><button class="mi" data-n="Penne Bolognese" data-p="59000" ><div class="ph"><img src="https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=300&q=70" alt=""></div>
-      <div style="padding:10px 12px 12px;text-align:left"><b style="font:600 13.5px/1.3 var(--f-title);display:block;min-height:35px">Penne Bolognese</b><div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px"><span style="font:700 13px var(--f-title)">Rp 59.000</span><span class="plus"><svg class="ic" style="width:15px;height:15px"><use href="#i-plus"/></svg></span></div></div></button><button class="mi" data-n="Classic Beef Burger" data-p="55000" ><div class="ph"><img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=300&q=70" alt=""></div>
-      <div style="padding:10px 12px 12px;text-align:left"><b style="font:600 13.5px/1.3 var(--f-title);display:block;min-height:35px">Classic Beef Burger</b><div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px"><span style="font:700 13px var(--f-title)">Rp 55.000</span><span class="plus"><svg class="ic" style="width:15px;height:15px"><use href="#i-plus"/></svg></span></div></div></button><button class="mi out" data-n="Chicken Wings BBQ" data-p="45000" disabled><div class="ph"><img src="https://images.unsplash.com/photo-1608039755401-742074f0548d?w=300&q=70" alt=""><span class="pill m" style="position:absolute;left:8px;top:8px">Habis</span></div>
-      <div style="padding:10px 12px 12px;text-align:left"><b style="font:600 13.5px/1.3 var(--f-title);display:block;min-height:35px">Chicken Wings BBQ</b><div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px"><span style="font:700 13px var(--f-title)">Rp 45.000</span><span class="plus"><svg class="ic" style="width:15px;height:15px"><use href="#i-plus"/></svg></span></div></div></button><button class="mi" data-n="Kentang Goreng" data-p="28000" ><div class="ph"><img src="https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=300&q=70" alt=""></div>
-      <div style="padding:10px 12px 12px;text-align:left"><b style="font:600 13.5px/1.3 var(--f-title);display:block;min-height:35px">Kentang Goreng</b><div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px"><span style="font:700 13px var(--f-title)">Rp 28.000</span><span class="plus"><svg class="ic" style="width:15px;height:15px"><use href="#i-plus"/></svg></span></div></div></button><button class="mi" data-n="Caesar Salad" data-p="42000" ><div class="ph"><img src="https://images.unsplash.com/photo-1550304943-4f24f54ddde9?w=300&q=70" alt=""></div>
-      <div style="padding:10px 12px 12px;text-align:left"><b style="font:600 13.5px/1.3 var(--f-title);display:block;min-height:35px">Caesar Salad</b><div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px"><span style="font:700 13px var(--f-title)">Rp 42.000</span><span class="plus"><svg class="ic" style="width:15px;height:15px"><use href="#i-plus"/></svg></span></div></div></button><button class="mi" data-n="Lemon Iced Tea" data-p="18000" ><div class="ph"><img src="https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=300&q=70" alt=""></div>
-      <div style="padding:10px 12px 12px;text-align:left"><b style="font:600 13.5px/1.3 var(--f-title);display:block;min-height:35px">Lemon Iced Tea</b><div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px"><span style="font:700 13px var(--f-title)">Rp 18.000</span><span class="plus"><svg class="ic" style="width:15px;height:15px"><use href="#i-plus"/></svg></span></div></div></button><button class="mi" data-n="Choco Brownie Ice Cream" data-p="32000" ><div class="ph"><img src="https://images.unsplash.com/photo-1624353365286-3f8d62daad51?w=300&q=70" alt=""></div>
-      <div style="padding:10px 12px 12px;text-align:left"><b style="font:600 13.5px/1.3 var(--f-title);display:block;min-height:35px">Choco Brownie Ice Cream</b><div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px"><span style="font:700 13px var(--f-title)">Rp 32.000</span><span class="plus"><svg class="ic" style="width:15px;height:15px"><use href="#i-plus"/></svg></span></div></div></button></div></div>
-      <div class="card" style="padding:0;overflow:hidden;position:sticky;top:16px">
-        <div style="background:var(--m);color:var(--cr);padding:18px 20px"><div style="display:flex;justify-content:space-between;align-items:center"><h2 style="font:600 19px var(--f-title)">Pesanan Dine-in</h2><span class="pill b">#0153</span></div>
-          <div style="font-size:12.5px;opacity:.8;margin-top:4px">Makan di tempat · kasir Bima Saputra</div></div>
-        <div style="padding:16px 20px">
-          <div class="field"><label>Nomor meja</label><div class="tables"><button class="">01</button><button class="">02</button><button class=" busy">03</button><button class="">04</button><button class=" busy">05</button><button class="">06</button><button class="on">07</button><button class="">08</button><button class="">09</button><button class="">10</button><button class="">11</button><button class=" busy">12</button><button class="">13</button><button class="">14</button><button class="">15</button><button class="">16</button></div>
-            <div style="display:flex;gap:14px;font-size:11.5px;margin-top:8px;opacity:.75"><span>■ dipilih</span><span>□ kosong</span><span style="opacity:.6">■ terisi</span></div></div>
-          <div class="eyebrow" style="margin:16px 0 0">Item pesanan</div><div id="ol"></div>
-          <div id="empty" style="padding:18px 0;font-size:13px;opacity:.6;text-align:center">Pilih menu di sebelah kiri</div>
-          <div class="field" style="margin-top:12px"><label>Catatan untuk dapur</label><div class="in"><input placeholder="Contoh: pizza dipotong 12"></div></div>
-          <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:16px;padding-top:12px;border-top:1.5px dashed var(--m60)"><span class="eyebrow">Total</span><b id="tot" style="font:700 26px var(--f-title)">Rp 0</b></div>
-          <button class="btn lg" style="width:100%;margin-top:14px" onclick="toast('Pesanan meja 07 diteruskan ke dapur')"><svg class="ic"><use href="#i-receipt"/></svg>Simpan &amp; Teruskan ke Dapur</button>
-          <p style="font-size:12px;opacity:.6;text-align:center;margin-top:10px">Pembayaran dicatat setelah pelanggan selesai makan</p></div>
+    <div class="grid split" style="grid-template-columns:minmax(260px,.32fr) minmax(0,1fr);align-items:start">
+      <div class="card" style="padding:16px"><div class="card-head" style="margin-bottom:6px"><h2>Menunggu Konfirmasi</h2><span class="pill m">6</span></div><p style="font-size:12.5px;opacity:.65;margin-bottom:12px">Pesanan online dari pelanggan</p><button class="qi on"><div style="display:flex;justify-content:space-between;align-items:center"><b style="font:700 14px var(--f-title)">ORD-0146</b><span style="font-size:12px;opacity:.75;display:flex;gap:5px;align-items:center"><svg class="ic" style="width:13px;height:13px"><use href="#i-clock"/></svg>10:55</span></div><div style="font:700 13.5px var(--f-accent);margin-top:6px">Sari Wulandari</div><div style="display:flex;justify-content:space-between;gap:8px;margin-top:6px;align-items:center"><span style="font-size:12px;opacity:.8">Delivery · Zona C</span><span class="pill c" style="font-size:10.5px;padding:3px 9px">Menunggu Verifikasi</span></div></button><button class="qi"><div style="display:flex;justify-content:space-between;align-items:center"><b style="font:700 14px var(--f-title)">ORD-0148</b><span style="font-size:12px;opacity:.75;display:flex;gap:5px;align-items:center"><svg class="ic" style="width:13px;height:13px"><use href="#i-clock"/></svg>11:02</span></div><div style="font:700 13.5px var(--f-accent);margin-top:6px">Budi Hartono</div><div style="display:flex;justify-content:space-between;gap:8px;margin-top:6px;align-items:center"><span style="font-size:12px;opacity:.8">Take Away · 11.30</span><span class="pill b" style="font-size:10.5px;padding:3px 9px">Bayar Tunai</span></div></button><button class="qi"><div style="display:flex;justify-content:space-between;align-items:center"><b style="font:700 14px var(--f-title)">ORD-0150</b><span style="font-size:12px;opacity:.75;display:flex;gap:5px;align-items:center"><svg class="ic" style="width:13px;height:13px"><use href="#i-clock"/></svg>11:06</span></div><div style="font:700 13.5px var(--f-accent);margin-top:6px">Nadia Putri</div><div style="display:flex;justify-content:space-between;gap:8px;margin-top:6px;align-items:center"><span style="font-size:12px;opacity:.8">Dine In · Meja 03</span><span class="pill b" style="font-size:10.5px;padding:3px 9px">Bayar Tunai</span></div></button><button class="qi"><div style="display:flex;justify-content:space-between;align-items:center"><b style="font:700 14px var(--f-title)">ORD-0151</b><span style="font-size:12px;opacity:.75;display:flex;gap:5px;align-items:center"><svg class="ic" style="width:13px;height:13px"><use href="#i-clock"/></svg>11:09</span></div><div style="font:700 13.5px var(--f-accent);margin-top:6px">Kevin Tanjung</div><div style="display:flex;justify-content:space-between;gap:8px;margin-top:6px;align-items:center"><span style="font-size:12px;opacity:.8">Delivery · Zona A</span><span class="pill b" style="font-size:10.5px;padding:3px 9px">Menunggu Verifikasi</span></div></button><button class="qi"><div style="display:flex;justify-content:space-between;align-items:center"><b style="font:700 14px var(--f-title)">ORD-0152</b><span style="font-size:12px;opacity:.75;display:flex;gap:5px;align-items:center"><svg class="ic" style="width:13px;height:13px"><use href="#i-clock"/></svg>11:12</span></div><div style="font:700 13.5px var(--f-accent);margin-top:6px">Lisa Marpaung</div><div style="display:flex;justify-content:space-between;gap:8px;margin-top:6px;align-items:center"><span style="font-size:12px;opacity:.8">Delivery · Zona B</span><span class="pill b" style="font-size:10.5px;padding:3px 9px">Menunggu Verifikasi</span></div></button></div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <div class="stripes" style="padding:22px 24px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap">
+          <div class="stamp-out"><div class="stamp" style="padding:18px 24px"><div class="eyebrow">Detail pesanan online</div><div style="font:700 26px var(--f-title);margin-top:4px">ORD-20261102-0146</div><div style="font-size:12.5px;opacity:.7">Masuk 10:55 · Senin, 2 Nov 2026</div></div></div>
+          <div style="display:grid;gap:8px;justify-items:end"><span class="pill b">Menunggu Konfirmasi</span><span class="pill m"><svg class="ic" style="width:13px;height:13px"><use href="#i-truck"/></svg>Delivery · Zona C</span></div></div>
+        <div class="grid split" style="grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);padding:20px 24px">
+          <div><div class="eyebrow" style="margin-bottom:6px">Menu dipesan</div><table><tr><td><b>Pizza Margherita</b><div style="font-size:12px;opacity:.6">Catatan: -</div></td><td>1×</td><td style="text-align:right"><b>Rp 89.000</b></td></tr><tr><td><b>Chicken Wings BBQ</b><div style="font-size:12px;opacity:.6">Catatan: pedas</div></td><td>1×</td><td style="text-align:right"><b>Rp 45.000</b></td></tr><tr><td><b>Choco Brownie Ice Cream</b><div style="font-size:12px;opacity:.6">Catatan: -</div></td><td>2×</td><td style="text-align:right"><b>Rp 64.000</b></td></tr></table>
+            <div style="display:grid;gap:6px;margin-top:12px;padding:14px;border-radius:16px;background:var(--pp);font-size:13.5px"><div style="display:flex;justify-content:space-between"><span>Subtotal</span><span>Rp 198.000</span></div><div style="display:flex;justify-content:space-between"><span>Pajak 10%</span><span>Rp 19.800</span></div><div style="display:flex;justify-content:space-between"><span>Biaya layanan 5%</span><span>Rp 9.900</span></div><div style="display:flex;justify-content:space-between"><span>Ongkos kirim · Zona C</span><span>Rp 22.000</span></div>
+              <div style="display:flex;justify-content:space-between;padding-top:8px;border-top:1.5px dashed var(--m60);font:700 20px var(--f-title)"><span>Total</span><span>Rp 249.700</span></div></div></div>
+          <div class="grid" style="align-content:start;gap:12px">
+            <div class="card soft" style="padding:14px"><div class="eyebrow" style="font-size:10px;margin-bottom:8px">Pelanggan &amp; alamat</div><div class="who"><span class="av">SW</span><div><b>Sari Wulandari</b><div style="font-size:12.5px;opacity:.7">0857 2233 1188</div></div></div>
+              <div style="display:flex;gap:8px;margin-top:10px;font-size:13px"><svg class="ic" style="width:16px;height:16px"><use href="#i-pin"/></svg>Jl. Karya Wisata No. 8, Medan Johor · Zona C</div></div>
+            <div class="card b" style="padding:14px"><div style="display:flex;justify-content:space-between;align-items:center"><span class="eyebrow" style="font-size:10px">Status pembayaran</span><span class="pill ">Menunggu Verifikasi</span></div>
+              <div style="display:flex;gap:12px;margin-top:10px;align-items:center"><div style="width:62px;height:62px;border-radius:12px;background:var(--cr);display:grid;place-items:center;box-shadow:inset 0 0 0 1.2px var(--m)"><svg class="ic" style="width:24px;height:24px"><use href="#i-image"/></svg></div>
+                <div><b style="font:600 13.5px var(--f-title)">Transfer · bukti_0146.jpg</b><div style="font-size:12px;opacity:.75">Diunggah 10:57</div><a href="{{ route('kasir.pembayaran') }}" style="font:700 12px var(--f-accent);text-decoration:underline">Verifikasi di menu Pembayaran</a></div></div></div>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:16px 24px 22px;border-top:1.5px solid var(--m15)">
+          <span style="font-size:12.5px;opacity:.7;display:flex;gap:8px;align-items:center"><svg class="ic" style="width:16px;height:16px"><use href="#i-info"/></svg>Pelanggan menerima notifikasi hasil konfirmasi</span>
+          <div style="display:flex;gap:10px"><button class="btn o" data-open="mTolak"><svg class="ic"><use href="#i-x"/></svg>Tolak</button><button class="btn" onclick="toast('Dikonfirmasi · tiket T-0146 dikirim ke antrean dapur')"><svg class="ic"><use href="#i-check"/></svg>Konfirmasi &amp; Kirim ke Dapur</button></div></div>
       </div>
     </div>
   </main>
 </div>
 
-
+<div class="ovl" id="mTolak"><div class="modal" style="width:min(480px,100%)">
+  <div class="mh"><div><div class="eyebrow" style="opacity:.7">ORD-0146</div><h3>Tolak Pesanan</h3></div><button class="icon-btn" data-close><svg class="ic"><use href="#i-x"/></svg></button></div>
+  <div class="mb"><div class="field"><label>Alasan penolakan</label><div class="in ta"><textarea placeholder="Contoh: menu habis, alamat di luar zona pengiriman"></textarea></div></div>
+    <div class="note" style="margin-top:14px"><svg class="ic"><use href="#i-info"/></svg><span>Status pesanan menjadi <b>Ditolak</b> dan alasan dikirim sebagai notifikasi ke pelanggan.</span></div></div>
+  <div class="mf"><button class="btn o" data-close>Batal</button><button class="btn" data-save="Pesanan ditolak · pelanggan diberi notifikasi">Tolak Pesanan</button></div></div></div>
 <div class="ovl" id="mLogout"><div class="modal sm">
   <div class="big-ic" style="background:var(--bl)"><svg class="ic"><use href="#i-logout"/></svg></div>
   <h3 style="font:700 24px var(--f-title)">Logout dari sistem?</h3>
@@ -329,20 +319,6 @@
   /* tombol simpan di dialog */
   document.querySelectorAll('[data-save]').forEach(b => b.addEventListener('click', () => { const ov = b.closest('.ovl'); if (ov) ov.classList.remove('on'); toast(b.dataset.save); }));
 
-  const order = {};
-  function draw() {
-    let t = 0, h = '';
-    Object.entries(order).forEach(([n, o]) => { t += o.p * o.q;
-      h += `<div class="oi"><b style="font:600 13.5px var(--f-title)">${n}</b><b style="font:600 13.5px var(--f-title)">${rp(o.p * o.q)}</b>
-        <span style="font-size:12px;opacity:.65">${rp(o.p)} / porsi</span><div class="qty"><button data-m="${n}">−</button><b>${o.q}</b><button data-a="${n}">+</button></div></div>`; });
-    ol.innerHTML = h; tot.textContent = rp(t); empty.style.display = h ? 'none' : '';
-  }
-  mg.addEventListener('click', e => { const b = e.target.closest('.mi'); if (!b || b.disabled) return; const n = b.dataset.n; order[n] = order[n] || { p: +b.dataset.p, q: 0 }; order[n].q++; draw(); });
-  ol.addEventListener('click', e => { const a = e.target.dataset.a, m = e.target.dataset.m;
-    if (a) order[a].q++; if (m) { order[m].q--; if (!order[m].q) delete order[m]; } draw(); });
-  document.querySelector('.tables').addEventListener('click', e => { const b = e.target.closest('button'); if (!b || b.classList.contains('busy')) return;
-    document.querySelectorAll('.tables button').forEach(x => x.classList.toggle('on', x === b)); });
-  ['Pizza Beef Pepperoni', 'Pizza Beef Pepperoni', 'Kentang Goreng', 'Lemon Iced Tea', 'Lemon Iced Tea'].forEach(n => document.querySelector(`.mi[data-n="${n}"]`).click());
 </script>
 </body>
 </html>

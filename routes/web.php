@@ -25,29 +25,31 @@ Route::name('pelanggan.')->group(function () {
     Route::view('/beranda', 'pelanggan.beranda')->name('beranda');
     Route::view('/keranjang', 'pelanggan.keranjang')->name('keranjang');
     Route::view('/checkout', 'pelanggan.checkout')->name('checkout');
+    Route::view('/pembayaran', 'pelanggan.pembayaran')->name('pembayaran');
     Route::view('/tracking', 'pelanggan.tracking')->name('tracking');
 });
 
 // Admin
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::view('/dashboard', 'admin.dashboard')->name('dashboard');
+    Route::view('/pengguna', 'admin.pengguna')->name('pengguna');
     Route::view('/menu', 'admin.menu')->name('menu');
-    Route::view('/bahan-baku', 'admin.bahan-baku')->name('bahan-baku');
     Route::view('/zona', 'admin.zona')->name('zona');
-    Route::view('/supplier', 'admin.supplier')->name('supplier');
+    Route::view('/pengaturan', 'admin.pengaturan')->name('pengaturan');
 });
 
 // Kasir
 Route::prefix('kasir')->name('kasir.')->group(function () {
-    Route::view('/pesanan', 'kasir.pesanan')->name('pesanan');
-    Route::view('/dine-in', 'kasir.dinein')->name('dinein');
+    Route::view('/dashboard', 'kasir.dashboard')->name('dashboard');
+    Route::view('/input', 'kasir.input')->name('input');
+    Route::view('/online', 'kasir.online')->name('online');
+    Route::view('/pembayaran', 'kasir.pembayaran')->name('pembayaran');
 });
 
 // Dapur
 Route::prefix('dapur')->name('dapur.')->group(function () {
-    Route::view('/antrian', 'dapur.antrian')->name('antrian');
-    Route::view('/stok', 'dapur.stok')->name('stok');
-    Route::view('/pemakaian', 'dapur.pemakaian')->name('pemakaian');
+    Route::view('/antrean', 'dapur.antrean')->name('antrean');
+    Route::view('/bahan-baku', 'dapur.bahan-baku')->name('bahan-baku');
 });
 
 // Kurir
@@ -57,7 +59,7 @@ Route::prefix('kurir')->name('kurir.')->group(function () {
 
 // Owner
 Route::prefix('owner')->name('owner.')->group(function () {
+    Route::view('/dashboard', 'owner.dashboard')->name('dashboard');
     Route::view('/laporan', 'owner.laporan')->name('laporan');
-    Route::view('/pegawai', 'owner.pegawai')->name('pegawai');
     Route::view('/pengeluaran', 'owner.pengeluaran')->name('pengeluaran');
 });

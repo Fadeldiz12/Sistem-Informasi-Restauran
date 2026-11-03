@@ -144,9 +144,6 @@
   .svc-opt.on .rad::after { content: ''; width: 10px; height: 10px; border-radius: 50%; background: var(--cr); }
   .svc-panel { margin-top: 18px; display: none; }
   .svc-panel.on { display: block; }
-  .pay-panel { display: none; } .pay-panel.on { display: block; }
-  .upl { display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: 18px; border: 1.8px dashed var(--m60); }
-  .upl-ic { width: 52px; height: 52px; border-radius: 14px; background: var(--bl); display: grid; place-items: center; flex: none; }
   .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
   .zone { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 22px; margin-top: 14px; }
   .zone .z { font: 700 24px var(--f-title); line-height: 1; margin-top: 6px; }
@@ -201,11 +198,13 @@
   <symbol id="i-cash" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.8"/></symbol>
   <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v4h16v-4"/></symbol>
   <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></symbol>
+  <symbol id="i-logout" viewBox="0 0 24 24"><path d="M15 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4"/><path d="M10 17l-5-5 5-5M5 12h11"/></symbol>
   <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></symbol>
 </svg>
 <div class="topbar"><div class="wrap">
-  <span><svg class="ic"><use href="#i-clock"/></svg>Buka hari ini 10.00 – 22.00 · Gratis ongkir radius 3 km</span>
-  <nav><a href="#"><svg class="ic"><use href="#i-receipt"/></svg>Lacak Pesanan</a><a href="#"><svg class="ic"><use href="#i-help"/></svg>Bantuan</a></nav>
+  <span><svg class="ic"><use href="#i-clock"/></svg>Buka hari ini 10.00 – 22.00 · Delivery tersedia untuk Zona A, B, C</span>
+  <nav><a href="{{ route('pelanggan.tracking') }}"><svg class="ic"><use href="#i-receipt"/></svg>Lacak Pesanan</a><a href="#"><svg class="ic"><use href="#i-help"/></svg>Bantuan</a></nav>
 </div></div>
 <header><div class="wrap">
   <a class="logo" href="{{ route('pelanggan.beranda') }}"><b>SIM RESTO</b><small>PIZZA &amp; PASTA HOUSE</small></a>
@@ -220,18 +219,18 @@
   <div class="page-head">
     <div><div class="crumb"><a href="{{ route('pelanggan.beranda') }}">Beranda</a><span>/</span><a href="{{ route('pelanggan.keranjang') }}">Keranjang</a><span>/</span><span>Checkout</span></div><h1>Checkout</h1></div>
     <div class="steps"><div class="s done"><span class="n"><svg class="ic" style="width:15px;height:15px;stroke-width:2.6"><use href="#i-check"/></svg></span><span>Keranjang</span></div><div class="line done"></div>
-      <div class="s now"><span class="n">2</span><span>Checkout &amp; Bayar</span></div><div class="line"></div><div class="s next"><span class="n">3</span><span>Lacak Pesanan</span></div></div>
+      <div class="s now"><span class="n">2</span><span>Checkout</span></div><div class="line"></div><div class="s next"><span class="n">3</span><span>Pembayaran</span></div></div>
   </div>
 
   <div class="layout">
     <div>
       <!-- 1. Jenis layanan -->
       <section class="card sec">
-        <div class="sec-title"><span class="no">1</span><div><h2>Pilih metode pengambilan</h2><p>Isian di bawah menyesuaikan layanan yang dipilih.</p></div></div>
+        <div class="sec-title"><span class="no">1</span><div><h2>Pilih jenis layanan</h2><p>Isian di bawah menyesuaikan layanan yang dipilih.</p></div></div>
         <div class="svc-grid" id="svc">
-          <button class="svc-opt" data-svc="dinein"><div class="top"><span class="ico"><svg class="ic"><use href="#i-dine"/></svg></span><span class="rad"></span></div><b>Makan di Tempat</b><small>Isi nomor meja</small></button>
-          <button class="svc-opt" data-svc="takeaway"><div class="top"><span class="ico"><svg class="ic"><use href="#i-bag"/></svg></span><span class="rad"></span></div><b>Ambil Sendiri</b><small>Ambil di kasir restoran</small></button>
-          <button class="svc-opt on" data-svc="delivery"><div class="top"><span class="ico"><svg class="ic"><use href="#i-truck"/></svg></span><span class="rad"></span></div><b>Diantar</b><small>Ongkir dihitung dari jarak</small></button>
+          <button class="svc-opt" data-svc="dinein"><div class="top"><span class="ico"><svg class="ic"><use href="#i-dine"/></svg></span><span class="rad"></span></div><b>Dine In</b><small>Makan di restoran</small></button>
+          <button class="svc-opt" data-svc="takeaway"><div class="top"><span class="ico"><svg class="ic"><use href="#i-bag"/></svg></span><span class="rad"></span></div><b>Take Away</b><small>Ambil sendiri di kasir</small></button>
+          <button class="svc-opt on" data-svc="delivery"><div class="top"><span class="ico"><svg class="ic"><use href="#i-truck"/></svg></span><span class="rad"></span></div><b>Delivery</b><small>Diantar kurir, ongkir sesuai zona</small></button>
         </div>
 
         <div class="svc-panel" data-panel="dinein">
@@ -250,8 +249,8 @@
           <div class="field"><label>Alamat pengiriman</label><div class="in ta"><svg class="ic" style="margin-top:2px"><use href="#i-pin"/></svg><textarea>Jl. Sei Batang Hari No. 27, Kel. Babura, Kec. Medan Sunggal, Medan</textarea></div></div>
           <div class="chips"><button class="on">Pakai alamat profil</button><button>Alamat lain</button></div>
           <div class="stamp-out"><div class="stamp zone">
-            <div><div class="eyebrow" style="font-size:10.5px">Jarak dari restoran</div><div class="z">4,2 km</div><small>Gratis ≤ 3 km · sisa 1,2 km dibulatkan 2 km × Rp 3.000</small></div>
-            <span class="kt">Rp 6.000</span></div></div>
+            <div><div class="eyebrow" style="font-size:10.5px">Zona terdeteksi otomatis</div><div class="z">Zona B</div><small>Jarak ± 4,2 km · estimasi tiba 35–45 menit</small></div>
+            <span class="kt">Rp 15.000</span></div></div>
         </div>
       </section>
 
@@ -265,23 +264,10 @@
         <div class="field" style="margin-top:16px"><label>Catatan pesanan (opsional)</label><div class="in ta"><textarea placeholder="Contoh: tolong telepon saat sampai"></textarea></div></div>
       </section>
 
-      <!-- 3. Metode pembayaran -->
-      <section class="card sec">
-        <div class="sec-title"><span class="no">3</span><div><h2>Metode pembayaran</h2><p>Bukti transfer diperiksa kasir sebelum pesanan diproses.</p></div></div>
-        <div class="grid2" id="payOpt">
-          <button class="svc-opt on" data-pay="transfer" style="margin-top:12px"><div class="top"><span class="ico"><svg class="ic"><use href="#i-card"/></svg></span><span class="rad"></span></div><b>Transfer Bank</b><small>Unggah bukti transfer</small></button>
-          <button class="svc-opt" data-pay="tunai" style="margin-top:12px"><div class="top"><span class="ico"><svg class="ic"><use href="#i-cash"/></svg></span><span class="rad"></span></div><b>Tunai</b><small>Bayar di kasir / ke kurir</small></button>
-        </div>
-        <div class="pay-panel on" data-pp="transfer" style="margin-top:18px">
-          <div class="stripes" style="border-radius:20px;padding:14px"><div class="stamp-out"><div class="stamp" style="padding:16px 20px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
-            <div><div class="eyebrow" style="font-size:10.5px">Rekening restoran</div><div style="font:700 22px var(--f-title);margin-top:2px">1234 5678 9012</div><small style="font-size:12.5px;opacity:.72">a.n. SIM Resto · nominal sesuai total pembayaran</small></div>
-            <button class="btn o sm" type="button">Salin</button></div></div></div>
-          <div class="field" style="margin-top:16px"><label>Bukti transfer</label>
-            <div class="upl"><div class="upl-ic"><svg class="ic"><use href="#i-upload"/></svg></div><div style="flex:1"><b style="font:600 14px var(--f-title)">bukti_transfer.jpg</b><div style="font-size:12.5px;opacity:.7">1,2 MB · JPG/PNG maksimal 2 MB</div></div><button class="btn o sm" type="button">Ganti</button></div></div>
-        </div>
-        <div class="pay-panel" data-pp="tunai" style="margin-top:18px">
-          <div class="note"><svg class="ic"><use href="#i-info"/></svg><span>Siapkan uang pas. Untuk pesanan diantar, pembayaran tunai diberikan kepada kurir saat pesanan diterima.</span></div>
-        </div>
+      <!-- 3. Pembayaran (info) -->
+      <section class="card sec soft">
+        <div class="sec-title" style="margin-bottom:12px"><span class="no" style="background:var(--bl);color:var(--m)">3</span><div><h2>Pembayaran</h2><p>Dilakukan setelah pesanan dibuat.</p></div></div>
+        <div class="note"><svg class="ic"><use href="#i-shield"/></svg><span>Setelah konfirmasi, pesanan tersimpan dengan status <b>Menunggu Pembayaran</b>. Kamu bisa bayar tunai atau transfer lalu unggah bukti transfer.</span></div>
       </section>
     </div>
 
@@ -297,12 +283,14 @@
           </div>
           <div class="hr"></div>
           <div class="sum-row"><span>Subtotal (5 item)</span><span>Rp 236.000</span></div>
-          <div class="sum-row" id="ongRow"><span>Ongkos kirim (4,2 km)</span><span id="ongVal">Rp 6.000</span></div>
+          <div class="sum-row"><span>Pajak (10%)</span><span>Rp 23.600</span></div>
+          <div class="sum-row"><span>Biaya layanan (5%)</span><span>Rp 11.800</span></div>
+          <div class="sum-row" id="ongRow"><span>Ongkos kirim (<span id="ongZone">Zona B</span>)</span><span id="ongVal">Rp 15.000</span></div>
         </div>
         <div class="sum-total">
-          <div class="t"><div><span class="eyebrow" style="opacity:.8">Total pembayaran</span><div style="margin-top:8px"><span class="pill b" id="svcBadge">Diantar · Transfer</span></div></div><b id="grand">Rp 242.000</b></div>
+          <div class="t"><div><span class="eyebrow" style="opacity:.8">Total pembayaran</span><div style="margin-top:8px"><span class="pill b" id="svcBadge">Delivery</span></div></div><b id="grand">Rp 286.400</b></div>
           <button class="btn cr blk" id="btnConfirm">Konfirmasi Pesanan <svg class="ic"><use href="#i-check"/></svg></button>
-          <small>Pesanan disimpan dan kasir menerima notifikasi pesanan masuk</small>
+          <small>Dengan menekan tombol ini, pesanan disimpan dan diteruskan ke kasir</small>
         </div>
       </div>
       <a class="btn o blk" href="{{ route('pelanggan.keranjang') }}"><svg class="ic"><use href="#i-arrl"/></svg>Kembali ke Keranjang</a>
@@ -314,9 +302,9 @@
   <div class="top stripes" style="padding:0"><div style="padding:34px 28px 22px;background:linear-gradient(transparent,transparent)"><div class="stamp-out" style="display:inline-block"><div class="stamp" style="padding:24px 34px">
     <div class="ok"><svg class="ic" style="width:36px;height:36px;stroke-width:2.6"><use href="#i-check"/></svg></div><h3>Pesanan Dibuat!</h3></div></div></div></div>
   <div style="padding:22px 28px 6px"><div class="eyebrow" style="opacity:.7">Nomor pesanan</div><div class="ord">ORD-20261102-0143</div>
-    <span class="pill b" style="font-size:13px;padding:7px 14px">Menunggu Verifikasi</span>
-    <p style="font:500 14px var(--f-body);opacity:.75;margin:14px 0 18px">Kasir sedang memeriksa pesanan dan bukti transfermu. Pantau statusnya di halaman lacak pesanan.</p></div>
-  <div class="bot"><a class="btn blk" href="{{ route('pelanggan.tracking') }}">Lacak Pesanan <svg class="ic"><use href="#i-arr"/></svg></a><a class="btn o blk" href="{{ route('pelanggan.beranda') }}">Kembali ke Beranda</a></div>
+    <span class="pill b" style="font-size:13px;padding:7px 14px">Menunggu Pembayaran</span>
+    <p style="font:500 14px var(--f-body);opacity:.75;margin:14px 0 18px">Selesaikan pembayaran agar pesanan dikonfirmasi kasir dan diteruskan ke dapur.</p></div>
+  <div class="bot"><a class="btn blk" href="{{ route('pelanggan.pembayaran') }}">Bayar Sekarang <svg class="ic"><use href="#i-arr"/></svg></a><a class="btn o blk" href="{{ route('pelanggan.beranda') }}">Kembali ke Beranda</a></div>
 </div></div>
 <footer>
   <svg class="torn" viewBox="0 0 1000 24" preserveAspectRatio="none" aria-hidden="true"><rect width="1000" height="12" fill="#F8F5E6"/><rect y="12" width="1000" height="12" fill="#97173A"/>
@@ -324,23 +312,16 @@
   <div class="wrap copy"><b>SIM RESTO</b><span>© 2026 SIM Resto · Jl. Gatot Subroto No. 100, Medan · 0811 6000 1234</span></div>
 </footer>
 <script>
-  const SUB = 236000, TAX = 0, SVC = 0, ONG = 6000;
+  const SUB = 236000, TAX = 23600, SVC = 11800, ONG = 15000;
   const rp = n => 'Rp ' + n.toLocaleString('id-ID');
-  const label = { dinein: 'Makan di tempat', takeaway: 'Ambil sendiri', delivery: 'Diantar' }, payLbl = { transfer: 'Transfer', tunai: 'Tunai' };
-  let svc = 'delivery', pay = 'transfer';
-  const badge = () => svcBadge.textContent = label[svc] + ' · ' + payLbl[pay];
-  document.querySelectorAll('#svc .svc-opt').forEach(b => b.addEventListener('click', () => {
-    const s = b.dataset.svc; svc = s;
-    document.querySelectorAll('#svc .svc-opt').forEach(x => x.classList.toggle('on', x === b));
+  const label = { dinein: 'Dine In', takeaway: 'Take Away', delivery: 'Delivery' };
+  document.querySelectorAll('.svc-opt').forEach(b => b.addEventListener('click', () => {
+    const s = b.dataset.svc;
+    document.querySelectorAll('.svc-opt').forEach(x => x.classList.toggle('on', x === b));
     document.querySelectorAll('.svc-panel').forEach(p => p.classList.toggle('on', p.dataset.panel === s));
     const ong = s === 'delivery' ? ONG : 0;
     ongRow.style.display = s === 'delivery' ? '' : 'none';
-    grand.textContent = rp(SUB + ong); badge();
-  }));
-  document.querySelectorAll('#payOpt .svc-opt').forEach(b => b.addEventListener('click', () => {
-    pay = b.dataset.pay;
-    document.querySelectorAll('#payOpt .svc-opt').forEach(x => x.classList.toggle('on', x === b));
-    document.querySelectorAll('.pay-panel').forEach(p => p.classList.toggle('on', p.dataset.pp === pay)); badge();
+    grand.textContent = rp(SUB + TAX + SVC + ong); svcBadge.textContent = label[s];
   }));
   document.querySelectorAll('.chips').forEach(g => g.addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Zona & Tarif Ongkir · SIM Resto</title>
+<title>Zona & Tarif Pengiriman · SIM Resto</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Raleway:wght@600;700;800&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -209,7 +209,7 @@
   <aside class="side"><div class="side-in">
     <div class="brand"><span class="mk">R</span><div><b>SIM RESTO</b><small>PANEL ADMIN</small></div></div>
     <div class="nav-lbl">Menu utama</div>
-    <a class="nav" href="{{ route('admin.dashboard') }}" title="Dashboard"><svg class="ic"><use href="#i-grid"/></svg><span>Dashboard</span></a><a class="nav" href="{{ route('admin.menu') }}" title="Menu & Resep"><svg class="ic"><use href="#i-tag"/></svg><span>Menu & Resep</span><span class="bd">40</span></a><a class="nav" href="{{ route('admin.bahan-baku') }}" title="Data Bahan Baku"><svg class="ic"><use href="#i-box"/></svg><span>Data Bahan Baku</span><span class="bd">24</span></a><a class="nav" href="{{ route('admin.supplier') }}" title="Data Supplier"><svg class="ic"><use href="#i-truck"/></svg><span>Data Supplier</span><span class="bd">6</span></a><a class="nav on" href="{{ route('admin.zona') }}" title="Zona & Tarif Ongkir"><svg class="ic"><use href="#i-map"/></svg><span>Zona & Tarif Ongkir</span></a>
+    <a class="nav" href="{{ route('admin.dashboard') }}" title="Dashboard"><svg class="ic"><use href="#i-grid"/></svg><span>Dashboard</span></a><a class="nav" href="{{ route('admin.pengguna') }}" title="Data Pengguna"><svg class="ic"><use href="#i-users"/></svg><span>Data Pengguna</span><span class="bd">48</span></a><a class="nav" href="{{ route('admin.menu') }}" title="Kategori & Menu"><svg class="ic"><use href="#i-tag"/></svg><span>Kategori & Menu</span><span class="bd">40</span></a><a class="nav on" href="{{ route('admin.zona') }}" title="Zona & Tarif"><svg class="ic"><use href="#i-map"/></svg><span>Zona & Tarif</span><span class="bd">3</span></a><a class="nav" href="{{ route('admin.pengaturan') }}" title="Pengaturan Sistem"><svg class="ic"><use href="#i-settings"/></svg><span>Pengaturan Sistem</span></a>
     <div class="spacer"></div>
     <div class="hours"><small>JAM OPERASIONAL</small><b>10.00 – 22.00</b><span>Senin, 2 November 2026</span></div>
     <a class="nav" href="#" title="Bantuan"><svg class="ic"><use href="#i-help"/></svg><span>Bantuan</span></a>
@@ -218,7 +218,7 @@
 
   <main class="main">
     <div class="topbar">
-      <div><div class="crumb">Admin / Zona & Tarif Ongkir</div><h1>Zona & Tarif Ongkir</h1><div class="sub">Atur radius bebas ongkos kirim dan tarif per kilometer di luarnya</div></div>
+      <div><div class="crumb">Admin / Zona & Tarif</div><h1>Zona & Tarif Pengiriman</h1><div class="sub">Kelola zona pengiriman dan tarif ongkos kirim</div></div>
       <div class="tb-right">
         <label class="search"><svg class="ic"><use href="#i-search"/></svg><input placeholder="Cari…"></label>
         <button class="icon-btn" aria-label="Notifikasi"><svg class="ic"><use href="#i-bell"/></svg><span class="dot">3</span></button>
@@ -226,39 +226,48 @@
       </div>
     </div>
 
-    <div class="grid split" style="grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);align-items:start">
-      <div class="card"><div class="card-head"><div><h2>Pengaturan Zona &amp; Tarif</h2><p>Dipakai sistem untuk menghitung ongkos kirim pesanan yang diantar</p></div></div>
-        <div class="fgrid">
-          <div class="field"><label>Radius bebas ongkir</label><div class="in"><svg class="ic"><use href="#i-map"/></svg><input id="zFree" type="number" step="0.5" value="3"><span class="suf">km</span></div></div>
-          <div class="field"><label>Tarif per km di luar zona</label><div class="in"><span class="suf" style="opacity:1">Rp</span><input id="zRate" type="number" step="500" value="3000"><span class="suf">/ km</span></div></div>
-          <div class="field"><label>Jangkauan maksimal</label><div class="in"><svg class="ic"><use href="#i-nav"/></svg><input id="zMax" type="number" value="10"><span class="suf">km</span></div></div>
-          <div class="field"><label>Pembulatan jarak</label><div class="seg"><button class="on" type="button">Ke atas per 1 km</button><button type="button">Tanpa pembulatan</button></div></div>
-        </div>
-        <div class="stamp-out" style="margin-top:18px"><div class="stamp" style="padding:18px 22px;background:var(--bl)"><div class="eyebrow">Rumus ongkos kirim</div>
-          <div style="font:600 15px/1.6 var(--f-title);margin-top:6px">Jarak ≤ radius → Gratis<br>Jarak &gt; radius → (jarak − radius, dibulatkan ke atas) × tarif per km</div></div></div>
-        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px"><button class="btn o">Batal</button><button class="btn" data-save2="1" onclick="toast('Zona dan tarif ongkir disimpan')"><svg class="ic"><use href="#i-check"/></svg>Simpan Pengaturan</button></div></div>
-      <div class="grid" style="align-content:start">
-        <div class="card"><div class="card-head" style="margin-bottom:8px"><h2>Peta Zona</h2><span class="pill">titik pusat = restoran</span></div><svg viewBox="0 0 320 320" style="width:100%;max-width:300px;display:block;margin:0 auto">
-      <circle cx="160" cy="160" r="150" fill="#E7E0D6"/><circle cx="160" cy="160" r="150" fill="none" stroke="#97173A" stroke-width="1.5" stroke-dasharray="4 6"/>
-      <circle cx="160" cy="160" r="128" fill="#B2C2D2"/>
-      <circle cx="160" cy="160" r="46" fill="#97173A"/>
-      <g font-family="Poppins" font-weight="700" fill="#97173A" font-size="13"><text x="160" y="26" text-anchor="middle">Di luar 10 km</text><text x="160" y="58" text-anchor="middle">3 – 10 km · Rp 3.000/km</text></g>
-      <text x="160" y="146" text-anchor="middle" font-family="Poppins" font-weight="700" font-size="12" fill="#F8F5E6">≤ 3 km</text>
-      <text x="160" y="186" text-anchor="middle" font-family="Poppins" font-weight="700" font-size="11" fill="#F8F5E6">GRATIS</text>
-      <circle cx="160" cy="162" r="9" fill="#F8F5E6"/><circle cx="222" cy="205" r="7" fill="#97173A" stroke="#F8F5E6" stroke-width="3" id="dot"/></svg></div>
-        <div class="card"><div class="card-head" style="margin-bottom:12px"><div><h2>Simulasi Ongkir</h2><p>Geser jarak alamat pelanggan</p></div></div>
-          <input id="km" type="range" min="0" max="12" step="0.1" value="4.2" style="width:100%;accent-color:#97173A">
-          <div class="stamp-out" style="margin-top:12px"><div class="stamp" style="padding:18px 20px;display:flex;justify-content:space-between;align-items:center;gap:12px">
-            <div><div class="eyebrow">Jarak <span id="kmV">4,2</span> km</div><div id="zRes" style="font:700 20px var(--f-title);margin-top:4px">Tarif per km</div><div id="zSub" style="font-size:12.5px;opacity:.7">2 km × Rp 3.000</div></div>
-            <span class="kt m" id="zFee" style="font-size:16px">Rp 6.000</span></div></div></div>
+    <div class="grid g3"><div class="card stat "><div class="top"><span class="eyebrow">Zona A · 0 – 3 km</span><span class="ico"><svg class="ic"><use href="#i-map"/></svg></span></div><div class="v">Rp 8.000</div><div class="t">214 pengiriman bulan ini</div></div><div class="card stat f"><div class="top"><span class="eyebrow">Zona B · 3 – 6 km</span><span class="ico"><svg class="ic"><use href="#i-map"/></svg></span></div><div class="v">Rp 15.000</div><div class="t">167 pengiriman bulan ini</div></div><div class="card stat b"><div class="top"><span class="eyebrow">Zona C · 6 – 10 km</span><span class="ico"><svg class="ic"><use href="#i-map"/></svg></span></div><div class="v">Rp 22.000</div><div class="t">58 pengiriman bulan ini</div></div></div>
+    <div class="grid" style="margin-top:18px">
+      <div class="card"><div class="card-head"><div><h2>Daftar Zona Pengiriman</h2><p>Dasar perhitungan ongkos kirim pesanan Delivery</p></div><button class="btn" data-open="mZona"><svg class="ic"><use href="#i-plus"/></svg>Tambah Zona</button></div>
+        <div class="tbl-wrap"><table><thead><tr><th>Zona</th><th>Jarak</th><th>Cakupan wilayah</th><th>Tarif ongkir</th><th>Penggunaan</th><th>Aksi</th></tr></thead><tbody><tr><td><div class="who"><span class="av " style="font-size:15px">A</span><b>Zona A</b></div></td><td>0 – 3 km</td><td class="wrap" style="opacity:.75">Medan Baru, Medan Petisah, Medan Polonia</td><td><span class="kt">Rp 8.000</span></td><td>214 kiriman</td><td><div class="acts"><button class="ab" data-open="mZona" title="Ubah"><svg class="ic"><use href="#i-edit"/></svg></button><button class="ab f js-del" data-name="Zona A" title="Hapus"><svg class="ic"><use href="#i-trash"/></svg></button></div></td></tr><tr><td><div class="who"><span class="av m" style="font-size:15px">B</span><b>Zona B</b></div></td><td>3 – 6 km</td><td class="wrap" style="opacity:.75">Medan Sunggal, Medan Helvetia, Medan Maimun</td><td><span class="kt m">Rp 15.000</span></td><td>167 kiriman</td><td><div class="acts"><button class="ab" data-open="mZona" title="Ubah"><svg class="ic"><use href="#i-edit"/></svg></button><button class="ab f js-del" data-name="Zona B" title="Hapus"><svg class="ic"><use href="#i-trash"/></svg></button></div></td></tr><tr><td><div class="who"><span class="av " style="font-size:15px">C</span><b>Zona C</b></div></td><td>6 – 10 km</td><td class="wrap" style="opacity:.75">Medan Johor, Medan Tuntungan, Medan Selayang</td><td><span class="kt">Rp 22.000</span></td><td>58 kiriman</td><td><div class="acts"><button class="ab" data-open="mZona" title="Ubah"><svg class="ic"><use href="#i-edit"/></svg></button><button class="ab f js-del" data-name="Zona C" title="Hapus"><svg class="ic"><use href="#i-trash"/></svg></button></div></td></tr></tbody></table></div>
+        <div class="note" style="margin-top:16px"><svg class="ic"><use href="#i-info"/></svg><span>Alamat di luar 10 km tidak dapat memilih layanan Delivery. Pelanggan diarahkan memilih Take Away.</span></div></div>
+      <div class="grid split" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:stretch">
+        <div class="card"><div class="card-head" style="margin-bottom:8px"><h2>Peta Zona</h2><span class="pill">dari restoran</span></div><svg viewBox="0 0 300 300" style="width:100%;max-width:280px;display:block;margin:0 auto">
+      <circle cx="150" cy="150" r="140" fill="#B2C2D2"/><circle cx="150" cy="150" r="140" fill="none" stroke="#97173A" stroke-width="1.5" stroke-dasharray="4 6"/>
+      <circle cx="150" cy="150" r="96" fill="#F8F5E6" stroke="#97173A" stroke-width="1.5"/>
+      <circle cx="150" cy="150" r="52" fill="#97173A"/>
+      <g font-family="Poppins" font-weight="700" font-size="14" fill="#97173A"><text x="150" y="30" text-anchor="middle">C · 6–10 km</text><text x="150" y="78" text-anchor="middle">B · 3–6 km</text></g>
+      <text x="150" y="128" text-anchor="middle" font-family="Poppins" font-weight="700" font-size="13" fill="#F8F5E6">A · 0–3 km</text>
+      <circle cx="150" cy="156" r="13" fill="#F8F5E6"/><path d="M144 152v8M148 152v8M144 156h4M155 151c-2 2-2 5 0 7v3" stroke="#97173A" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      <circle cx="214" cy="196" r="7" fill="#97173A" stroke="#F8F5E6" stroke-width="3"/></svg></div>
+        <div class="card"><div class="card-head" style="margin-bottom:12px"><div><h2>Simulasi Ongkir</h2><p>Cek zona dan ongkir berdasarkan jarak alamat pelanggan</p></div></div>
+          <div class="field"><label>Jarak alamat pelanggan</label><div class="in"><svg class="ic"><use href="#i-nav"/></svg><input id="km" type="number" value="4.2" step="0.1" min="0"><span class="suf">km</span></div></div>
+          <input id="kmRange" type="range" min="0" max="12" step="0.1" value="4.2" style="width:100%;margin:14px 0;accent-color:#97173A">
+          <div class="stamp-out"><div class="stamp" style="padding:18px 20px;display:flex;justify-content:space-between;align-items:center;gap:12px">
+            <div><div class="eyebrow">Hasil</div><div id="zRes" style="font:700 22px var(--f-title);margin-top:4px">Zona B</div><div id="zSub" style="font-size:12.5px;opacity:.7">Medan Sunggal, Medan Helvetia…</div></div>
+            <span class="kt m" id="zFee" style="font-size:16px">Rp 15.000</span></div></div></div>
       </div>
     </div>
-    <div class="card" style="margin-top:18px"><div class="card-head"><div><h2>Contoh Perhitungan</h2><p>Berdasarkan pengaturan yang sedang berlaku</p></div></div>
-      <div class="tbl-wrap"><table><thead><tr><th>Alamat contoh</th><th>Jarak</th><th>Jarak dikenai tarif</th><th>Keterangan</th><th>Ongkos kirim</th></tr></thead><tbody><tr><td class="wrap">Jl. Gatot Subroto, Medan Petisah</td><td>1,8 km</td><td>—</td><td><span class="pill m">Bebas ongkir</span></td><td><b>Gratis</b></td></tr><tr><td class="wrap">Jl. Sei Batang Hari, Medan Sunggal</td><td>4,2 km</td><td>2 km</td><td><span class="pill b">Tarif per km</span></td><td><b>Rp 6.000</b></td></tr><tr><td class="wrap">Jl. Karya Wisata, Medan Johor</td><td>7,5 km</td><td>5 km</td><td><span class="pill b">Tarif per km</span></td><td><b>Rp 15.000</b></td></tr><tr><td class="wrap">Jl. Jamin Ginting, Pancur Batu</td><td>11 km</td><td>—</td><td><span class="pill p">Di luar jangkauan</span></td><td><b>—</b></td></tr></tbody></table></div></div>
   </main>
 </div>
 
-
+<div class="ovl" id="mZona"><div class="modal">
+  <div class="mh"><div><div class="eyebrow" style="opacity:.7">Zona pengiriman</div><h3>Tambah / Ubah Zona</h3></div><button class="icon-btn" data-close><svg class="ic"><use href="#i-x"/></svg></button></div>
+  <div class="mb"><div class="fgrid">
+    <div class="field full"><label>Nama zona</label><div class="in"><svg class="ic"><use href="#i-map"/></svg><input type="text" value="Zona B" placeholder=""></div></div>
+    <div class="field "><label>Jarak minimum</label><div class="in"><svg class="ic"><use href="#i-nav"/></svg><input type="number" value="3" placeholder=""><span class=suf>km</span></div></div><div class="field "><label>Jarak maksimum</label><div class="in"><svg class="ic"><use href="#i-nav"/></svg><input type="number" value="6" placeholder=""><span class=suf>km</span></div></div>
+    <div class="field full"><label>Cakupan wilayah</label><div class="in ta"><textarea>Medan Sunggal, Medan Helvetia, Medan Maimun</textarea></div></div>
+    <div class="field full"><label>Tarif ongkos kirim</label><div class="in"><span class="suf" style="opacity:1">Rp</span><input value="15.000"></div></div>
+  </div></div>
+  <div class="mf"><button class="btn o" data-close>Batal</button><button class="btn" data-save="Zona pengiriman disimpan"><svg class="ic"><use href="#i-check"/></svg>Simpan</button></div>
+</div></div>
+<div class="ovl" id="mHapus"><div class="modal sm">
+  <div class="big-ic" style="background:var(--m);color:var(--cr)"><svg class="ic"><use href="#i-trash"/></svg></div>
+  <h3 style="font:700 24px var(--f-title)">Hapus zona ini?</h3>
+  <div class="pill p" style="margin-top:12px;font-size:13px;padding:7px 14px" id="delName"></div>
+  <p style="opacity:.75;margin:12px 28px 22px">Data akan dihapus dari database dan tidak dapat dikembalikan.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 28px 28px"><button class="btn o lg" data-close>Tidak</button><button class="btn lg" id="delOk">Ya, Hapus</button></div>
+</div></div>
 <div class="ovl" id="mLogout"><div class="modal sm">
   <div class="big-ic" style="background:var(--bl)"><svg class="ic"><use href="#i-logout"/></svg></div>
   <h3 style="font:700 24px var(--f-title)">Logout dari sistem?</h3>
@@ -317,14 +326,14 @@
   /* tombol simpan di dialog */
   document.querySelectorAll('[data-save]').forEach(b => b.addEventListener('click', () => { const ov = b.closest('.ovl'); if (ov) ov.classList.remove('on'); toast(b.dataset.save); }));
 
-  function sim() {
-    const k = +km.value, f = +zFree.value || 0, r = +zRate.value || 0, mx = +zMax.value || 0;
-    kmV.textContent = k.toLocaleString('id-ID');
-    if (k > mx) { zRes.textContent = 'Di luar jangkauan'; zSub.textContent = 'Pesanan tidak dapat diantar'; zFee.textContent = '—'; return; }
-    if (k <= f) { zRes.textContent = 'Bebas ongkir'; zSub.textContent = 'Masih dalam radius ' + f + ' km'; zFee.textContent = 'Gratis'; return; }
-    const ex = Math.ceil(k - f); zRes.textContent = 'Tarif per km'; zSub.textContent = ex + ' km × ' + rp(r); zFee.textContent = rp(ex * r);
+  const Z = [['A', 0, 3, 'Medan Baru, Medan Petisah, Medan Polonia', 8000], ['B', 3, 6, 'Medan Sunggal, Medan Helvetia, Medan Maimun', 15000], ['C', 6, 10, 'Medan Johor, Medan Tuntungan, Medan Selayang', 22000]];
+  function sim(v) {
+    const z = Z.find(r => v >= r[1] && v < r[2] || (v === r[2] && r[0] === 'C'));
+    if (!z) { zRes.textContent = 'Di luar jangkauan'; zSub.textContent = 'Lebih dari 10 km · Delivery tidak tersedia'; zFee.textContent = '—'; return; }
+    zRes.textContent = 'Zona ' + z[0]; zSub.textContent = z[3]; zFee.textContent = rp(z[4]);
   }
-  [km, zFree, zRate, zMax].forEach(i => i.addEventListener('input', sim));
+  km.addEventListener('input', () => { kmRange.value = km.value; sim(+km.value); });
+  kmRange.addEventListener('input', () => { km.value = kmRange.value; sim(+kmRange.value); });
 </script>
 </body>
 </html>
