@@ -122,27 +122,24 @@
     .user, .cart .txt, .topbar nav, .steps .s span:not(.n) { display: none; }
   }
 
-  .orders { display: grid; gap: 10px; }
   .od { display: block; width: 100%; text-align: left; padding: 16px; border-radius: 0 20px 20px 20px; position: relative; margin-top: 12px; box-shadow: inset 0 0 0 1.4px var(--m15); background: var(--cr); }
   .od::before { content: ''; position: absolute; left: 0; top: -11px; width: 74px; height: 12px; border-radius: 12px 12px 0 0; background: inherit; box-shadow: inset 1.4px 1.4px 0 var(--m15), inset -1.4px 0 0 var(--m15); }
   .od.on { background: var(--m); color: var(--cr); box-shadow: none; } .od.on::before { box-shadow: none; }
-  .od b { font: 700 16px var(--f-title); }
   .tl { position: relative; padding-left: 46px; margin-top: 8px; }
   .tl .st { position: relative; padding-bottom: 22px; }
   .tl .st::before { content: ''; position: absolute; left: -31px; top: 34px; bottom: 0; width: 2.5px; background: var(--m15); }
-  .tl .st.done::before { background: var(--m); }
-  .tl .st:last-child::before { display: none; }
+  .tl .st.done::before { background: var(--m); } .tl .st:last-child::before { display: none; }
   .tl .dot { position: absolute; left: -46px; top: 0; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: var(--cr); box-shadow: inset 0 0 0 1.8px var(--m); }
   .tl .done .dot { background: var(--m); color: var(--cr); box-shadow: none; }
   .tl .now .dot { background: var(--bl); box-shadow: 0 0 0 6px rgba(178, 194, 210, .5), inset 0 0 0 1.8px var(--m); }
-  .tl b { font: 600 16px var(--f-title); display: block; }
-  .tl small { font: 500 13px var(--f-body); opacity: .72; }
-  .tl .todo { opacity: .55; }
-  .hist td, .hist th { text-align: left; padding: 12px 10px; border-bottom: 1px solid var(--m15); white-space: nowrap; font-size: 14px; }
-  .hist th { font: 800 10.5px var(--f-accent); letter-spacing: .1em; text-transform: uppercase; border-bottom: 1.5px solid var(--m); }
-  .hist { width: 100%; border-collapse: collapse; }
-  .split { display: grid; grid-template-columns: minmax(280px, .34fr) minmax(0, 1fr); gap: clamp(18px, 2vw, 32px); align-items: start; }
-  @media (max-width: 1100px) { .split2 { grid-template-columns: minmax(0, 1fr) !important; } }
+  .tl b { font: 600 16px var(--f-title); display: block; } .tl small { font: 500 13px var(--f-body); opacity: .72; } .tl .todo { opacity: .55; }
+  .split { display: grid; grid-template-columns: minmax(270px, .32fr) minmax(0, 1fr); gap: clamp(18px, 2vw, 32px); align-items: start; }
+  .split2 { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 24px; }
+  .flows { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .flow { padding: 14px 16px; border-radius: 16px; box-shadow: inset 0 0 0 1.3px var(--m15); font-size: 12.5px; line-height: 1.6; }
+  .flow.on { background: var(--bl); box-shadow: none; }
+  .flow b { display: flex; gap: 8px; align-items: center; font: 700 14px var(--f-title); margin-bottom: 4px; }
+  @media (max-width: 1100px) { .split2, .flows { grid-template-columns: minmax(0, 1fr); } }
   @media (max-width: 900px) { .split { grid-template-columns: minmax(0, 1fr); } }
 </style>
 </head>
@@ -172,11 +169,13 @@
   <symbol id="i-cash" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.8"/></symbol>
   <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v4h16v-4"/></symbol>
   <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></symbol>
+  <symbol id="i-logout" viewBox="0 0 24 24"><path d="M15 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4"/><path d="M10 17l-5-5 5-5M5 12h11"/></symbol>
   <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></symbol>
 </svg>
 <div class="topbar"><div class="wrap">
-  <span><svg class="ic"><use href="#i-clock"/></svg>Buka hari ini 10.00 – 22.00 · Gratis ongkir radius 3 km</span>
-  <nav><a href="#"><svg class="ic"><use href="#i-receipt"/></svg>Lacak Pesanan</a><a href="#"><svg class="ic"><use href="#i-help"/></svg>Bantuan</a></nav>
+  <span><svg class="ic"><use href="#i-clock"/></svg>Buka hari ini 10.00 – 22.00 · Delivery tersedia untuk Zona A, B, C</span>
+  <nav><a href="{{ route('pelanggan.tracking') }}"><svg class="ic"><use href="#i-receipt"/></svg>Lacak Pesanan</a><a href="#"><svg class="ic"><use href="#i-help"/></svg>Bantuan</a></nav>
 </div></div>
 <header><div class="wrap">
   <a class="logo" href="{{ route('pelanggan.beranda') }}"><b>SIM RESTO</b><small>PIZZA &amp; PASTA HOUSE</small></a>
@@ -188,35 +187,30 @@
   </div>
 </div></header>
 <main class="wrap">
-  <div class="page-head">
-    <div><div class="crumb"><a href="{{ route('pelanggan.beranda') }}">Beranda</a><span>/</span><span>Lacak Pesanan</span></div><h1>Lacak Status Pesanan</h1></div>
-    <div class="steps"><div class="s done"><span class="n"><svg class="ic" style="width:15px;height:15px;stroke-width:2.6"><use href="#i-check"/></svg></span><span>Keranjang</span></div><div class="line done"></div>
-      <div class="s done"><span class="n"><svg class="ic" style="width:15px;height:15px;stroke-width:2.6"><use href="#i-check"/></svg></span><span>Checkout &amp; Bayar</span></div><div class="line done"></div><div class="s now"><span class="n">3</span><span>Lacak Pesanan</span></div></div>
-  </div>
+  <div class="page-head"><div><div class="crumb"><a href="{{ route('pelanggan.beranda') }}">Beranda</a><span>/</span><span>Lacak Pesanan</span></div><h1>Lacak Status Pesanan</h1></div></div>
   <div class="split">
-    <aside class="card"><div class="card-head" style="margin-bottom:4px"><h2>Pesanan saya</h2><span class="pill b">3</span></div><div class="orders"><button class="od on"><div style="display:flex;justify-content:space-between;align-items:center"><b>ORD-0143</b><span class="pill b">Dalam Pengantaran</span></div><div style="font-size:13px;opacity:.8;margin-top:6px">Hari ini 10:42 · Diantar · 5 item</div></button><button class="od"><div style="display:flex;justify-content:space-between;align-items:center"><b>ORD-0139</b><span class="pill ">Selesai</span></div><div style="font-size:13px;opacity:.8;margin-top:6px">Kemarin 19:05 · Ambil sendiri · 2 item</div></button><button class="od"><div style="display:flex;justify-content:space-between;align-items:center"><b>ORD-0127</b><span class="pill ">Selesai</span></div><div style="font-size:13px;opacity:.8;margin-top:6px">30 Okt 2026 · Makan di tempat · 4 item</div></button></div></aside>
+    <aside class="card"><div class="card-head" style="margin-bottom:4px"><h2>Pesanan saya</h2><span class="pill b">3</span></div><button class="od on"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b style="font:700 16px var(--f-title)">ORD-0143</b><span class="pill b">Dalam Perjalanan</span></div><div style="font-size:13px;opacity:.8;margin-top:6px">Hari ini 10:42 · Delivery · 5 item</div></button><button class="od"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b style="font:700 16px var(--f-title)">ORD-0139</b><span class="pill o">Selesai</span></div><div style="font-size:13px;opacity:.8;margin-top:6px">Kemarin 19:05 · Take Away · 2 item</div></button><button class="od"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b style="font:700 16px var(--f-title)">ORD-0127</b><span class="pill o">Selesai</span></div><div style="font-size:13px;opacity:.8;margin-top:6px">30 Okt 2026 · Dine In · Meja 07</div></button></aside>
     <div style="display:grid;gap:clamp(16px,1.6vw,24px)">
       <section class="card" style="padding:0;overflow:hidden">
         <div class="stripes" style="padding:22px 24px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap">
-          <div class="stamp-out"><div class="stamp" style="padding:18px 24px"><div class="eyebrow">Nomor pesanan</div><div style="font:700 24px var(--f-title);margin-top:4px">ORD-20261102-0143</div><div style="font-size:12.5px;opacity:.7">Diantar · Transfer · 5 item</div></div></div>
-          <span class="pill m" style="font-size:13px;padding:8px 16px"><svg class="ic" style="width:15px;height:15px"><use href="#i-truck"/></svg>Dalam Pengantaran</span></div>
-        <div class="split2" style="display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:24px;padding:24px">
-          <div><div class="eyebrow" style="margin-bottom:10px">Tahapan status</div><div class="tl"><div class="st done"><span class="dot"><svg class=ic style=width:16px;height:16px;stroke-width:2.6><use href=#i-check /></svg></span><div class=""><b>Pesanan dibuat</b><small>10:42 · Pesanan dan bukti transfer terkirim</small></div></div><div class="st done"><span class="dot"><svg class=ic style=width:16px;height:16px;stroke-width:2.6><use href=#i-check /></svg></span><div class=""><b>Diverifikasi kasir</b><small>10:47 · Pembayaran dikonfirmasi, diteruskan ke dapur</small></div></div><div class="st done"><span class="dot"><svg class=ic style=width:16px;height:16px;stroke-width:2.6><use href=#i-check /></svg></span><div class=""><b>Sedang dimasak</b><small>10:52 · Pesanan diolah dapur sesuai antrian</small></div></div><div class="st done"><span class="dot"><svg class=ic style=width:16px;height:16px;stroke-width:2.6><use href=#i-check /></svg></span><div class=""><b>Siap diantar</b><small>11:08 · Kasir menugaskan kurir Andi Pratama</small></div></div><div class="st now"><span class="dot"><svg class=ic style=width:16px;height:16px><use href=#i-truck /></svg></span><div class=""><b>Dalam pengantaran</b><small>11:14 · Kurir menuju alamatmu (4,2 km)</small></div></div><div class="st todo"><span class="dot"></span><div class="todo"><b>Selesai</b><small>Menunggu bukti penerimaan dari kurir</small></div></div></div></div>
+          <div class="stamp-out"><div class="stamp" style="padding:18px 24px"><div class="eyebrow">Nomor pesanan</div><div style="font:700 24px var(--f-title);margin-top:4px">ORD-20261102-0143</div><div style="font-size:12.5px;opacity:.7">Delivery · Zona B · Transfer (Lunas)</div></div></div>
+          <span class="pill m" style="font-size:13px;padding:8px 16px"><svg class="ic" style="width:15px;height:15px"><use href="#i-truck"/></svg>Dalam Perjalanan</span></div>
+        <div class="split2" style="padding:24px">
+          <div><div class="eyebrow" style="margin-bottom:10px">Timeline status · Delivery</div><div class="tl"><div class="st done"><span class="dot"><svg class="ic" style="width:15px;height:15px;stroke-width:2.6"><use href="#i-check"/></svg></span><div class=""><b>Dikonfirmasi</b><small>10:47 · Pembayaran terverifikasi, tiket dikirim ke dapur</small></div></div><div class="st done"><span class="dot"><svg class="ic" style="width:15px;height:15px;stroke-width:2.6"><use href="#i-check"/></svg></span><div class=""><b>Dimasak</b><small>10:52 · Pesanan diolah sesuai antrean dapur (FIFO)</small></div></div><div class="st done"><span class="dot"><svg class="ic" style="width:15px;height:15px;stroke-width:2.6"><use href="#i-check"/></svg></span><div class=""><b>Siap Diantar</b><small>11:08 · Pesanan masuk antrean tugas kurir (FIFO)</small></div></div><div class="st now"><span class="dot"><svg class=ic style=width:16px;height:16px><use href=#i-truck /></svg></span><div class=""><b>Dalam Perjalanan</b><small>11:14 · Kurir Andi Pratama menuju alamatmu</small></div></div><div class="st todo"><span class="dot"></span><div class="todo"><b>Diterima</b><small>Kurir mengunggah bukti pengiriman</small></div></div></div></div>
           <div style="display:grid;gap:14px;align-content:start">
-            <div class="card soft" style="padding:16px"><div style="display:flex;gap:12px;align-items:center"><span style="width:44px;height:44px;border-radius:50%;background:var(--m);color:var(--cr);display:grid;place-items:center;font:700 14px var(--f-title)">AP</span>
-              <div style="flex:1"><b style="font:600 15px var(--f-title)">Andi Pratama</b><div style="font-size:12.5px;opacity:.7">Kurir · BK 4821 AB</div></div><a class="btn o sm" href="#"><svg class="ic"><use href="#i-phone"/></svg>Hubungi</a></div>
-              <div style="display:flex;gap:8px;font-size:13px;margin-top:12px;padding-top:12px;border-top:1.5px dashed var(--m60)"><svg class="ic"><use href="#i-pin"/></svg>Jl. Sei Batang Hari No. 27, Medan Sunggal</div></div>
-            <div class="card soft" style="padding:16px"><div class="eyebrow" style="margin-bottom:8px">Rincian</div><div style="display:flex;justify-content:space-between;font-size:14px;padding:4px 0"><span><b style="font-family:var(--f-title)">1×</b> Pizza Beef Pepperoni</span><span>Rp 109.000</span></div><div style="display:flex;justify-content:space-between;font-size:14px;padding:4px 0"><span><b style="font-family:var(--f-title)">1×</b> Penne Bolognese</span><span>Rp 59.000</span></div><div style="display:flex;justify-content:space-between;font-size:14px;padding:4px 0"><span><b style="font-family:var(--f-title)">2×</b> Lemon Iced Tea</span><span>Rp 36.000</span></div><div style="display:flex;justify-content:space-between;font-size:14px;padding:4px 0"><span><b style="font-family:var(--f-title)">1×</b> Choco Brownie Ice Cream</span><span>Rp 32.000</span></div>
-              <div style="display:flex;justify-content:space-between;font-size:14px;padding:4px 0"><span>Ongkos kirim (4,2 km)</span><span>Rp 6.000</span></div>
-              <div style="display:flex;justify-content:space-between;font:700 18px var(--f-title);border-top:1.5px dashed var(--m60);padding-top:8px;margin-top:6px"><span>Total</span><span>Rp 242.000</span></div></div>
+            <div class="card soft" style="padding:16px"><div class="eyebrow" style="font-size:10px;margin-bottom:10px">Kurir</div>
+              <div style="display:flex;gap:12px;align-items:center"><span style="width:44px;height:44px;border-radius:50%;background:var(--m);color:var(--cr);display:grid;place-items:center;font:700 14px var(--f-title)">AP</span>
+              <div style="flex:1"><b style="font:600 15px var(--f-title)">Andi Pratama</b><div style="font-size:12.5px;opacity:.7">BK 4821 AB</div></div><a class="btn o sm" href="#"><svg class="ic"><use href="#i-phone"/></svg>Hubungi</a></div>
+              <div style="display:flex;gap:8px;font-size:13px;margin-top:12px;padding-top:12px;border-top:1.5px dashed var(--m60)"><svg class="ic"><use href="#i-pin"/></svg>Jl. Sei Batang Hari No. 27, Medan Sunggal</div>
+              <div style="display:flex;gap:10px;align-items:center;margin-top:12px;padding:10px;border-radius:14px;background:var(--pp);font-size:12.5px"><span class="stripes" style="width:40px;height:40px;border-radius:10px;flex:none"></span>Bukti pengiriman tampil setelah pesanan diterima</div></div>
+            <div class="card soft" style="padding:16px"><div class="eyebrow" style="font-size:10px;margin-bottom:8px">Rincian</div><div style="display:flex;justify-content:space-between;font-size:14px;padding:4px 0"><span><b style="font-family:var(--f-title)">1×</b> Pizza Beef Pepperoni</span><span>Rp 109.000</span></div><div style="display:flex;justify-content:space-between;font-size:14px;padding:4px 0"><span><b style="font-family:var(--f-title)">1×</b> Penne Bolognese</span><span>Rp 59.000</span></div><div style="display:flex;justify-content:space-between;font-size:14px;padding:4px 0"><span><b style="font-family:var(--f-title)">2×</b> Lemon Iced Tea</span><span>Rp 36.000</span></div><div style="display:flex;justify-content:space-between;font-size:14px;padding:4px 0"><span><b style="font-family:var(--f-title)">1×</b> Choco Brownie Ice Cream</span><span>Rp 32.000</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:14px;padding:4px 0"><span>Pajak + biaya layanan</span><span>Rp 35.400</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:14px;padding:4px 0"><span>Ongkos kirim (Zona B)</span><span>Rp 15.000</span></div>
+              <div style="display:flex;justify-content:space-between;font:700 18px var(--f-title);border-top:1.5px dashed var(--m60);padding-top:8px;margin-top:6px"><span>Total</span><span>Rp 286.400</span></div></div>
           </div>
         </div>
       </section>
-      <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:clamp(16px,1.6vw,24px);align-items:start" class="split2">
-        <section class="card" style="background:var(--m);color:var(--cr);box-shadow:none"><div class="card-head" style="margin-bottom:6px"><h2>Notifikasi</h2><svg class="ic"><use href="#i-bell"/></svg></div><div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid rgba(248,245,230,.2)"><span style="font:700 12.5px var(--f-title);min-width:42px">11:14</span><span style="font-size:13.5px">Pesananmu sedang diantar oleh Andi Pratama.</span></div><div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid rgba(248,245,230,.2)"><span style="font:700 12.5px var(--f-title);min-width:42px">11:08</span><span style="font-size:13.5px">Pesananmu siap dan akan segera diantar.</span></div><div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid rgba(248,245,230,.2)"><span style="font:700 12.5px var(--f-title);min-width:42px">10:47</span><span style="font-size:13.5px">Pembayaran terverifikasi. Pesanan diteruskan ke dapur.</span></div></section>
-        <section class="card"><div class="card-head" style="margin-bottom:6px"><h2>Riwayat pesanan</h2></div>
-          <div style="overflow-x:auto"><table class="hist"><thead><tr><th>Pesanan</th><th>Metode</th><th>Total</th><th>Status</th></tr></thead><tbody><tr><td><b style="font:600 14px var(--f-title)">ORD-0143</b><div style="font-size:12px;opacity:.65">02 Nov 2026</div></td><td>Diantar</td><td>Rp 242.000</td><td><span class="pill b">Dalam Pengantaran</span></td></tr><tr><td><b style="font:600 14px var(--f-title)">ORD-0139</b><div style="font-size:12px;opacity:.65">01 Nov 2026</div></td><td>Ambil sendiri</td><td>Rp 74.000</td><td><span class="pill o">Selesai</span></td></tr><tr><td><b style="font:600 14px var(--f-title)">ORD-0127</b><div style="font-size:12px;opacity:.65">30 Okt 2026</div></td><td>Makan di tempat</td><td>Rp 186.000</td><td><span class="pill o">Selesai</span></td></tr><tr><td><b style="font:600 14px var(--f-title)">ORD-0108</b><div style="font-size:12px;opacity:.65">24 Okt 2026</div></td><td>Diantar</td><td>Rp 131.000</td><td><span class="pill o">Selesai</span></td></tr></tbody></table></div></section>
-      </div>
+      <section class="card"><div class="card-head" style="margin-bottom:12px"><div><h2>Alur status per jenis layanan</h2><p style="font-size:13px;opacity:.7;margin-top:2px">Timeline mengikuti layanan yang dipilih saat memesan</p></div></div><div class="flows"><div class="flow"><b><svg class="ic" style="width:16px;height:16px"><use href="#i-dine"/></svg>Dine In</b>Dikonfirmasi → Dimasak → Siap Disajikan → Selesai · menampilkan nomor meja</div><div class="flow"><b><svg class="ic" style="width:16px;height:16px"><use href="#i-bag"/></svg>Take Away</b>Dikonfirmasi → Dimasak → Siap Diambil → Selesai</div><div class="flow on"><b><svg class="ic" style="width:16px;height:16px"><use href="#i-truck"/></svg>Delivery</b>Dikonfirmasi → Dimasak → Siap Diantar → Dalam Perjalanan → Diterima · nama kurir & bukti pengiriman</div></div></section>
     </div>
   </div>
 </main>

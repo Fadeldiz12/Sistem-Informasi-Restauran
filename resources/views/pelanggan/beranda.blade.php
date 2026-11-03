@@ -224,6 +224,10 @@
     .user, .cart .txt, .topbar nav { display: none; }
     .hero-art .stamp-note { left: 2%; bottom: 6%; }
   }
+
+  .ovl { position: fixed; inset: 0; z-index: 100; background: rgba(40, 40, 40, .55); display: none; place-items: center; padding: 20px; }
+  .ovl.on { display: grid; }
+  .modal { width: min(420px, 100%); background: var(--cr); border-radius: 26px; padding: 30px 28px 26px; text-align: center; }
 </style>
 </head>
 <body>
@@ -242,12 +246,13 @@
   <symbol id="i-arrl" viewBox="0 0 24 24"><path d="M20 12H4M10 6l-6 6 6 6"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></symbol>
   <symbol id="i-receipt" viewBox="0 0 24 24"><path d="M5 3h14v18l-2.5-1.5L14 21l-2-1.5L10 21l-2.5-1.5L5 21z"/><path d="M9 8h6M9 12h6"/></symbol>
+  <symbol id="i-logout" viewBox="0 0 24 24"><path d="M15 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4"/><path d="M10 17l-5-5 5-5M5 12h11"/></symbol>
   <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 0 1 5 0c0 1.7-2.5 2-2.5 4M12 17h.01"/></symbol>
 </svg>
 
 <div class="topbar">
   <div class="wrap">
-    <span><svg class="ic"><use href="#i-clock"/></svg>Buka hari ini 10.00 – 22.00 · Gratis ongkir radius 3 km</span>
+    <span><svg class="ic"><use href="#i-clock"/></svg>Buka hari ini 10.00 – 22.00 · Delivery tersedia untuk Zona A, B, C</span>
     <nav><a href="#lacak"><svg class="ic"><use href="#i-receipt"/></svg>Lacak Pesanan</a><a href="#"><svg class="ic"><use href="#i-help"/></svg>Bantuan</a></nav>
   </div>
 </div>
@@ -261,7 +266,7 @@
     </nav>
     <div class="hd-right">
       <button class="icon-btn" aria-label="Cari menu"><svg class="ic"><use href="#i-search"/></svg></button>
-      <a class="user" href="{{ route('login') }}"><span class="av">RA</span><span>Rina</span></a>
+      <a class="user" href="#" id="userBtn" title="Akun · Logout"><span class="av">RA</span><span>Rina</span></a>
       <a class="btn cart" href="{{ route('pelanggan.keranjang') }}"><svg class="ic"><use href="#i-cart"/></svg><span class="txt" id="cartTotal">Rp 236.000</span><span class="count" id="cartCount">3</span></a>
     </div>
   </div>
@@ -279,7 +284,7 @@
         <div class="hero-text">
           <div><span class="pill b">PROMO MINGGU INI</span></div>
           <h1>2 Pizza Reguler<br>cuma <em>Rp 149rb</em></h1>
-          <p>Berlaku untuk makan di tempat, ambil sendiri, dan diantar setiap Senin–Kamis sampai 30 November 2026.</p>
+          <p>Berlaku untuk Delivery, Take Away, dan Dine In setiap Senin–Kamis sampai 30 November 2026.</p>
           <div class="hero-cta"><a class="btn cr" href="#menu">Pesan Sekarang <svg class="ic"><use href="#i-arr"/></svg></a><a class="btn ghost" href="#promo">Lihat Semua Promo</a></div>
           <div class="hero-dots"><i class="on"></i><i></i><i></i><div class="arrows"><button aria-label="Sebelumnya"><svg class="ic"><use href="#i-arrl"/></svg></button><button aria-label="Berikutnya"><svg class="ic"><use href="#i-arr"/></svg></button></div></div>
         </div>
@@ -298,13 +303,13 @@
     <div class="wrap">
       <div class="order-card">
         <div class="seg" role="tablist">
-          <button class="on" data-mode="delivery"><svg class="ic"><use href="#i-truck"/></svg>Diantar</button>
-          <button data-mode="takeaway"><svg class="ic"><use href="#i-bag"/></svg>Ambil Sendiri</button>
-          <button data-mode="dinein"><svg class="ic"><use href="#i-dine"/></svg>Makan di Tempat</button>
+          <button class="on" data-mode="delivery"><svg class="ic"><use href="#i-truck"/></svg>Delivery</button>
+          <button data-mode="takeaway"><svg class="ic"><use href="#i-bag"/></svg>Take Away</button>
+          <button data-mode="dinein"><svg class="ic"><use href="#i-dine"/></svg>Dine In</button>
         </div>
         <label class="addr"><svg class="ic"><use href="#i-pin" id="addrIcon"/></svg>
           <span style="flex:1;min-width:0"><span class="lbl" id="addrLbl">Kirim ke</span><input id="addrIn" value="Jl. Sei Batang Hari No. 27, Medan Sunggal"></span></label>
-        <div class="zone" id="zoneInfo"><span class="pill b">4,2 km · Ongkir Rp 6.000</span><span>Estimasi tiba 35–45 menit</span></div>
+        <div class="zone" id="zoneInfo"><span class="pill b">Zona B · Ongkir Rp 15.000</span><span>Estimasi tiba 35–45 menit</span></div>
         <a class="btn" href="#menu">Mulai Pesan</a>
       </div>
     </div>
@@ -395,7 +400,7 @@
           <p>Status pesanan diperbarui secara real-time: dikonfirmasi kasir, dimasak sesuai antrean, hingga diantar kurir.</p>
           <div class="hero-cta"><a class="btn cr" href="#">Lacak Pesanan <svg class="ic"><use href="#i-arr"/></svg></a></div></div>
         <div class="stamp-out"><div class="stamp" style="padding:28px 30px">
-          <div class="order-mini"><div><span class="eyebrow" style="font-size:10.5px">Pesanan aktif</span><b>ORD-20261102-0143</b><span style="font-size:13px;opacity:.7">Diantar · 5 item · Kurir Andi Pratama</span></div><span class="pill m">Dalam Perjalanan</span></div>
+          <div class="order-mini"><div><span class="eyebrow" style="font-size:10.5px">Pesanan aktif</span><b>ORD-20261102-0143</b><span style="font-size:13px;opacity:.7">Delivery · 5 item · Kurir Andi Pratama</span></div><span class="pill m">Dalam Perjalanan</span></div>
           <div class="steps">
             <div class="step done"><span class="dot"><svg class="ic" style="width:16px;height:16px;stroke-width:2.6"><use href="#i-check"/></svg></span>Dikonfirmasi<small>10:47</small></div>
             <div class="step done"><span class="dot"><svg class="ic" style="width:16px;height:16px;stroke-width:2.6"><use href="#i-check"/></svg></span>Dimasak<small>10:52</small></div>
@@ -415,10 +420,10 @@
   <div class="wrap">
     <div class="foot">
       <div><a class="logo" href="#"><b>SIM RESTO</b><small>PIZZA &amp; PASTA HOUSE</small></a>
-        <p>Pesan pizza, pasta, dan menu favorit lainnya untuk makan di tempat, ambil sendiri, atau diantar.</p>
+        <p>Pesan pizza, pasta, dan menu favorit lainnya untuk Delivery, Take Away, atau Dine In.</p>
         <div class="hours"><small>JAM OPERASIONAL</small><b>10.00 – 22.00</b></div></div>
       <div><h4>Menu</h4><ul><li><a href="#">Pizza</a></li><li><a href="#">Pasta</a></li><li><a href="#">Burger</a></li><li><a href="#">Camilan</a></li><li><a href="#">Minuman</a></li></ul></div>
-      <div><h4>Layanan</h4><ul><li><a href="#">Diantar</a></li><li><a href="#">Ambil Sendiri</a></li><li><a href="#">Makan di Tempat</a></li><li><a href="{{ route('pelanggan.tracking') }}">Lacak Pesanan</a></li><li><a href="#">Tarif Ongkir</a></li></ul></div>
+      <div><h4>Layanan</h4><ul><li><a href="#">Delivery</a></li><li><a href="#">Take Away</a></li><li><a href="#">Dine In</a></li><li><a href="{{ route('pelanggan.tracking') }}">Lacak Pesanan</a></li><li><a href="#">Zona Pengiriman</a></li></ul></div>
       <div><h4>Bantuan</h4><ul><li><a href="#">Pertanyaan Umum</a></li><li><a href="#">Cara Pembayaran</a></li><li><a href="#">Syarat &amp; Ketentuan</a></li><li><a href="#">0811 6000 1234</a></li></ul></div>
     </div>
     <div class="copy"><span>© 2026 SIM Resto. Semua hak dilindungi.</span><span>Jl. Gatot Subroto No. 100, Medan</span></div>
@@ -429,7 +434,7 @@
   // Ganti isian sesuai jenis layanan (sesuai alur Pilih Jenis Layanan)
   const modes = {
     delivery: { lbl: 'Kirim ke', val: 'Jl. Sei Batang Hari No. 27, Medan Sunggal', icon: '#i-pin',
-                zone: '<span class="pill b">4,2 km · Ongkir Rp 6.000</span><span>Estimasi tiba 35–45 menit</span>' },
+                zone: '<span class="pill b">Zona B · Ongkir Rp 15.000</span><span>Estimasi tiba 35–45 menit</span>' },
     takeaway: { lbl: 'Waktu pengambilan', val: 'Hari ini, 12.30', icon: '#i-clock',
                 zone: '<span class="pill b">Tanpa ongkir</span><span>Siap ± 20 menit setelah dikonfirmasi</span>' },
     dinein:   { lbl: 'Nomor meja', val: 'Meja 07', icon: '#i-dine',
@@ -454,6 +459,17 @@
   document.querySelectorAll('.add[data-p]').forEach(b => b.addEventListener('click', () => {
     count++; total += +b.dataset.p; cartCount.textContent = count; cartTotal.textContent = rp(total);
   }));
+</script>
+<div class="ovl" id="mLogout"><div class="modal">
+  <div style="width:66px;height:66px;border-radius:50%;background:var(--bl);display:grid;place-items:center;margin:0 auto 14px"><svg class="ic" style="width:28px;height:28px"><use href="#i-logout"/></svg></div>
+  <div style="font:700 24px var(--f-title)">Keluar dari akun?</div>
+  <p style="opacity:.75;margin:10px 0 22px">Sesi login akan dihapus dan kamu kembali ke halaman login.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><button class="btn" style="background:transparent;color:var(--m);box-shadow:inset 0 0 0 1.5px var(--m)" id="lgNo">Batal</button><a class="btn" href="{{ route('login') }}">Ya, Keluar</a></div>
+</div></div>
+<script>
+  userBtn.addEventListener('click', e => { e.preventDefault(); mLogout.classList.add('on'); });
+  lgNo.addEventListener('click', () => mLogout.classList.remove('on'));
+  mLogout.addEventListener('click', e => { if (e.target === mLogout) mLogout.classList.remove('on'); });
 </script>
 </body>
 </html>
