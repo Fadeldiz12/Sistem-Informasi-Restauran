@@ -71,6 +71,52 @@ class Pesanan extends Model
         return $this->hasOne(Pengiriman::class, 'id_pesanan');
     }
 
+    public const LABEL_LAYANAN = [
+        self::LAYANAN_DINE_IN => 'Dine In',
+        self::LAYANAN_TAKE_AWAY => 'Take Away',
+        self::LAYANAN_DELIVERY => 'Delivery',
+    ];
+
+    public const LABEL_STATUS = [
+        self::STATUS_MENUNGGU => 'Menunggu Konfirmasi',
+        self::STATUS_DIPROSES => 'Diproses',
+        self::STATUS_SIAP => 'Siap',
+        self::STATUS_DIANTAR => 'Diantar',
+        self::STATUS_SELESAI => 'Selesai',
+        self::STATUS_DIBATALKAN => 'Dibatalkan',
+    ];
+
+    /**
+     * Nomor pesanan untuk ditampilkan, contoh: ORD-0007.
+     */
+    public function kode(): string
+    {
+        return 'ORD-'.str_pad((string) $this->id, 4, '0', STR_PAD_LEFT);
+    }
+
+    public function layananLabel(): string
+    {
+        return self::LABEL_LAYANAN[$this->jenis_layanan] ?? $this->jenis_layanan;
+    }
+
+    public function statusLabel(): string
+    {
+        return self::LABEL_STATUS[$this->status] ?? $this->status;
+    }
+
+    /**
+     * Kelas warna .pill untuk status pesanan.
+     */
+    public function statusPill(): string
+    {
+        return match ($this->status) {
+            self::STATUS_MENUNGGU => 'b',
+            self::STATUS_DIPROSES, self::STATUS_DIANTAR => 'm',
+            self::STATUS_SELESAI, self::STATUS_DIBATALKAN => 'p',
+            default => '',
+        };
+    }
+
     public function isDelivery(): bool
     {
         return $this->jenis_layanan === self::LAYANAN_DELIVERY;

@@ -182,7 +182,7 @@
   <nav class="mainnav"><a href="{{ route('pelanggan.beranda') }}#promo">Promo</a><a href="{{ route('pelanggan.beranda') }}#menu">Pizza</a><a href="{{ route('pelanggan.beranda') }}#menu">Pasta</a><a href="{{ route('pelanggan.beranda') }}#menu">Burger</a><a href="{{ route('pelanggan.beranda') }}#menu">Camilan</a><a href="{{ route('pelanggan.beranda') }}#menu">Minuman</a><a href="{{ route('pelanggan.beranda') }}#menu">Dessert</a></nav>
   <div class="hd-right">
     <button class="icon-btn" aria-label="Cari menu"><svg class="ic"><use href="#i-search"/></svg></button>
-    <a class="user" href="#"><span class="av">{{ auth()->user()->inisial() }}</span><span>{{ auth()->user()->namaDepan() }}</span></a>
+    @include('partials.profile-menu', ['trigger' => 'user'])
     <a class="btn cart" href="{{ route('pelanggan.keranjang') }}"><svg class="ic"><use href="#i-cart"/></svg><span class="txt" id="hdTotal">Rp 0</span><span class="count" id="hdCount">0</span></a>
   </div>
 </div></header>

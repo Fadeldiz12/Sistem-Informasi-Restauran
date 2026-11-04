@@ -88,6 +88,25 @@ class AuthTest extends TestCase
         $this->assertGuest();
     }
 
+    public function test_semua_halaman_pelanggan_punya_menu_profil_dan_logout(): void
+    {
+        $pelanggan = User::factory()->create([
+            'role' => User::ROLE_PELANGGAN, 'nama' => 'Rina Amalia', 'email' => 'rina@example.com',
+            'no_hp' => '081265432109', 'alamat' => 'Jl. Gatot Subroto No. 12',
+        ]);
+
+        foreach (['/beranda', '/keranjang', '/checkout', '/pembayaran', '/tracking'] as $url) {
+            $this->actingAs($pelanggan)->get($url)->assertOk()
+                ->assertSee('data-pm', false)
+                ->assertSeeInOrder(['Rina Amalia', 'rina@example.com', '081265432109', 'Jl. Gatot Subroto No. 12'])
+                ->assertSee('class="pm-out" data-logout', false)
+                ->assertSee('id="logout-form"', false);
+        }
+
+        $this->actingAs($pelanggan)->post('/logout')->assertRedirect('/login');
+        $this->assertGuest();
+    }
+
     public function test_registrasi_membuat_akun_pelanggan(): void
     {
         $this->post('/registrasi', [
