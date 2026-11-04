@@ -2,8 +2,8 @@
 
 use App\Http\Controllers\Admin;
 use App\Http\Controllers\Auth\AuthController;
-use App\Http\Controllers\BuktiBayarController;
 use App\Http\Controllers\Kasir;
+use App\Http\Controllers\MidtransController;
 use App\Http\Controllers\Pelanggan;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -53,13 +53,14 @@ Route::middleware(['auth', 'role:'.User::ROLE_PELANGGAN])->name('pelanggan.')->g
 
     Route::get('/pembayaran', [Pelanggan\PembayaranController::class, 'terakhir'])->name('pembayaran.terakhir');
     Route::get('/pesanan/{pesanan}/pembayaran', [Pelanggan\PembayaranController::class, 'show'])->name('pembayaran');
-    Route::post('/pesanan/{pesanan}/pembayaran', [Pelanggan\PembayaranController::class, 'store'])->name('pembayaran.store');
+    Route::post('/pesanan/{pesanan}/pembayaran', [Pelanggan\PembayaranController::class, 'store'])->middleware('throttle:10,1')->name('pembayaran.store');
+    Route::get('/pesanan/{pesanan}/pembayaran/status', [Pelanggan\PembayaranController::class, 'status'])->name('pembayaran.status');
 
     Route::get('/tracking', Pelanggan\TrackingController::class)->name('tracking');
 });
 
-// Bukti pembayaran (privat): pemilik pesanan, kasir, owner, admin
-Route::get('/bukti-bayar/{pembayaran}', BuktiBayarController::class)->middleware('auth')->name('bukti.bayar');
+// Notifikasi pembayaran dari Midtrans (webhook, tanpa login; diverifikasi lewat signature)
+Route::post('/midtrans/notifikasi', MidtransController::class)->name('midtrans.notifikasi');
 
 // Admin
 Route::middleware(['auth', 'role:'.User::ROLE_ADMIN])->prefix('admin')->name('admin.')->group(function () {
@@ -102,7 +103,6 @@ Route::middleware(['auth', 'role:'.User::ROLE_KASIR])->prefix('kasir')->name('ka
 
     Route::get('/pembayaran', [Kasir\PembayaranController::class, 'index'])->name('pembayaran');
     Route::post('/pembayaran/{pesanan}/lunas', [Kasir\PembayaranController::class, 'lunas'])->name('pembayaran.lunas');
-    Route::post('/pembayaran/{pesanan}/tolak-bukti', [Kasir\PembayaranController::class, 'tolakBukti'])->name('pembayaran.tolak');
     Route::get('/pesanan/{pesanan}/struk', [Kasir\PembayaranController::class, 'struk'])->name('struk');
     Route::post('/pesanan/{pesanan}/selesai', [Kasir\PembayaranController::class, 'selesai'])->name('selesai');
 });

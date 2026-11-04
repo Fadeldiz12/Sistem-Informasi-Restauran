@@ -35,4 +35,16 @@ return [
         ],
     ],
 
+    /*
+    | Payment gateway Midtrans (Virtual Account & QRIS).
+    | Ambil key di https://dashboard.sandbox.midtrans.com (Settings > Access Keys).
+    */
+    'midtrans' => [
+        'server_key' => env('MIDTRANS_SERVER_KEY'),
+        'client_key' => env('MIDTRANS_CLIENT_KEY'),
+        'is_production' => (bool) env('MIDTRANS_IS_PRODUCTION', false),
+        // lama VA / QRIS berlaku sebelum kedaluwarsa (menit)
+        'kedaluwarsa_menit' => (int) env('MIDTRANS_KEDALUWARSA_MENIT', 60),
+    ],
+
 ];

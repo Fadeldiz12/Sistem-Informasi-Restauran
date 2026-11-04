@@ -19,7 +19,7 @@
   .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
   .mi { border-radius: 18px; overflow: hidden; box-shadow: inset 0 0 0 1.3px var(--m15); background: var(--cr); transition: .15s; text-align: left; }
   .mi:hover { box-shadow: inset 0 0 0 1.5px var(--m); }
-  .mi .ph { position: relative; height: 96px; background: var(--bl); display: grid; place-items: center; } .mi .ph img { width: 100%; height: 100%; object-fit: cover; }
+  .mi .ph { position: relative; height: 96px; background: var(--bl); display: grid; place-items: center; overflow: hidden; } .mi .ph img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
   .mi .plus { width: 26px; height: 26px; border-radius: 50%; background: var(--m); color: var(--cr); display: grid; place-items: center; }
   .mi.out { opacity: .5; cursor: not-allowed; }
   .tables { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; }
@@ -32,6 +32,17 @@
   .svc-p { display: none; } .svc-p.on { display: block; }
   .ord-empty { padding: 18px 4px; font-size: 13px; opacity: .6; text-align: center; }
   @media (max-width: 1280px) { .tables { grid-template-columns: repeat(6, 1fr); } }
+  .jump { display: none; }
+  @media (max-width: 760px) {
+    .menu-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .mi .ph { height: 84px; }
+    #fOrder { position: static !important; scroll-margin-top: 12px; }
+    .tables { grid-template-columns: repeat(6, 1fr); }
+    .jump { display: flex; position: fixed; left: 16px; right: 16px; bottom: calc(76px + env(safe-area-inset-bottom)); z-index: 55; align-items: center; gap: 10px;
+            padding: 12px 18px; border-radius: 999px; background: var(--m); color: var(--cr); font: 700 14px var(--f-title); box-shadow: 0 8px 22px rgba(40, 40, 40, .25); }
+    .jump[hidden] { display: none !important; }
+    .jump b { margin-left: auto; }
+  }
 </style>
 @endpush
 
@@ -79,6 +90,7 @@
 @endsection
 
 @push('modals')
+<a href="#fOrder" class="jump" id="jump" hidden><svg class="ic"><use href="#i-receipt"/></svg><span id="jumpN">0 item</span><b id="jumpT">Rp 0</b></a>
 @if ($baru)
 <div class="ovl on" id="mDone"><div class="modal sm">
   <div class="big-ic" style="background:var(--m);color:var(--cr)"><svg class="ic"><use href="#i-check"/></svg></div><h3 style="font:700 24px var(--f-title)">Pesanan tersimpan</h3>
@@ -112,6 +124,8 @@
       itemInputs.innerHTML = inp;
       sub.textContent = rp(s); tx.textContent = rp(t); tot.textContent = rp(s + t);
       btnSave.disabled = !order.length;
+      var n = order.reduce(function (a, o) { return a + o.q; }, 0);
+      jump.hidden = !n; jumpN.textContent = 'Pesanan · ' + n + ' item'; jumpT.textContent = rp(s + t);
     }
     function tambah(b) {
       if (b.classList.contains('out')) { toast('Menu tidak tersedia, pilih menu lain'); return; }

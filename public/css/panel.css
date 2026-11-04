@@ -215,3 +215,52 @@
   /* kotak cari di dalam halaman tetap tampil di layar < 1100px (yang disembunyikan hanya cari di topbar) */
   .search.keep { display: flex; }
   @media (max-width: 640px) { .search.keep { width: 100%; } }
+
+  /* logo di sidebar */
+  .brand img.mk { border-radius: 50%; object-fit: cover; padding: 0; }
+
+  .nav .ns { display: none; }
+  /* ===== HP (≤ 760px): sidebar menjadi navigasi bawah ===== */
+  @media (max-width: 760px) {
+    .app { display: block; }
+    .side { position: fixed; left: 0; right: 0; bottom: 0; top: auto; min-height: 0; height: calc(66px + env(safe-area-inset-bottom)); z-index: 60;
+            box-shadow: 0 -6px 18px rgba(40, 40, 40, .12); }
+    .side::after { display: none; }
+    .side-in { position: static; height: 100%; flex-direction: row; align-items: stretch; justify-content: space-around; gap: 2px;
+               padding: 6px 6px calc(6px + env(safe-area-inset-bottom)); overflow: visible; }
+    .brand, .nav-lbl, .hours, .side .spacer { display: none !important; }
+    .nav { flex: 1 1 0; width: auto !important; height: auto !important; min-width: 0; flex-direction: column; justify-content: center; gap: 3px;
+           padding: 6px 2px !important; border-radius: 14px; position: relative; }
+    .nav .ic { width: 20px; height: 20px; }
+    .nav span:not(.bd) { display: block !important; font: 700 10.5px/1.1 var(--f-accent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+    .nav span.nl { display: none !important; }
+    .nav .bd { display: block !important; position: absolute; top: 2px; left: calc(50% + 6px); margin: 0; padding: 0 6px; font-size: 10px; line-height: 16px; }
+    .main { padding: 16px 16px calc(96px + env(safe-area-inset-bottom)); }
+    .topbar { margin-bottom: 18px; gap: 10px; flex-wrap: nowrap; align-items: flex-start; }
+    .topbar h1 { font-size: 24px; }
+    .topbar .sub { font-size: 13px; }
+    .g4 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+    .card { padding: 14px; border-radius: 18px; }
+    .card-head { flex-wrap: wrap; gap: 10px; }
+    .btn { white-space: normal; }
+    .ovl { padding: 10px; align-items: end; }
+    .modal { max-height: calc(100vh - 20px); overflow-y: auto; }
+    .modal .mh, .modal .mb, .modal .mf { padding-left: 18px; padding-right: 18px; }
+    .modal .mf { flex-wrap: wrap; }
+    .toast { bottom: calc(84px + env(safe-area-inset-bottom)); max-width: calc(100vw - 32px); }
+  }
+  @media (max-width: 400px) { .g4 { gap: 10px; } .stat .v { font-size: 24px; } }
+  /* tabel sederhana yang teksnya boleh turun baris */
+  table.plain td { white-space: normal; }
+
+  /* tabel menjadi baris bertumpuk di HP: kolom pertama penuh, sisanya berderet, aksi di kanan */
+  @media (max-width: 760px) {
+    .tbl-stack thead { display: none; }
+    .tbl-stack, .tbl-stack tbody { display: block; }
+    .tbl-stack tr { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 12px 0; border-bottom: 1px solid var(--m15); }
+    .tbl-stack td { display: block; border: 0 !important; padding: 0 !important; white-space: normal; }
+    .tbl-stack td:first-child { flex: 1 1 100%; }
+    .tbl-stack td:last-child { margin-left: auto; }
+    .tbl-stack td[colspan] { flex: 1 1 100%; }
+    .tbl-stack .hide-md { display: none; }
+  }

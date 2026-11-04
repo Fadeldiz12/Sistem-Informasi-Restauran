@@ -191,6 +191,13 @@
   .zone-opt:has(input:checked) { box-shadow: inset 0 0 0 2px var(--m); background: var(--pp); }
   .ro { opacity: .8; }
   .btn[disabled] { opacity: .5; cursor: not-allowed; }
+  @media (max-width: 640px) {
+    #svc.svc-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 8px; }
+    #svc .svc-opt { padding: 12px 10px; }
+    #svc .svc-opt small { display: none; }
+    #svc .svc-opt b { font-size: 14px; margin-top: 8px; }
+    #svc .svc-opt .ico { width: 36px; height: 36px; }
+  }
   .mi .ph-none { width: 48px; height: 48px; border-radius: 12px; display: grid; place-items: center; background: var(--bl); flex: none; }
 </style>
 @endpush
@@ -265,7 +272,7 @@
         <!-- 3. Pembayaran (info) -->
         <section class="card sec soft">
           <div class="sec-title" style="margin-bottom:12px"><span class="no" style="background:var(--bl);color:var(--m)">3</span><div><h2>Pembayaran</h2><p>Dilakukan setelah pesanan dibuat.</p></div></div>
-          <div class="note"><svg class="ic"><use href="#i-shield"/></svg><span>Setelah konfirmasi, pesanan tersimpan dengan status <b>Menunggu Konfirmasi</b>. Kamu bisa bayar tunai, transfer, atau QRIS lalu unggah bukti pembayaran.</span></div>
+          <div class="note"><svg class="ic"><use href="#i-shield"/></svg><span>Setelah konfirmasi, pesanan tersimpan dengan status <b>Menunggu Pembayaran</b>. Bayar dengan Virtual Account atau QRIS (dicek otomatis, langsung masuk dapur), atau tunai di kasir.</span></div>
         </section>
       </div>
 

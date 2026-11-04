@@ -171,16 +171,18 @@ class Pesanan extends Model
             return $this->isOnline() ? 'Belum Bayar' : 'Belum Lunas';
         }
 
-        return match ($bayar->status_bayar) {
-            Pembayaran::STATUS_LUNAS => 'Lunas',
-            Pembayaran::STATUS_DITOLAK => 'Bukti Ditolak',
-            default => $bayar->metode === Pembayaran::METODE_TUNAI ? 'Bayar Tunai' : 'Menunggu Verifikasi',
+        return match (true) {
+            $bayar->status_bayar === Pembayaran::STATUS_LUNAS => 'Lunas',
+            $bayar->status_bayar === Pembayaran::STATUS_DITOLAK, $bayar->isKedaluwarsa() => 'Gagal / Kedaluwarsa',
+            $bayar->metode === Pembayaran::METODE_TUNAI => 'Bayar Tunai',
+            default => 'Menunggu Pembayaran',
         };
     }
 
     /**
-     * Pesanan yang menunggu diproses kasir di menu Pembayaran:
-     * pesanan di tempat yang belum lunas, atau pembayaran pelanggan yang menunggu (tunai / verifikasi bukti).
+     * Pesanan yang diproses kasir di menu Pembayaran:
+     * pesanan di tempat yang belum lunas, atau pesanan online yang dibayar tunai.
+     * (VA & QRIS lunas otomatis lewat Midtrans, tidak perlu kasir.)
      */
     #[Scope]
     protected function belumLunas(Builder $query): void
@@ -188,16 +190,19 @@ class Pesanan extends Model
         $query->where('status', '!=', self::STATUS_DIBATALKAN)->where(fn ($w) => $w
             ->where(fn ($a) => $a->whereNull('id_pelanggan')
                 ->whereDoesntHave('pembayaran', fn ($b) => $b->where('status_bayar', Pembayaran::STATUS_LUNAS)))
-            ->orWhereHas('pembayaran', fn ($b) => $b->where('status_bayar', Pembayaran::STATUS_MENUNGGU)));
+            ->orWhereHas('pembayaran', fn ($b) => $b->where('metode', Pembayaran::METODE_TUNAI)->where('status_bayar', Pembayaran::STATUS_MENUNGGU)));
     }
 
     /**
-     * Pesanan online yang menunggu konfirmasi kasir (FIFO: paling lama di atas).
+     * Pesanan online bayar tunai yang menunggu konfirmasi kasir (FIFO: paling lama di atas).
+     * Pesanan VA/QRIS otomatis masuk dapur setelah lunas.
      */
     #[Scope]
     protected function menungguKonfirmasi(Builder $query): void
     {
-        $query->whereNotNull('id_pelanggan')->where('status', self::STATUS_MENUNGGU)->orderBy('waktu_pesan')->orderBy('id');
+        $query->whereNotNull('id_pelanggan')->where('status', self::STATUS_MENUNGGU)
+            ->whereHas('pembayaran', fn ($b) => $b->where('metode', Pembayaran::METODE_TUNAI))
+            ->orderBy('waktu_pesan')->orderBy('id');
     }
 
     public function isDelivery(): bool

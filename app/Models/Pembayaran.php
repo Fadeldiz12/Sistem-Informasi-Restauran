@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Services\MidtransService;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Table;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Table('pembayaran')]
-#[Fillable(['id_pesanan', 'id_kasir', 'metode', 'jumlah', 'bukti_bayar', 'status_bayar', 'waktu_bayar'])]
+#[Fillable(['id_pesanan', 'id_kasir', 'metode', 'jumlah', 'bukti_bayar', 'status_bayar', 'waktu_bayar', 'kode_transaksi', 'bank', 'nomor_va', 'qris_url', 'kedaluwarsa_pada'])]
 class Pembayaran extends Model
 {
     public const METODE_TUNAI = 'tunai';
@@ -28,6 +29,7 @@ class Pembayaran extends Model
         return [
             'jumlah' => 'decimal:2',
             'waktu_bayar' => 'datetime',
+            'kedaluwarsa_pada' => 'datetime',
         ];
     }
 
@@ -37,14 +39,29 @@ class Pembayaran extends Model
         self::METODE_QRIS => 'QRIS',
     ];
 
+    /**
+     * Contoh: "Tunai", "VA BCA", "QRIS", "Transfer" (transfer manual di kasir).
+     */
     public function metodeLabel(): string
     {
+        if ($this->metode === self::METODE_TRANSFER && $this->bank) {
+            return 'VA '.(MidtransService::BANK[$this->bank] ?? strtoupper($this->bank));
+        }
+
         return self::LABEL_METODE[$this->metode] ?? $this->metode;
     }
 
-    public function buktiUrl(): ?string
+    /**
+     * Dibayar otomatis lewat Midtrans (Virtual Account / QRIS).
+     */
+    public function isOtomatis(): bool
     {
-        return $this->bukti_bayar ? route('bukti.bayar', $this) : null;
+        return $this->metode !== self::METODE_TUNAI && $this->kode_transaksi !== null;
+    }
+
+    public function isKedaluwarsa(): bool
+    {
+        return $this->status_bayar === self::STATUS_MENUNGGU && $this->kedaluwarsa_pada?->isPast();
     }
 
     public function pesanan(): BelongsTo

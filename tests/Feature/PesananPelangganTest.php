@@ -10,7 +10,6 @@ use App\Models\User;
 use App\Models\ZonaPengiriman;
 use Database\Seeders\MasterDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -139,42 +138,32 @@ class PesananPelangganTest extends TestCase
         return Pesanan::latest('id')->firstOrFail();
     }
 
-    public function test_transfer_dan_qris_wajib_bukti_tunai_tidak(): void
+    public function test_pilih_tunai_dan_pesanan_orang_lain_tidak_bisa_dibuka(): void
     {
         $p = $this->buatPesanan();
 
-        $this->actingAs($this->pelanggan)->post("/pesanan/{$p->id}/pembayaran", ['metode' => 'transfer'])->assertSessionHasErrors('bukti_bayar');
-        $this->actingAs($this->pelanggan)->post("/pesanan/{$p->id}/pembayaran", ['metode' => 'qris', 'bukti_bayar' => UploadedFile::fake()->create('x.pdf', 10)])
-            ->assertSessionHasErrors('bukti_bayar');
-
-        $this->actingAs($this->pelanggan)->post("/pesanan/{$p->id}/pembayaran", ['metode' => 'qris', 'bukti_bayar' => UploadedFile::fake()->image('qris.png')])
-            ->assertSessionHasNoErrors()->assertSessionHas('pembayaran_terkirim', 'qris');
-        $bayar = $p->fresh()->pembayaran;
-        $this->assertSame(['qris', Pembayaran::STATUS_MENUNGGU], [$bayar->metode, $bayar->status_bayar]);
-        $this->assertEquals($p->total, $bayar->jumlah);
-        Storage::disk('local')->assertExists($bayar->bukti_bayar);
-
-        // ganti ke tunai: bukti lama dihapus
         $this->actingAs($this->pelanggan)->post("/pesanan/{$p->id}/pembayaran", ['metode' => 'tunai'])->assertSessionHasNoErrors();
-        Storage::disk('local')->assertMissing($bayar->bukti_bayar);
-        $this->assertNull($p->fresh()->pembayaran->bukti_bayar);
-    }
-
-    public function test_pesanan_dan_bukti_orang_lain_tidak_bisa_dibuka(): void
-    {
-        $p = $this->buatPesanan();
-        $this->actingAs($this->pelanggan)->post("/pesanan/{$p->id}/pembayaran", ['metode' => 'transfer', 'bukti_bayar' => UploadedFile::fake()->image('b.jpg')]);
         $bayar = $p->fresh()->pembayaran;
+        $this->assertSame(['tunai', Pembayaran::STATUS_MENUNGGU, null], [$bayar->metode, $bayar->status_bayar, $bayar->kode_transaksi]);
+        $this->assertEquals($p->total, $bayar->jumlah);
+        $this->actingAs($this->pelanggan)->get("/pesanan/{$p->id}/pembayaran")->assertSee('bayar tunai');
 
         $lain = User::factory()->create(['role' => User::ROLE_PELANGGAN]);
         $this->actingAs($lain)->get("/pesanan/{$p->id}/pembayaran")->assertNotFound();
         $this->actingAs($lain)->post("/pesanan/{$p->id}/pembayaran", ['metode' => 'tunai'])->assertNotFound();
-        $this->actingAs($lain)->get("/bukti-bayar/{$bayar->id}")->assertNotFound();
+        $this->actingAs($lain)->getJson("/pesanan/{$p->id}/pembayaran/status")->assertNotFound();
         $this->actingAs($lain)->get('/tracking')->assertDontSee($p->kode());
+    }
 
-        $this->actingAs($this->pelanggan)->get("/bukti-bayar/{$bayar->id}")->assertOk();
-        $this->actingAs(User::factory()->create(['role' => User::ROLE_KASIR]))->get("/bukti-bayar/{$bayar->id}")->assertOk();
-        $this->actingAs(User::factory()->create(['role' => User::ROLE_DAPUR]))->get("/bukti-bayar/{$bayar->id}")->assertNotFound();
+    public function test_va_dan_qris_tidak_bisa_dipilih_jika_midtrans_belum_diatur(): void
+    {
+        config(['services.midtrans.server_key' => null]);
+        $p = $this->buatPesanan();
+
+        $this->actingAs($this->pelanggan)->get("/pesanan/{$p->id}/pembayaran")->assertSee('belum diaktifkan');
+        $this->actingAs($this->pelanggan)->post("/pesanan/{$p->id}/pembayaran", ['metode' => 'transfer', 'bank' => 'bca'])
+            ->assertSessionHasErrors('metode');
+        $this->assertNull($p->fresh()->pembayaran);
     }
 
     // ---------- lacak pesanan

@@ -5,15 +5,18 @@ namespace App\Http\Controllers\Pelanggan;
 use App\Http\Controllers\Controller;
 use App\Models\Pembayaran;
 use App\Models\Pesanan;
+use App\Services\MidtransService;
 use App\Services\PesananService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class PembayaranController extends Controller
 {
-    public function __construct(private PesananService $pesanan) {}
+    public function __construct(private PesananService $pesanan, private MidtransService $midtrans) {}
 
     /**
      * Tanpa nomor pesanan: buka pesanan terbaru yang belum lunas.
@@ -35,7 +38,9 @@ class PembayaranController extends Controller
 
         return view('pelanggan.pembayaran', [
             'pesanan' => $pesanan,
-            'rekening' => config('resto.rekening'),
+            'midtransAktif' => $this->midtrans->aktif(),
+            'sandbox' => $this->midtrans->sandbox(),
+            'bank' => MidtransService::BANK,
         ]);
     }
 
@@ -45,12 +50,44 @@ class PembayaranController extends Controller
 
         $data = $request->validate([
             'metode' => ['required', Rule::in(array_keys(Pembayaran::LABEL_METODE))],
-            'bukti_bayar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'bank' => ['nullable', 'required_if:metode,'.Pembayaran::METODE_TRANSFER, Rule::in(array_keys(MidtransService::BANK))],
+        ], [
+            'bank.required_if' => 'Pilih bank untuk Virtual Account.',
         ]);
 
-        $bayar = $this->pesanan->pilihPembayaran($pesanan, $data['metode'], $request->file('bukti_bayar'));
+        $bayar = $this->pesanan->pilihPembayaran($pesanan, $data['metode'], $data['bank'] ?? null);
 
-        return to_route('pelanggan.pembayaran', $pesanan)->with('pembayaran_terkirim', $bayar->metode);
+        return to_route('pelanggan.pembayaran', $pesanan)->with('status', $bayar->metode === Pembayaran::METODE_TUNAI
+            ? 'Metode tunai disimpan. Pesanan menunggu konfirmasi kasir.'
+            : 'Silakan selesaikan pembayaran '.$bayar->metodeLabel().'.');
+    }
+
+    /**
+     * Dipanggil berkala oleh halaman pembayaran untuk mengecek apakah VA/QRIS sudah dibayar.
+     */
+    public function status(Request $request, Pesanan $pesanan): JsonResponse
+    {
+        $this->milikSendiri($request, $pesanan);
+        $bayar = $pesanan->pembayaran;
+
+        if ($bayar?->isOtomatis()) {
+            // dibatasi agar tidak membanjiri Midtrans
+            $kunci = 'cek-bayar:'.$bayar->id;
+            if (Cache::add($kunci, true, now()->addSeconds(4))) {
+                try {
+                    $bayar = $this->pesanan->cekStatusGateway($bayar);
+                } catch (\RuntimeException) {
+                    // koneksi gagal: coba lagi di permintaan berikutnya
+                }
+            }
+        }
+
+        return response()->json([
+            'status_bayar' => $bayar?->status_bayar,
+            'lunas' => $bayar?->status_bayar === Pembayaran::STATUS_LUNAS,
+            'gagal' => $bayar && ($bayar->status_bayar === Pembayaran::STATUS_DITOLAK || $bayar->isKedaluwarsa()),
+            'status_pesanan' => $pesanan->fresh()->status,
+        ]);
     }
 
     private function milikSendiri(Request $request, Pesanan $pesanan): void

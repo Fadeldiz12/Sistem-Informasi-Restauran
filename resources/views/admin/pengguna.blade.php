@@ -37,7 +37,7 @@
       </div>
     </div>
 
-    <div class="tbl-wrap"><table><thead><tr><th>Nama</th><th>Email</th><th>Nomor HP</th><th>Peran</th><th class="hide-md">Terdaftar</th><th>Aksi</th></tr></thead>
+    <div class="tbl-wrap"><table class="tbl-stack"><thead><tr><th>Nama</th><th>Email</th><th>Nomor HP</th><th>Peran</th><th class="hide-md">Terdaftar</th><th>Aksi</th></tr></thead>
       <tbody id="tbUser">
         @forelse ($users as $u)
           <tr data-id="{{ $u->id }}" data-url="{{ route('admin.pengguna.update', $u) }}" data-nama="{{ $u->nama }}" data-email="{{ $u->email }}" data-hp="{{ $u->no_hp }}" data-role="{{ $u->role }}">

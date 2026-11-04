@@ -121,7 +121,7 @@
           <button class="btn" id="btnAddMenu" @disabled($kategori->isEmpty())><svg class="ic"><use href="#i-plus"/></svg>Tambah Menu</button>
         </div>
       </div>
-      <div class="tbl-wrap"><table><thead><tr><th>Menu</th><th>Kategori</th><th>Harga</th><th>Ketersediaan</th><th>Aksi</th></tr></thead><tbody id="tbMenu">
+      <div class="tbl-wrap"><table class="tbl-stack"><thead><tr><th>Menu</th><th>Kategori</th><th>Harga</th><th>Ketersediaan</th><th>Aksi</th></tr></thead><tbody id="tbMenu">
         @forelse ($menu as $m)
           <tr data-id="{{ $m->id }}" data-url="{{ route('admin.menu.update', $m) }}" data-nama="{{ $m->nama_menu }}" data-kategori="{{ $m->id_kategori }}"
               data-harga="{{ (int) $m->harga }}" data-tersedia="{{ $m->tersedia ? 1 : 0 }}" data-foto="{{ $m->fotoUrl() }}">
