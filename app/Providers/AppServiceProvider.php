@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\Kategori;
 use App\Models\Menu;
 use App\Models\PengaturanSistem;
 use App\Models\User;
@@ -27,6 +28,11 @@ class AppServiceProvider extends ServiceProvider
         // Jam operasional di sidebar semua panel staf
         View::composer('partials.panel.hours', function ($view) {
             $view->with('jamOperasional', PengaturanSistem::aktif()->jamLabel());
+        });
+
+        // Kategori di navbar pelanggan (dipilih admin, maks 6)
+        View::composer(['partials.pelanggan.nav', 'partials.pelanggan.catstrip'], function ($view) {
+            $view->with('navKategori', Kategori::navbar()->get());
         });
 
         // Angka badge di sidebar admin

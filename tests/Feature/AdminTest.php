@@ -136,6 +136,46 @@ class AdminTest extends TestCase
         $this->assertModelMissing($kat);
     }
 
+    public function test_navbar_maksimal_6_kategori(): void
+    {
+        // seeder: 6 kategori sudah di navbar, Salad belum
+        $this->assertSame(6, Kategori::where('tampil_navbar', true)->count());
+        $salad = Kategori::where('nama_kategori', 'Salad')->first();
+
+        $this->actingAs($this->admin)->put("/admin/kategori/{$salad->id}", ['nama_kategori' => 'Salad', 'tampil_navbar' => '1', 'urutan_navbar' => 2])
+            ->assertSessionHasErrors('tampil_navbar');
+        $this->assertFalse($salad->fresh()->tampil_navbar);
+
+        $this->actingAs($this->admin)->post('/admin/kategori', ['nama_kategori' => 'Paket', 'tampil_navbar' => '1', 'urutan_navbar' => 1])
+            ->assertSessionHasErrors('tampil_navbar');
+
+        // sembunyikan Dessert, lalu Salad bisa masuk
+        $dessert = Kategori::where('nama_kategori', 'Dessert')->first();
+        $this->actingAs($this->admin)->put("/admin/kategori/{$dessert->id}", ['nama_kategori' => 'Dessert'])->assertSessionHasNoErrors();
+        $this->assertFalse($dessert->fresh()->tampil_navbar);
+        $this->assertNull($dessert->fresh()->urutan_navbar);
+
+        $this->actingAs($this->admin)->put("/admin/kategori/{$salad->id}", ['nama_kategori' => 'Salad', 'tampil_navbar' => '1', 'urutan_navbar' => 6])
+            ->assertSessionHasNoErrors();
+        $this->assertSame([true, 6], [$salad->fresh()->tampil_navbar, $salad->fresh()->urutan_navbar]);
+    }
+
+    public function test_urutan_navbar_bertukar_posisi(): void
+    {
+        $pizza = Kategori::where('nama_kategori', 'Pizza')->first();   // urutan 1
+        $burger = Kategori::where('nama_kategori', 'Burger')->first(); // urutan 3
+
+        $this->actingAs($this->admin)->put("/admin/kategori/{$burger->id}", ['nama_kategori' => 'Burger', 'tampil_navbar' => '1', 'urutan_navbar' => 1])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(1, $burger->fresh()->urutan_navbar);
+        $this->assertSame(3, $pizza->fresh()->urutan_navbar);
+        $this->assertSame(['Burger', 'Pasta', 'Pizza', 'Camilan', 'Minuman', 'Dessert'], Kategori::navbar()->pluck('nama_kategori')->all());
+
+        $this->actingAs($this->admin)->put("/admin/kategori/{$burger->id}", ['nama_kategori' => 'Burger', 'tampil_navbar' => '1'])
+            ->assertSessionHasErrors('urutan_navbar');
+    }
+
     public function test_tambah_dan_ubah_menu_dengan_foto(): void
     {
         Storage::fake('public');
@@ -232,22 +272,23 @@ class AdminTest extends TestCase
     public function test_ubah_pengaturan_sistem(): void
     {
         $this->actingAs($this->admin)->put('/admin/pengaturan', [
-            'pajak' => '11', 'biaya_layanan' => '3.500', 'jam_buka' => '09:00', 'jam_tutup' => '21:30',
+            'pajak' => '11', 'biaya_layanan' => '2.5', 'jam_buka' => '09:00', 'jam_tutup' => '21:30',
         ])->assertRedirect('/admin/pengaturan')->assertSessionHas('status');
 
         $set = PengaturanSistem::aktif();
         $this->assertSame(1, PengaturanSistem::count());
-        $this->assertEquals([11, 3500], [(float) $set->pajak, (float) $set->biaya_layanan]);
+        $this->assertEquals([11, 2.5], [(float) $set->pajak, (float) $set->biaya_layanan]);
+        $this->assertEquals(2500, $set->hitungBiayaLayanan(100000));
         $this->assertSame('09:00 – 21:30', $set->jamLabel());
         $this->assertEquals(11000, $set->hitungPajak(100000));
 
-        $this->actingAs($this->admin)->get('/admin/dashboard')->assertSee('09:00 – 21:30')->assertSee('11%');
+        $this->actingAs($this->admin)->get('/admin/dashboard')->assertSee('09:00 – 21:30')->assertSee('11%')->assertSee('2,5%');
     }
 
     public function test_validasi_pengaturan(): void
     {
         $this->actingAs($this->admin)->put('/admin/pengaturan', [
-            'pajak' => 150, 'biaya_layanan' => 'x', 'jam_buka' => '22:00', 'jam_tutup' => '10:00',
+            'pajak' => 150, 'biaya_layanan' => 101, 'jam_buka' => '22:00', 'jam_tutup' => '10:00',
         ])->assertSessionHasErrors(['pajak', 'biaya_layanan', 'jam_tutup']);
     }
 }

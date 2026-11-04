@@ -27,6 +27,22 @@ class PengaturanSistem extends Model
     }
 
     /**
+     * Biaya layanan dalam persen dari subtotal, contoh: 5 = 5%.
+     */
+    public function hitungBiayaLayanan(float $subtotal): float
+    {
+        return round($subtotal * (float) $this->biaya_layanan / 100, 2);
+    }
+
+    /**
+     * Angka persen tanpa nol di belakang, contoh: 10.00 -> "10", 2.50 -> "2,5".
+     */
+    public static function persen(float|string|null $nilai): string
+    {
+        return rtrim(rtrim(number_format((float) $nilai, 2, ',', ''), '0'), ',');
+    }
+
+    /**
      * Contoh: "10.00 – 22.00".
      */
     public function jamLabel(): string

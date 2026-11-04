@@ -32,6 +32,7 @@ class MenuController extends Controller
         return view('admin.menu', [
             'menu' => $menu,
             'kategori' => Kategori::withCount('menu')->orderBy('nama_kategori')->get(),
+            'navbar' => Kategori::navbar()->get(),
             'kategoriId' => $kategoriId,
             'status' => $status,
             'q' => $q,

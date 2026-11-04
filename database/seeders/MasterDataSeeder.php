@@ -44,8 +44,15 @@ class MasterDataSeeder extends Seeder
             ],
         ];
 
+        // kategori yang tampil di navbar beranda (urutan 1 - 6), sesuai UI
+        $navbar = ['Pizza', 'Pasta', 'Burger', 'Camilan', 'Minuman', 'Dessert'];
+
         foreach ($menu as $namaKategori => $daftar) {
-            $kategori = Kategori::firstOrCreate(['nama_kategori' => $namaKategori]);
+            $urutan = array_search($namaKategori, $navbar, true);
+            $kategori = Kategori::updateOrCreate(['nama_kategori' => $namaKategori], [
+                'tampil_navbar' => $urutan !== false,
+                'urutan_navbar' => $urutan === false ? null : $urutan + 1,
+            ]);
 
             foreach ($daftar as [$nama, $harga, $fotoId, $tersedia]) {
                 Menu::updateOrCreate(
@@ -62,7 +69,7 @@ class MasterDataSeeder extends Seeder
 
         PengaturanSistem::aktif()->update([
             'pajak' => 10,
-            'biaya_layanan' => 2000,
+            'biaya_layanan' => 5, // persen dari subtotal
             'jam_buka' => '10:00',
             'jam_tutup' => '22:00',
         ]);

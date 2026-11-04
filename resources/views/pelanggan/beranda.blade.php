@@ -202,6 +202,15 @@
   .hours b { font: 700 22px var(--f-title); }
   .copy { border-top: 1px solid rgba(248, 245, 230, .2); padding: 18px 0 26px; display: flex; justify-content: space-between; font: 600 13px var(--f-accent); opacity: .8; flex-wrap: wrap; gap: 10px; }
 
+  /* ---------- tambahan versi dinamis ---------- */
+  [hidden] { display: none !important; }
+  #menu { scroll-margin-top: 96px; }
+  #promo { scroll-margin-top: 96px; }
+  .item .ph .ph-none, .cat .ph .ph-none { width: 100%; height: 100%; display: grid; place-items: center; background: var(--bl); }
+  .item .ft { margin-top: auto; padding-top: 14px; }
+  .grid-empty { padding: 40px 16px; text-align: center; font: 600 15px var(--f-accent); opacity: .65; }
+  @media (max-width: 1180px) { #menu, #promo { scroll-margin-top: 150px; } }
+
   /* ---------- RESPONSIF ---------- */
   @media (max-width: 1180px) {
     .mainnav { display: none; }
@@ -259,17 +268,15 @@
 
 <header>
   <div class="wrap">
-    <a class="logo" href="#"><b>SIM RESTO</b><small>PIZZA &amp; PASTA HOUSE</small></a>
-    <nav class="mainnav">
-      <a href="#promo" class="on">Promo</a><a href="#menu">Pizza</a><a href="#menu">Pasta</a><a href="#menu">Burger</a>
-      <a href="#menu">Camilan</a><a href="#menu">Salad</a><a href="#menu">Minuman</a><a href="#menu">Dessert</a>
-    </nav>
+    <a class="logo" href="{{ route('pelanggan.beranda') }}"><b>SIM RESTO</b><small>PIZZA &amp; PASTA HOUSE</small></a>
+    @include('partials.pelanggan.nav')
     <div class="hd-right">
       <button class="icon-btn" aria-label="Cari menu"><svg class="ic"><use href="#i-search"/></svg></button>
       @include('partials.profile-menu', ['trigger' => 'user'])
-      <a class="btn cart" href="{{ route('pelanggan.keranjang') }}"><svg class="ic"><use href="#i-cart"/></svg><span class="txt" id="cartTotal">Rp 236.000</span><span class="count" id="cartCount">3</span></a>
+      <a class="btn cart" href="{{ route('pelanggan.keranjang') }}"><svg class="ic"><use href="#i-cart"/></svg><span class="txt" id="cartTotal">Rp 0</span><span class="count" id="cartCount">0</span></a>
     </div>
   </div>
+  @include('partials.pelanggan.catstrip')
 </header>
 
 <main>
@@ -318,15 +325,11 @@
   <!-- KATEGORI -->
   <section class="block">
     <div class="wrap">
-      <div class="sec-head"><div><div class="eyebrow">Kategori</div><h2 class="h2">Mau makan apa hari ini?</h2></div><a class="link" href="#menu">Lihat semua menu <svg class="ic"><use href="#i-arr"/></svg></a></div>
+      <div class="sec-head"><div><div class="eyebrow">Kategori</div><h2 class="h2">Mau makan apa hari ini?</h2></div><a class="link" href="{{ route('pelanggan.beranda') }}#menu" data-kat="">Lihat semua menu <svg class="ic"><use href="#i-arr"/></svg></a></div>
       <div class="cats">
-        <a class="cat on" href="#menu"><span class="ph"><img src="https://images.unsplash.com/photo-1628840042765-356cda07504e?w=400&q=75" alt=""></span>Pizza</a>
-        <a class="cat" href="#menu"><span class="ph"><img src="https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=400&q=75" alt=""></span>Pasta</a>
-        <a class="cat" href="#menu"><span class="ph"><img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&q=75" alt=""></span>Burger</a>
-        <a class="cat" href="#menu"><span class="ph"><img src="https://images.unsplash.com/photo-1608039755401-742074f0548d?w=400&q=75" alt=""></span>Camilan</a>
-        <a class="cat" href="#menu"><span class="ph"><img src="https://images.unsplash.com/photo-1550304943-4f24f54ddde9?w=400&q=75" alt=""></span>Salad</a>
-        <a class="cat" href="#menu"><span class="ph"><img src="https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=400&q=75" alt=""></span>Minuman</a>
-        <a class="cat" href="#menu"><span class="ph"><img src="https://images.unsplash.com/photo-1624353365286-3f8d62daad51?w=400&q=75" alt=""></span>Dessert</a>
+        @foreach ($kategoriFoto as $kf)
+          <a href="{{ route('pelanggan.beranda', ['kategori' => $kf['k']->slug()]) }}#menu" data-kat="{{ $kf['k']->slug() }}" @class(['cat', 'on' => $aktif === $kf['k']->slug()])><span class="ph">@if ($kf['foto'])<img src="{{ $kf['foto'] }}" alt="">@else<span class="ph-none"><svg class="ic"><use href="#i-dine"/></svg></span>@endif</span>{{ $kf['k']->nama_kategori }}</a>
+        @endforeach
       </div>
     </div>
   </section>
@@ -360,35 +363,20 @@
     <div class="wrap">
       <div class="sec-head"><div><div class="eyebrow">Menu</div><h2 class="h2">Favorit Pelanggan</h2></div>
         <div class="chips" id="chips">
-          <button class="on" data-f="all">Semua</button><button data-f="pizza">Pizza</button><button data-f="pasta">Pasta</button>
-          <button data-f="burger">Burger</button><button data-f="camilan">Camilan</button><button data-f="salad">Salad</button><button data-f="minuman">Minuman</button>
+          <button data-kat="" @class(['on' => ! $aktif])>Semua</button>
+          @foreach ($kategori as $k)
+            <button data-kat="{{ $k->slug() }}" @class(['on' => $aktif === $k->slug()])>{{ $k->nama_kategori }}</button>
+          @endforeach
         </div></div>
       <div class="menu-grid" id="grid">
-        <article class="item" data-c="pizza"><div class="ph"><img src="https://images.unsplash.com/photo-1534308983496-4fabb1a015ee?w=700&q=80" alt=""><span class="pill m">Terlaris</span></div>
-          <div class="bd"><span class="cat-lbl">Pizza</span><h3>Pizza Beef Pepperoni</h3><p>Saus tomat, mozzarella, dan beef pepperoni. Ukuran reguler 8 potong.</p>
-          <div class="ft"><span class="price">Rp 109.000</span><button class="add" data-p="109000" aria-label="Tambah"><svg class="ic"><use href="#i-plus"/></svg></button></div></div></article>
-        <article class="item" data-c="pizza"><div class="ph"><img src="https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=700&q=80" alt=""></div>
-          <div class="bd"><span class="cat-lbl">Pizza</span><h3>Pizza Margherita</h3><p>Tomat segar, mozzarella, dan daun basil. Ringan dan klasik.</p>
-          <div class="ft"><span class="price">Rp 89.000</span><button class="add" data-p="89000" aria-label="Tambah"><svg class="ic"><use href="#i-plus"/></svg></button></div></div></article>
-        <article class="item" data-c="pasta"><div class="ph"><img src="https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=700&q=80" alt=""><span class="pill b">Baru</span></div>
-          <div class="bd"><span class="cat-lbl">Pasta</span><h3>Penne Bolognese</h3><p>Penne dengan saus daging sapi cincang dan taburan keju parmesan.</p>
-          <div class="ft"><span class="price">Rp 59.000</span><button class="add" data-p="59000" aria-label="Tambah"><svg class="ic"><use href="#i-plus"/></svg></button></div></div></article>
-        <article class="item" data-c="pasta"><div class="ph"><img src="https://images.unsplash.com/photo-1563379926898-05f4575a45d8?w=700&q=80" alt=""></div>
-          <div class="bd"><span class="cat-lbl">Pasta</span><h3>Spaghetti Seafood</h3><p>Spaghetti dengan udang, cumi, dan tomat ceri dalam saus bawang putih.</p>
-          <div class="ft"><span class="price">Rp 69.000</span><button class="add" data-p="69000" aria-label="Tambah"><svg class="ic"><use href="#i-plus"/></svg></button></div></div></article>
-        <article class="item" data-c="burger"><div class="ph"><img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=700&q=80" alt=""></div>
-          <div class="bd"><span class="cat-lbl">Burger</span><h3>Classic Beef Burger</h3><p>Patty sapi, keju cheddar, selada, tomat, dan saus spesial.</p>
-          <div class="ft"><span class="price">Rp 55.000</span><button class="add" data-p="55000" aria-label="Tambah"><svg class="ic"><use href="#i-plus"/></svg></button></div></div></article>
-        <article class="item out" data-c="camilan"><div class="ph"><img src="https://images.unsplash.com/photo-1608039755401-742074f0548d?w=700&q=80" alt=""></div>
-          <div class="bd"><span class="cat-lbl">Camilan</span><h3>Chicken Wings BBQ</h3><p>Sayap ayam panggang saus BBQ dengan saus cocol.</p>
-          <div class="ft"><span class="price">Rp 45.000</span><button class="add" disabled aria-label="Stok habis"><svg class="ic"><use href="#i-plus"/></svg></button></div></div></article>
-        <article class="item" data-c="salad"><div class="ph"><img src="https://images.unsplash.com/photo-1550304943-4f24f54ddde9?w=700&q=80" alt=""></div>
-          <div class="bd"><span class="cat-lbl">Salad</span><h3>Caesar Salad</h3><p>Selada romaine, crouton, parmesan, dan caesar dressing.</p>
-          <div class="ft"><span class="price">Rp 42.000</span><button class="add" data-p="42000" aria-label="Tambah"><svg class="ic"><use href="#i-plus"/></svg></button></div></div></article>
-        <article class="item" data-c="minuman"><div class="ph"><img src="https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=700&q=80" alt=""></div>
-          <div class="bd"><span class="cat-lbl">Minuman</span><h3>Lemon Iced Tea</h3><p>Teh dingin dengan perasan lemon dan jeruk nipis segar.</p>
-          <div class="ft"><span class="price">Rp 18.000</span><button class="add" data-p="18000" aria-label="Tambah"><svg class="ic"><use href="#i-plus"/></svg></button></div></div></article>
+        @foreach ($menu as $m)
+          <article class="item" data-c="{{ $m->kategori->slug() }}" @if ($aktif && $aktif !== $m->kategori->slug()) style="display:none" @endif>
+            <div class="ph">@if ($m->fotoUrl())<img src="{{ $m->fotoUrl() }}" alt="{{ $m->nama_menu }}" loading="lazy">@else<span class="ph-none"><svg class="ic"><use href="#i-dine"/></svg></span>@endif</div>
+            <div class="bd"><span class="cat-lbl">{{ $m->kategori->nama_kategori }}</span><h3>{{ $m->nama_menu }}</h3>
+            <div class="ft"><span class="price">Rp {{ number_format($m->harga, 0, ',', '.') }}</span><button class="add" data-id="{{ $m->id }}" data-p="{{ (int) $m->harga }}" aria-label="Tambah {{ $m->nama_menu }} ke keranjang"><svg class="ic"><use href="#i-plus"/></svg></button></div></div></article>
+        @endforeach
       </div>
+      <p class="grid-empty" id="gridEmpty" @if (! ($menu->isEmpty() || ($aktif && ! $menu->contains(fn ($m) => $m->kategori->slug() === $aktif)))) hidden @endif>Belum ada menu yang tersedia di kategori ini.</p>
     </div>
   </section>
 
@@ -447,14 +435,34 @@
     addrIcon.setAttribute('href', m.icon);
   }));
 
-  // Filter menu per kategori
-  document.querySelectorAll('#chips button').forEach(b => b.addEventListener('click', () => {
-    document.querySelectorAll('#chips button').forEach(x => x.classList.toggle('on', x === b));
-    document.querySelectorAll('#grid .item').forEach(it => it.style.display = (b.dataset.f === 'all' || it.dataset.c === b.dataset.f) ? '' : 'none');
-  }));
+  // Filter menu per kategori: navbar, baris kategori (HP), lingkaran kategori, dan chips.
+  // Tanpa reload; alamat jadi /beranda?kategori=... supaya tombol Back dan link bisa dibagikan.
+  function pilihKategori(slug) {
+    document.querySelectorAll('[data-kat]').forEach(el => {
+      if (el.closest('.mainnav, .catstrip, .cats, #chips')) el.classList.toggle('on', el.dataset.kat === slug && (slug !== '' || el.closest('#chips')));
+    });
+    let tampil = 0;
+    document.querySelectorAll('#grid .item').forEach(it => { const ok = !slug || it.dataset.c === slug; it.style.display = ok ? '' : 'none'; if (ok) tampil++; });
+    gridEmpty.hidden = tampil > 0;
+  }
+  function slugDariUrl() { return new URLSearchParams(location.search).get('kategori') || ''; }
+  document.addEventListener('click', e => {
+    const el = e.target.closest('[data-kat]'); if (!el) return;
+    e.preventDefault();
+    const slug = el.dataset.kat;
+    if (slug !== slugDariUrl()) history.pushState({ kategori: slug }, '', slug ? '?kategori=' + encodeURIComponent(slug) : location.pathname);
+    pilihKategori(slug);
+    document.getElementById('menu').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+  document.addEventListener('click', e => {
+    const el = e.target.closest('[data-promo]'); if (!el) return;
+    e.preventDefault(); document.getElementById('promo').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+  window.addEventListener('popstate', () => pilihKategori(slugDariUrl()));
+  if (slugDariUrl()) document.getElementById('menu').scrollIntoView({ block: 'start' });
 
   // Tambah ke keranjang
-  let count = 3, total = 236000;
+  let count = 0, total = 0;
   const rp = n => 'Rp ' + n.toLocaleString('id-ID');
   document.querySelectorAll('.add[data-p]').forEach(b => b.addEventListener('click', () => {
     count++; total += +b.dataset.p; cartCount.textContent = count; cartTotal.textContent = rp(total);
