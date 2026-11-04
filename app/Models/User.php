@@ -7,6 +7,7 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -16,6 +17,27 @@ class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
+
+    public const ROLE_ADMIN = 'admin';
+
+    public const ROLE_OWNER = 'owner';
+
+    public const ROLE_KASIR = 'kasir';
+
+    public const ROLE_PELANGGAN = 'pelanggan';
+
+    public const ROLE_DAPUR = 'dapur';
+
+    public const ROLE_KURIR = 'kurir';
+
+    public const ROLES = [
+        self::ROLE_ADMIN,
+        self::ROLE_OWNER,
+        self::ROLE_KASIR,
+        self::ROLE_PELANGGAN,
+        self::ROLE_DAPUR,
+        self::ROLE_KURIR,
+    ];
 
     /**
      * Get the attributes that should be cast.
@@ -27,5 +49,40 @@ class User extends Authenticatable
         return [
             'password' => 'hashed',
         ];
+    }
+
+    public function hasRole(string ...$roles): bool
+    {
+        return in_array($this->role, $roles, true);
+    }
+
+    /** Pesanan yang dibuat pelanggan. */
+    public function pesanan(): HasMany
+    {
+        return $this->hasMany(Pesanan::class, 'id_pelanggan');
+    }
+
+    /** Pesanan yang diinput / dikonfirmasi kasir. */
+    public function pesananKasir(): HasMany
+    {
+        return $this->hasMany(Pesanan::class, 'id_kasir');
+    }
+
+    /** Pembayaran yang diproses kasir. */
+    public function pembayaranKasir(): HasMany
+    {
+        return $this->hasMany(Pembayaran::class, 'id_kasir');
+    }
+
+    /** Tugas pengiriman milik kurir. */
+    public function tugasPengiriman(): HasMany
+    {
+        return $this->hasMany(Pengiriman::class, 'id_kurir');
+    }
+
+    /** Pengeluaran yang dicatat owner. */
+    public function pengeluaran(): HasMany
+    {
+        return $this->hasMany(Pengeluaran::class, 'id_owner');
     }
 }
