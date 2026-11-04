@@ -19,6 +19,8 @@ class DatabaseSeeder extends Seeder
             MasterDataSeeder::class,
             BahanBakuSeeder::class,
             ResepSeeder::class,
+            PengeluaranSeeder::class,
+            PenjualanContohSeeder::class,
         ]);
     }
 }
