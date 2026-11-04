@@ -52,7 +52,7 @@
     <div class="grid" style="align-content:start">
       <div class="card soft" style="background-image:linear-gradient(var(--m08) 1px,transparent 1px),linear-gradient(90deg,var(--m08) 1px,transparent 1px);background-size:24px 24px">
         <div class="card-head"><h2>Pengaturan Aktif</h2><a class="btn o sm" href="{{ route('admin.pengaturan') }}"><svg class="ic" style="width:15px;height:15px"><use href="#i-edit"/></svg>Ubah</a></div>
-        @foreach ([['i-file', 'Pajak restoran', rtrim(rtrim((string) $pengaturan->pajak, '0'), '.').'%'], ['i-receipt', 'Biaya layanan', $rp($pengaturan->biaya_layanan).' / pesanan'], ['i-clock', 'Jam operasional', $pengaturan->jamLabel()]] as [$ikon, $label, $nilai])
+        @foreach ([['i-file', 'Pajak restoran', \App\Models\PengaturanSistem::persen($pengaturan->pajak).'%'], ['i-receipt', 'Biaya layanan', \App\Models\PengaturanSistem::persen($pengaturan->biaya_layanan).'%'], ['i-clock', 'Jam operasional', $pengaturan->jamLabel()]] as [$ikon, $label, $nilai])
           <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;padding:11px 14px;border-radius:14px;background:var(--cr);box-shadow:inset 0 0 0 1.2px var(--m15);margin-bottom:8px;font-size:13.5px"><span style="display:flex;gap:9px;align-items:center;font-weight:600"><svg class="ic" style="width:16px;height:16px"><use href="#{{ $ikon }}"/></svg>{{ $label }}</span><b style="font:600 13.5px var(--f-title);text-align:right">{{ $nilai }}</b></div>
         @endforeach
       </div>

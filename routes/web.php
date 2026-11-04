@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Pelanggan;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -37,7 +38,7 @@ Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->n
 
 // Pelanggan
 Route::middleware(['auth', 'role:'.User::ROLE_PELANGGAN])->name('pelanggan.')->group(function () {
-    Route::view('/beranda', 'pelanggan.beranda')->name('beranda');
+    Route::get('/beranda', Pelanggan\BerandaController::class)->name('beranda');
     Route::view('/keranjang', 'pelanggan.keranjang')->name('keranjang');
     Route::view('/checkout', 'pelanggan.checkout')->name('checkout');
     Route::view('/pembayaran', 'pelanggan.pembayaran')->name('pembayaran');

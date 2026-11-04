@@ -210,3 +210,8 @@
   .chips a span { opacity: .7; margin-left: 4px; }
   .empty { padding: 34px 16px; text-align: center; opacity: .65; font: 600 14px var(--f-accent); }
   .drop input[type=file] { display: none; }
+  /* atribut hidden harus selalu menang (mis. .av { display: grid } menimpa hidden) */
+  [hidden] { display: none !important; }
+  /* kotak cari di dalam halaman tetap tampil di layar < 1100px (yang disembunyikan hanya cari di topbar) */
+  .search.keep { display: flex; }
+  @media (max-width: 640px) { .search.keep { width: 100%; } }

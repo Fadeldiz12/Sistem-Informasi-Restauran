@@ -29,7 +29,7 @@
         @endforeach
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap">
-        <form method="get" action="{{ route('admin.pengguna') }}" class="search" style="background:var(--pp)">
+        <form method="get" action="{{ route('admin.pengguna') }}" class="search keep" style="background:var(--pp)">
           @if ($role)<input type="hidden" name="role" value="{{ $role }}">@endif
           <svg class="ic"><use href="#i-search"/></svg><input name="q" value="{{ $q }}" placeholder="Cari nama, email, atau HP…">
         </form>

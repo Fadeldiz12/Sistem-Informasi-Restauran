@@ -176,13 +176,14 @@
 </div></div>
 <header><div class="wrap">
   <a class="logo" href="{{ route('pelanggan.beranda') }}"><b>SIM RESTO</b><small>PIZZA &amp; PASTA HOUSE</small></a>
-  <nav class="mainnav"><a href="{{ route('pelanggan.beranda') }}#promo">Promo</a><a href="{{ route('pelanggan.beranda') }}#menu">Pizza</a><a href="{{ route('pelanggan.beranda') }}#menu">Pasta</a><a href="{{ route('pelanggan.beranda') }}#menu">Burger</a><a href="{{ route('pelanggan.beranda') }}#menu">Camilan</a><a href="{{ route('pelanggan.beranda') }}#menu">Minuman</a><a href="{{ route('pelanggan.beranda') }}#menu">Dessert</a></nav>
+  @include('partials.pelanggan.nav')
   <div class="hd-right">
     <button class="icon-btn" aria-label="Cari menu"><svg class="ic"><use href="#i-search"/></svg></button>
     @include('partials.profile-menu', ['trigger' => 'user'])
     <a class="btn cart" href="{{ route('pelanggan.keranjang') }}"><svg class="ic"><use href="#i-cart"/></svg><span class="txt" id="hdTotal">Rp 0</span><span class="count" id="hdCount">0</span></a>
   </div>
-</div></header>
+</div>@include('partials.pelanggan.catstrip')
+</header>
 <main class="wrap">
   <div class="page-head">
     <div><div class="crumb"><a href="{{ route('pelanggan.beranda') }}">Beranda</a><span>/</span><a href="{{ route('pelanggan.tracking') }}">Pesanan saya</a><span>/</span><span>Pembayaran</span></div><h1>Pembayaran</h1></div>
