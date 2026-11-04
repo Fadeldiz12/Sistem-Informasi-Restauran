@@ -67,7 +67,10 @@
   .logo { position: absolute; z-index: 5; top: calc(var(--k) * 24); left: calc(var(--k) * 174); width: calc(var(--k) * 300);
           display: flex; flex-direction: column; align-items: center; color: var(--cr); text-align: center; }
   .logo b { font: 800 calc(var(--k) * 28) var(--f-accent); letter-spacing: .08em; line-height: 1; }
-  .logo img { width: calc(var(--k) * 64); height: calc(var(--k) * 64); border-radius: 50%; margin-bottom: calc(var(--k) * 10); box-shadow: 0 0 0 calc(var(--k) * 3) var(--cr); }
+  /* logo di samping tulisan agar tinggi header sama seperti desain */
+  .logo { flex-direction: row !important; justify-content: center; gap: calc(var(--k) * 10); }
+  .logo img { width: calc(var(--k) * 42); height: calc(var(--k) * 42); border-radius: 50%; flex: none; box-shadow: 0 0 0 calc(var(--k) * 2) var(--cr); }
+  .logo .lt { display: flex; flex-direction: column; align-items: center; }
   .logo small { font: 600 calc(var(--k) * 10) var(--f-accent); letter-spacing: .3em; text-transform: uppercase; margin-top: calc(var(--k) * 6); opacity: .85; }
 
   /* kumpulan piring, selalu di tengah vertikal */
@@ -123,9 +126,7 @@
     .visual { position: relative; width: 100%; height: 280px; }
     .strip { left: 0; width: 100%; }
     .logo { left: 0; width: 100%; }
-    .logo img { width: 52px; height: 52px; margin-bottom: 8px; box-shadow: 0 0 0 3px var(--cr); }
-    .visual, .plates { height: 330px !important; }
-    .p1 { top: 138px !important; width: 176px !important; height: 176px !important; margin-left: -88px !important; }
+    .logo img { width: 40px; height: 40px; box-shadow: 0 0 0 2px var(--cr); }
     .plates { width: 100%; height: 280px; top: 0; transform: none; }
     .p1 { left: 50%; top: 84px; width: 230px; height: 230px; margin-left: -115px; border-width: 8px; }
     .right { position: relative; left: 0; padding: 90px 24px 40px; }
@@ -186,7 +187,7 @@
 
   <section class="visual" aria-hidden="true">
     <div class="strip"></div>
-    <div class="logo"><img src="{{ asset('images/logo-192.png') }}" alt="Logo SIM Resto"><b>SIM RESTO</b><small>Pizza &amp; Pasta House</small></div>
+    <div class="logo"><img src="{{ asset('images/logo-192.png') }}" alt="Logo SIM Resto"><span class="lt"><b>SIM RESTO</b><small>Pizza &amp; Pasta House</small></span></div>
     <div class="plates">
       <div class="plate p1"><img src="https://images.unsplash.com/photo-1595854341625-f33ee10dbf94?w=900&q=80" alt=""></div>
       <div class="plate p2"><img src="https://images.unsplash.com/photo-1593560708920-61dd98c46a4e?w=600&q=80" alt=""></div>
