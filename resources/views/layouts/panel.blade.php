@@ -21,7 +21,7 @@
       <div><div class="crumb">@yield('crumb')</div><h1>@yield('heading')</h1><div class="sub">@yield('sub')</div></div>
       <div class="tb-right">
         @yield('topbar')
-        <a class="me" href="#"><span class="av m">{{ auth()->user()->inisial() }}</span><span>{{ auth()->user()->nama }}</span></a>
+        @include('partials.profile-menu', ['trigger' => 'me'])
       </div>
     </div>
 
