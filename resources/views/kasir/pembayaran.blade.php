@@ -222,7 +222,7 @@
       <div class="tb-right">
         <label class="search"><svg class="ic"><use href="#i-search"/></svg><input placeholder="Cari…"></label>
         <button class="icon-btn" aria-label="Notifikasi"><svg class="ic"><use href="#i-bell"/></svg><span class="dot">3</span></button>
-        <a class="me" href="#"><span class="av m">BS</span><span>Bima Saputra</span></a>
+        <a class="me" href="#"><span class="av m">{{ auth()->user()->inisial() }}</span><span>{{ auth()->user()->nama }}</span></a>
       </div>
     </div>
 
@@ -278,7 +278,7 @@
   <div class="big-ic" style="background:var(--bl)"><svg class="ic"><use href="#i-logout"/></svg></div>
   <h3 style="font:700 24px var(--f-title)">Logout dari sistem?</h3>
   <p style="opacity:.75;margin:10px 28px 22px">Sesi login akan dihapus dan Anda diarahkan kembali ke halaman login.</p>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 28px 28px"><button class="btn o lg" data-close>Batal</button><a class="btn lg" href="{{ route('login') }}">Ya, Logout</a></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 28px 28px"><button class="btn o lg" data-close>Batal</button><a class="btn lg" href="#" data-logout>Ya, Logout</a></div>
 </div></div>
 <div class="toast" id="toast"><svg class="ic"><use href="#i-check"/></svg><span id="toastMsg">Tersimpan</span></div>
 
@@ -339,5 +339,6 @@
   cash.addEventListener('input', chgCalc);
   mtd.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; document.querySelectorAll('.mt').forEach(m => m.classList.toggle('on', m.dataset.mt === b.dataset.m)); });
 </script>
+@include('partials.logout')
 </body>
 </html>

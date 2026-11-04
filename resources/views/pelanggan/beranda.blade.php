@@ -266,7 +266,7 @@
     </nav>
     <div class="hd-right">
       <button class="icon-btn" aria-label="Cari menu"><svg class="ic"><use href="#i-search"/></svg></button>
-      <a class="user" href="#" id="userBtn" title="Akun · Logout"><span class="av">RA</span><span>Rina</span></a>
+      <a class="user" href="#" id="userBtn" title="Akun · Logout"><span class="av">{{ auth()->user()->inisial() }}</span><span>{{ auth()->user()->namaDepan() }}</span></a>
       <a class="btn cart" href="{{ route('pelanggan.keranjang') }}"><svg class="ic"><use href="#i-cart"/></svg><span class="txt" id="cartTotal">Rp 236.000</span><span class="count" id="cartCount">3</span></a>
     </div>
   </div>
@@ -464,12 +464,13 @@
   <div style="width:66px;height:66px;border-radius:50%;background:var(--bl);display:grid;place-items:center;margin:0 auto 14px"><svg class="ic" style="width:28px;height:28px"><use href="#i-logout"/></svg></div>
   <div style="font:700 24px var(--f-title)">Keluar dari akun?</div>
   <p style="opacity:.75;margin:10px 0 22px">Sesi login akan dihapus dan kamu kembali ke halaman login.</p>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><button class="btn" style="background:transparent;color:var(--m);box-shadow:inset 0 0 0 1.5px var(--m)" id="lgNo">Batal</button><a class="btn" href="{{ route('login') }}">Ya, Keluar</a></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><button class="btn" style="background:transparent;color:var(--m);box-shadow:inset 0 0 0 1.5px var(--m)" id="lgNo">Batal</button><a class="btn" href="#" data-logout>Ya, Keluar</a></div>
 </div></div>
 <script>
   userBtn.addEventListener('click', e => { e.preventDefault(); mLogout.classList.add('on'); });
   lgNo.addEventListener('click', () => mLogout.classList.remove('on'));
   mLogout.addEventListener('click', e => { if (e.target === mLogout) mLogout.classList.remove('on'); });
 </script>
+@include('partials.logout')
 </body>
 </html>

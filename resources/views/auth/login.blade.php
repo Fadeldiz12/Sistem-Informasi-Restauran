@@ -126,6 +126,11 @@
     .right { position: relative; left: 0; padding: 90px 24px 40px; }
     .form { width: 100%; max-width: 420px; }
   }
+
+  /* pesan error validasi */
+  .alert { margin: 0 0 18px; padding: 12px 18px; border-radius: 16px; background: var(--m); color: var(--cr);
+           font: 600 13.5px/1.45 var(--f-body); }
+  .alert ul { margin: 0; padding-left: 18px; }
 </style>
 </head>
 <body>
@@ -188,9 +193,10 @@
     <form class="form" action="{{ route('login.submit') }}" method="post">
       @csrf
       <h1>Selamat Datang Kembali!</h1>
+      @include('partials.auth-alert')
       <label class="field">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
-        <input type="email" name="email" placeholder="Email" autocomplete="email" required>
+        <input type="email" name="email" value="{{ old('email') }}" placeholder="Email" autocomplete="email" required>
       </label>
       <label class="field">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
