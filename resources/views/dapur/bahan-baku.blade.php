@@ -64,7 +64,8 @@
       @empty
         <tr><td colspan="6"><div class="empty">Belum ada bahan baku. Tambahkan bahan baku pertama.</div></td></tr>
       @endforelse
-    </tbody></table></div></div>
+    </tbody></table></div>
+    <div class="note" style="margin-top:16px"><svg class="ic"><use href="#i-info"/></svg><span>Pemakaian bahan tercatat otomatis saat tiket ditekan <b>Mulai Masak</b> (takaran resep × jumlah porsi; resep diatur admin di menu Kategori &amp; Menu). Catat Mutasi Stok dipakai untuk barang masuk, bahan rusak/terbuang, atau koreksi stok.</span></div></div>
 
   <div class="card" style="margin-top:18px"><div class="card-head" style="margin-bottom:4px"><div><h2>Riwayat Mutasi</h2><p>12 mutasi stok terbaru</p></div></div>
     <div class="riwayat">

@@ -34,6 +34,11 @@ class BahanBaku extends Model
         return $this->hasMany(MutasiBahanBaku::class, 'id_bahan');
     }
 
+    public function resep(): HasMany
+    {
+        return $this->hasMany(Resep::class, 'id_bahan');
+    }
+
     /**
      * Hitung ROP: rop = rata_pemakaian × lead_time + safety_stock.
      */

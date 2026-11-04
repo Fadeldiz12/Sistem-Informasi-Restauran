@@ -34,6 +34,14 @@ class Menu extends Model
     }
 
     /**
+     * Resep per porsi (bahan baku yang dipakai saat menu dimasak).
+     */
+    public function resep(): HasMany
+    {
+        return $this->hasMany(Resep::class, 'id_menu');
+    }
+
+    /**
      * URL foto menu. Kolom foto berisi path di disk "public" (hasil upload)
      * atau URL lengkap (data contoh).
      */

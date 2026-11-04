@@ -13,6 +13,9 @@
   $katEditId = old('_modal') === 'mKat' ? old('_id') : null;
   $filter = fn (array $ubah) => route('admin.menu', array_filter(array_merge(['kategori' => $kategoriId, 'status' => $status, 'q' => $q], $ubah)));
   $navPenuh = $navbar->count() >= Kategori::MAKS_NAVBAR;
+  $angka = fn ($n) => rtrim(rtrim(number_format((float) $n, 2, '.', ''), '0'), '.');
+  $bahanJs = $bahan->map(fn ($b) => ['id' => $b->id, 'nama' => $b->nama_bahan, 'satuan' => $b->satuan])->values();
+  $resepLama = old('_modal') === 'mMenu' ? array_values(old('resep', [])) : null;
 @endphp
 
 @push('styles')
@@ -63,6 +66,14 @@
   .switch-row { display: flex; gap: 12px; align-items: center; padding: 12px 14px; border-radius: 14px; background: var(--pp); font: 600 13.5px var(--f-body); }
   .switch-row > span { flex: 1; }
   .switch-row small { display: block; font-size: 12px; opacity: .7; font-weight: 500; }
+
+  /* resep per porsi */
+  .rs-list { display: grid; gap: 8px; }
+  .rs-row { display: grid; grid-template-columns: minmax(0, 1fr) 150px 40px; gap: 8px; align-items: center; }
+  .rs-row .ab { width: 40px; height: 40px; }
+  .rs-empty { font-size: 12.5px; opacity: .7; padding: 4px 2px; }
+  .rs-info { font-size: 12px; opacity: .65; margin-top: 2px; }
+  @media (max-width: 520px) { .rs-row { grid-template-columns: minmax(0, 1fr) 40px; } .rs-row .in:nth-child(2) { grid-column: 1; } .rs-row .ab { grid-row: 1; grid-column: 2; } }
 </style>
 @endpush
 
@@ -124,10 +135,11 @@
       <div class="tbl-wrap"><table class="tbl-stack"><thead><tr><th>Menu</th><th>Kategori</th><th>Harga</th><th>Ketersediaan</th><th>Aksi</th></tr></thead><tbody id="tbMenu">
         @forelse ($menu as $m)
           <tr data-id="{{ $m->id }}" data-url="{{ route('admin.menu.update', $m) }}" data-nama="{{ $m->nama_menu }}" data-kategori="{{ $m->id_kategori }}"
-              data-harga="{{ (int) $m->harga }}" data-tersedia="{{ $m->tersedia ? 1 : 0 }}" data-foto="{{ $m->fotoUrl() }}">
+              data-harga="{{ (int) $m->harga }}" data-tersedia="{{ $m->tersedia ? 1 : 0 }}" data-foto="{{ $m->fotoUrl() }}"
+              data-resep="{{ $m->resep->map(fn ($r) => ['id_bahan' => $r->id_bahan, 'jumlah' => $angka($r->jumlah)])->values()->toJson() }}">
             <td><div class="who">
               @if ($m->fotoUrl())<img class="thumb" src="{{ $m->fotoUrl() }}" alt="">@else<span class="av" style="border-radius:14px"><svg class="ic"><use href="#i-tag"/></svg></span>@endif
-              <div style="min-width:0"><b>{{ $m->nama_menu }}</b></div></div></td>
+              <div style="min-width:0"><b>{{ $m->nama_menu }}</b><div class="rs-info">{{ $m->resep->isEmpty() ? 'Belum ada resep' : 'Resep: '.$m->resep->count().' bahan baku' }}</div></div></div></td>
             <td><span class="pill b">{{ $m->kategori->nama_kategori }}</span></td>
             <td><b>Rp {{ number_format($m->harga, 0, ',', '.') }}</b></td>
             <td><div style="display:flex;gap:10px;align-items:center"><label class="toggle"><input type="checkbox" @checked($m->tersedia) class="js-avail" data-url="{{ route('admin.menu.tersedia', $m) }}"><i></i></label><span class="js-st">@if ($m->tersedia)<span class="pill m">Tersedia</span>@else<span class="pill p">Habis</span>@endif</span></div></td>
@@ -167,6 +179,10 @@
       </select></div></div>
       <div class="field"><label for="mnHarga">Harga</label><div class="in"><span class="suf" style="opacity:1">Rp</span><input name="harga" id="mnHarga" value="{{ old('harga') }}" inputmode="numeric" placeholder="0" required></div></div>
       <label class="switch-row full" for="mnTersedia"><span>Tersedia untuk dipesan<small>Jika dimatikan, menu ditandai Habis dan disembunyikan dari pelanggan</small></span><span class="toggle" style="flex:none"><input type="checkbox" name="tersedia" value="1" id="mnTersedia" @checked(old('_modal') === 'mMenu' ? old('tersedia') : true)><i></i></span></label>
+      <div class="field full"><label style="display:flex;justify-content:space-between;align-items:center;gap:10px">Resep per porsi<button type="button" class="btn o sm" id="rsAdd" @disabled($bahan->isEmpty())><svg class="ic" style="width:15px;height:15px"><use href="#i-plus"/></svg>Bahan</button></label>
+        <div class="rs-list" id="rsList"></div>
+        <p class="rs-empty" id="rsEmpty">{{ $bahan->isEmpty() ? 'Belum ada bahan baku. Bahan baku ditambahkan oleh staf dapur.' : 'Belum ada bahan. Tambahkan agar stok berkurang otomatis saat dapur mulai memasak.' }}</p>
+        <p style="font-size:12px;opacity:.7;margin-top:6px">Stok bahan berkurang otomatis sebanyak takaran × jumlah porsi saat dapur menekan Mulai Masak.</p></div>
     </div>
   </div>
   <div class="mf"><button type="button" class="btn o" data-close>Batal</button><button class="btn" type="submit"><svg class="ic"><use href="#i-check"/></svg>Simpan</button></div>
@@ -207,6 +223,32 @@
       mnFile.textContent = name || (url ? 'Foto saat ini' : 'Belum ada foto');
       mnBtn.textContent = url ? 'Ganti foto' : 'Pilih foto';
     }
+    /* ---------- resep */
+    var BAHAN = @json($bahanJs), rsIdx = 0;
+    function rsSatuan(row) {
+      var b = BAHAN.find(function (x) { return String(x.id) === row.querySelector('select').value; });
+      row.querySelector('.suf').textContent = b ? b.satuan : '';
+    }
+    function rsCek() { rsEmpty.hidden = rsList.children.length > 0; }
+    function rsTambah(r) {
+      r = r || {};
+      var i = rsIdx++, row = document.createElement('div'); row.className = 'rs-row';
+      var opsi = '<option value="">Pilih bahan…</option>' + BAHAN.map(function (b) {
+        return '<option value="' + b.id + '"' + (String(b.id) === String(r.id_bahan) ? ' selected' : '') + '>' + b.nama.replace(/</g, '&lt;') + '</option>';
+      }).join('');
+      row.innerHTML = '<div class="in"><select name="resep[' + i + '][id_bahan]" required aria-label="Bahan baku">' + opsi + '</select></div>'
+        + '<div class="in"><input name="resep[' + i + '][jumlah]" inputmode="decimal" placeholder="0" required aria-label="Takaran per porsi"><span class="suf"></span></div>'
+        + '<button type="button" class="ab f" title="Hapus bahan"><svg class="ic"><use href="#i-trash"/></svg></button>';
+      row.querySelector('input').value = r.jumlah || '';
+      row.querySelector('select').addEventListener('change', function () { rsSatuan(row); });
+      row.querySelector('button').addEventListener('click', function () { row.remove(); rsCek(); });
+      rsList.appendChild(row); rsSatuan(row); rsCek();
+      return row;
+    }
+    function rsIsi(list) { rsList.innerHTML = ''; (list || []).forEach(rsTambah); rsCek(); }
+    rsAdd.addEventListener('click', function () { rsTambah().querySelector('select').focus(); });
+    rsIsi(@json($resepLama));
+
     function setMode(form, edit, url, id) {
       var e = form.querySelector('.ferr'); if (e) e.remove();
       form.action = edit ? url : form.dataset.store;
@@ -220,7 +262,7 @@
     var addMenu = document.getElementById('btnAddMenu');
     addMenu && addMenu.addEventListener('click', function () {
       setMode(fMenu, false); mnTitle.textContent = 'Tambah Menu';
-      mnNama.value = ''; mnHarga.value = ''; mnTersedia.checked = true; mnFoto.value = ''; preview(null);
+      mnNama.value = ''; mnHarga.value = ''; mnTersedia.checked = true; mnFoto.value = ''; preview(null); rsIsi([]);
       openModal('mMenu');
     });
     document.addEventListener('click', function (e) {
@@ -229,6 +271,7 @@
       setMode(fMenu, true, tr.dataset.url, tr.dataset.id); mnTitle.textContent = 'Ubah Menu';
       mnNama.value = tr.dataset.nama; mnKat.value = tr.dataset.kategori; mnHarga.value = rib(tr.dataset.harga);
       mnTersedia.checked = tr.dataset.tersedia === '1'; mnFoto.value = ''; preview(tr.dataset.foto);
+      rsIsi(JSON.parse(tr.dataset.resep || '[]'));
       openModal('mMenu');
     });
     // dibuka ulang karena error validasi saat mengubah menu: tampilkan foto lamanya
