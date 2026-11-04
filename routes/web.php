@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Dapur;
 use App\Http\Controllers\Kasir;
 use App\Http\Controllers\MidtransController;
 use App\Http\Controllers\Pelanggan;
@@ -109,8 +110,15 @@ Route::middleware(['auth', 'role:'.User::ROLE_KASIR])->prefix('kasir')->name('ka
 
 // Dapur
 Route::middleware(['auth', 'role:'.User::ROLE_DAPUR])->prefix('dapur')->name('dapur.')->group(function () {
-    Route::view('/antrean', 'dapur.antrean')->name('antrean');
-    Route::view('/bahan-baku', 'dapur.bahan-baku')->name('bahan-baku');
+    Route::get('/antrean', [Dapur\AntreanController::class, 'index'])->name('antrean');
+    Route::post('/tiket/{tiket}/mulai', [Dapur\AntreanController::class, 'mulai'])->name('tiket.mulai');
+    Route::post('/tiket/{tiket}/selesai', [Dapur\AntreanController::class, 'selesai'])->name('tiket.selesai');
+
+    Route::get('/bahan-baku', [Dapur\BahanBakuController::class, 'index'])->name('bahan-baku');
+    Route::post('/bahan-baku', [Dapur\BahanBakuController::class, 'store'])->name('bahan-baku.store');
+    Route::put('/bahan-baku/{bahan}', [Dapur\BahanBakuController::class, 'update'])->name('bahan-baku.update');
+    Route::delete('/bahan-baku/{bahan}', [Dapur\BahanBakuController::class, 'destroy'])->name('bahan-baku.destroy');
+    Route::post('/mutasi', [Dapur\BahanBakuController::class, 'mutasi'])->name('mutasi.store');
 });
 
 // Kurir
