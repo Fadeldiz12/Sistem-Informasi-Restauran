@@ -56,6 +56,36 @@ class User extends Authenticatable
         return in_array($this->role, $roles, true);
     }
 
+    /**
+     * Nama route halaman utama (dashboard) sesuai role.
+     */
+    public function homeRoute(): string
+    {
+        return match ($this->role) {
+            self::ROLE_ADMIN => 'admin.dashboard',
+            self::ROLE_OWNER => 'owner.dashboard',
+            self::ROLE_KASIR => 'kasir.dashboard',
+            self::ROLE_DAPUR => 'dapur.antrean',
+            self::ROLE_KURIR => 'kurir.tugas',
+            default => 'pelanggan.beranda',
+        };
+    }
+
+    /**
+     * Inisial nama untuk avatar, contoh: "Dewi Lestari" -> "DL".
+     */
+    public function inisial(): string
+    {
+        $kata = preg_split('/\s+/', trim($this->nama)) ?: [];
+
+        return mb_strtoupper(collect($kata)->take(2)->map(fn ($k) => mb_substr($k, 0, 1))->implode(''));
+    }
+
+    public function namaDepan(): string
+    {
+        return strtok(trim($this->nama), ' ') ?: $this->nama;
+    }
+
     /** Pesanan yang dibuat pelanggan. */
     public function pesanan(): HasMany
     {

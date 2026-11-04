@@ -222,7 +222,7 @@
       <div class="tb-right">
         <label class="search"><svg class="ic"><use href="#i-search"/></svg><input placeholder="Cari…"></label>
         <button class="icon-btn" aria-label="Notifikasi"><svg class="ic"><use href="#i-bell"/></svg><span class="dot">3</span></button>
-        <a class="me" href="#"><span class="av m">BS</span><span>Bima Saputra</span></a>
+        <a class="me" href="#"><span class="av m">{{ auth()->user()->inisial() }}</span><span>{{ auth()->user()->nama }}</span></a>
       </div>
     </div>
 
@@ -279,7 +279,7 @@
   <div class="big-ic" style="background:var(--bl)"><svg class="ic"><use href="#i-logout"/></svg></div>
   <h3 style="font:700 24px var(--f-title)">Logout dari sistem?</h3>
   <p style="opacity:.75;margin:10px 28px 22px">Sesi login akan dihapus dan Anda diarahkan kembali ke halaman login.</p>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 28px 28px"><button class="btn o lg" data-close>Batal</button><a class="btn lg" href="{{ route('login') }}">Ya, Logout</a></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 28px 28px"><button class="btn o lg" data-close>Batal</button><a class="btn lg" href="#" data-logout>Ya, Logout</a></div>
 </div></div>
 <div class="toast" id="toast"><svg class="ic"><use href="#i-check"/></svg><span id="toastMsg">Tersimpan</span></div>
 
@@ -350,5 +350,6 @@
     document.querySelectorAll('.svc-p').forEach(p => p.classList.toggle('on', p.dataset.p === b.dataset.s)); });
   ['Pizza Beef Pepperoni', 'Pizza Beef Pepperoni', 'Kentang Goreng', 'Lemon Iced Tea', 'Lemon Iced Tea'].forEach(n => document.querySelector(`.mi[data-n="${n}"]`).click());
 </script>
+@include('partials.logout')
 </body>
 </html>

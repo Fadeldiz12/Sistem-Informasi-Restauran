@@ -182,7 +182,7 @@
   <nav class="mainnav"><a href="{{ route('pelanggan.beranda') }}#promo">Promo</a><a href="{{ route('pelanggan.beranda') }}#menu">Pizza</a><a href="{{ route('pelanggan.beranda') }}#menu">Pasta</a><a href="{{ route('pelanggan.beranda') }}#menu">Burger</a><a href="{{ route('pelanggan.beranda') }}#menu">Camilan</a><a href="{{ route('pelanggan.beranda') }}#menu">Minuman</a><a href="{{ route('pelanggan.beranda') }}#menu">Dessert</a></nav>
   <div class="hd-right">
     <button class="icon-btn" aria-label="Cari menu"><svg class="ic"><use href="#i-search"/></svg></button>
-    <a class="user" href="#"><span class="av">RA</span><span>Rina</span></a>
+    <a class="user" href="#"><span class="av">{{ auth()->user()->inisial() }}</span><span>{{ auth()->user()->namaDepan() }}</span></a>
     <a class="btn cart" href="{{ route('pelanggan.keranjang') }}"><svg class="ic"><use href="#i-cart"/></svg><span class="txt" id="hdTotal">Rp 0</span><span class="count" id="hdCount">0</span></a>
   </div>
 </div></header>
@@ -219,5 +219,6 @@
     <path d="M0,7 L24,9 L49,5 L76,8 L101,6 L128,10 L155,6 L183,8 L209,5 L238,9 L265,6 L292,8 L318,5 L347,9 L373,7 L400,10 L427,6 L455,8 L482,5 L510,9 L537,6 L563,8 L591,5 L618,9 L644,7 L671,10 L697,6 L725,8 L752,5 L779,9 L806,6 L833,8 L859,5 L887,9 L914,7 L941,10 L967,6 L1000,8 L1000,18 L972,16 L944,20 L917,17 L889,19 L861,15 L834,18 L806,16 L779,20 L751,17 L723,19 L696,15 L668,18 L641,16 L613,20 L585,17 L558,19 L530,15 L503,18 L476,16 L448,20 L421,17 L393,19 L366,15 L338,18 L311,16 L283,20 L256,17 L228,19 L200,15 L173,18 L146,16 L118,20 L91,17 L63,19 L36,15 L0,18 Z" fill="#E7E0D6"/></svg>
   <div class="wrap copy"><b>SIM RESTO</b><span>© 2026 SIM Resto · Jl. Gatot Subroto No. 100, Medan · 0811 6000 1234</span></div>
 </footer>
+@include('partials.logout')
 </body>
 </html>

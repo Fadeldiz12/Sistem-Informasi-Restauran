@@ -1,27 +1,41 @@
 <?php
 
+use App\Http\Controllers\Auth\AuthController;
+use App\Models\User;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| Route UI sementara (tampilan statis)
+| Umum: login, registrasi, logout
 |--------------------------------------------------------------------------
-| Route di bawah ini hanya menampilkan halaman UI (Blade) tanpa logika.
-| Nanti diganti dengan controller + middleware auth/role.
 */
 
-Route::redirect('/', '/login');
+// Halaman awal: ke dashboard sesuai role kalau sudah login, kalau belum ke login
+Route::get('/', function (Request $request) {
+    return $request->user()
+        ? redirect()->route($request->user()->homeRoute())
+        : redirect()->route('login');
+});
 
-// Umum (Auth)
-Route::view('/login', 'auth.login')->name('login');
-Route::view('/registrasi', 'auth.registrasi')->name('registrasi');
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1')->name('login.submit');
+    Route::get('/registrasi', [AuthController::class, 'showRegister'])->name('registrasi');
+    Route::post('/registrasi', [AuthController::class, 'register'])->middleware('throttle:5,1')->name('registrasi.submit');
+});
 
-// Sementara: submit form langsung diarahkan tanpa proses autentikasi
-Route::post('/login', fn () => redirect()->route('pelanggan.beranda'))->name('login.submit');
-Route::post('/registrasi', fn () => redirect()->route('login'))->name('registrasi.submit');
+Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
+
+/*
+|--------------------------------------------------------------------------
+| Halaman per role
+|--------------------------------------------------------------------------
+| Masih menampilkan UI statis (Route::view); diganti controller per tahap.
+*/
 
 // Pelanggan
-Route::name('pelanggan.')->group(function () {
+Route::middleware(['auth', 'role:'.User::ROLE_PELANGGAN])->name('pelanggan.')->group(function () {
     Route::view('/beranda', 'pelanggan.beranda')->name('beranda');
     Route::view('/keranjang', 'pelanggan.keranjang')->name('keranjang');
     Route::view('/checkout', 'pelanggan.checkout')->name('checkout');
@@ -30,7 +44,7 @@ Route::name('pelanggan.')->group(function () {
 });
 
 // Admin
-Route::prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'role:'.User::ROLE_ADMIN])->prefix('admin')->name('admin.')->group(function () {
     Route::view('/dashboard', 'admin.dashboard')->name('dashboard');
     Route::view('/pengguna', 'admin.pengguna')->name('pengguna');
     Route::view('/menu', 'admin.menu')->name('menu');
@@ -39,7 +53,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 });
 
 // Kasir
-Route::prefix('kasir')->name('kasir.')->group(function () {
+Route::middleware(['auth', 'role:'.User::ROLE_KASIR])->prefix('kasir')->name('kasir.')->group(function () {
     Route::view('/dashboard', 'kasir.dashboard')->name('dashboard');
     Route::view('/input', 'kasir.input')->name('input');
     Route::view('/online', 'kasir.online')->name('online');
@@ -47,18 +61,18 @@ Route::prefix('kasir')->name('kasir.')->group(function () {
 });
 
 // Dapur
-Route::prefix('dapur')->name('dapur.')->group(function () {
+Route::middleware(['auth', 'role:'.User::ROLE_DAPUR])->prefix('dapur')->name('dapur.')->group(function () {
     Route::view('/antrean', 'dapur.antrean')->name('antrean');
     Route::view('/bahan-baku', 'dapur.bahan-baku')->name('bahan-baku');
 });
 
 // Kurir
-Route::prefix('kurir')->name('kurir.')->group(function () {
+Route::middleware(['auth', 'role:'.User::ROLE_KURIR])->prefix('kurir')->name('kurir.')->group(function () {
     Route::view('/tugas', 'kurir.tugas')->name('tugas');
 });
 
 // Owner
-Route::prefix('owner')->name('owner.')->group(function () {
+Route::middleware(['auth', 'role:'.User::ROLE_OWNER])->prefix('owner')->name('owner.')->group(function () {
     Route::view('/dashboard', 'owner.dashboard')->name('dashboard');
     Route::view('/laporan', 'owner.laporan')->name('laporan');
     Route::view('/pengeluaran', 'owner.pengeluaran')->name('pengeluaran');

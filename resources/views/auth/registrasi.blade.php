@@ -142,6 +142,11 @@
   .agree input { accent-color: #97173A; width: 17px; height: 17px; }
   .form.reg .btn { margin-top: 18px; }
   @media (max-width: 900px), (max-aspect-ratio: 1/1) { .row2 { grid-template-columns: 1fr; } .row2 .field + .field { margin-top: 12px !important; } }
+
+  /* pesan error validasi */
+  .alert { margin: 0 0 18px; padding: 12px 18px; border-radius: 16px; background: var(--m); color: var(--cr);
+           font: 600 13.5px/1.45 var(--f-body); }
+  .alert ul { margin: 0; padding-left: 18px; }
 </style>
 </head>
 <body>
@@ -204,14 +209,15 @@
       @csrf
       <h1>Buat Akun Baru</h1>
       <p class="lead">Daftar untuk memesan menu, memilih jenis layanan, dan melacak pesananmu.</p>
+      @include('partials.auth-alert')
       <div class="row2">
-        <label class="field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg><input name="nama" placeholder="Nama lengkap" required></label>
-        <label class="field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h4l2 5-2.5 1.5a11 11 0 0 0 6 6L16 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 5a2 2 0 0 1 2-2z"/></svg><input name="hp" placeholder="Nomor HP" required></label>
+        <label class="field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg><input name="nama" value="{{ old('nama') }}" maxlength="100" placeholder="Nama lengkap" required></label>
+        <label class="field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h4l2 5-2.5 1.5a11 11 0 0 0 6 6L16 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 5a2 2 0 0 1 2-2z"/></svg><input name="hp" value="{{ old('hp') }}" maxlength="20" inputmode="tel" placeholder="Nomor HP" required></label>
       </div>
-      <label class="field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg><input type="email" name="email" placeholder="Email" required></label>
-      <label class="field ta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><textarea name="alamat" rows="2" placeholder="Alamat lengkap untuk pengantaran"></textarea></label>
+      <label class="field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg><input type="email" name="email" value="{{ old('email') }}" maxlength="100" placeholder="Email" required></label>
+      <label class="field ta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><textarea name="alamat" rows="2" placeholder="Alamat lengkap untuk pengantaran">{{ old('alamat') }}</textarea></label>
       <div class="row2">
-        <label class="field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><input type="password" name="password" placeholder="Password" required></label>
+        <label class="field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><input type="password" name="password" placeholder="Password" minlength="8" required></label>
         <label class="field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><input type="password" name="password_confirmation" placeholder="Konfirmasi password" required></label>
       </div>
       <label class="agree"><input type="checkbox" checked> Saya menyetujui syarat &amp; ketentuan</label>
