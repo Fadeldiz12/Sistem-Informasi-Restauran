@@ -227,7 +227,11 @@
                   <div style="font-size:13.5px;opacity:.75">Kurir ditugaskan setelah pesanan siap diantar.</div>
                 @endif
                 <div style="display:flex;gap:8px;font-size:13px;margin-top:12px;padding-top:12px;border-top:1.5px dashed var(--m60)"><svg class="ic"><use href="#i-pin"/></svg>{{ $kirim?->alamat }}</div>
-                <div style="display:flex;gap:10px;align-items:center;margin-top:12px;padding:10px;border-radius:14px;background:var(--pp);font-size:12.5px"><span class="stripes" style="width:40px;height:40px;border-radius:10px;flex:none"></span>{{ $kirim?->bukti_kirim ? 'Pesanan sudah diterima · bukti pengiriman tersimpan' : 'Bukti pengiriman tampil setelah pesanan diterima' }}</div></div>
+                @if ($kirim?->bukti_kirim)
+                  <a href="{{ route('pengiriman.bukti', $kirim) }}" target="_blank" rel="noopener" style="display:flex;gap:10px;align-items:center;margin-top:12px;padding:10px;border-radius:14px;background:var(--pp);font-size:12.5px"><img src="{{ route('pengiriman.bukti', $kirim) }}" alt="Foto bukti pengiriman" style="width:56px;height:56px;border-radius:10px;object-fit:cover;flex:none"><span style="flex:1"><b style="display:block;font:600 13px var(--f-title)">Bukti pengiriman</b>Diterima {{ $kirim->updated_at->translatedFormat('d M, H:i') }} · ketuk untuk memperbesar</span></a>
+                @else
+                  <div style="display:flex;gap:10px;align-items:center;margin-top:12px;padding:10px;border-radius:14px;background:var(--pp);font-size:12.5px"><span class="stripes" style="width:40px;height:40px;border-radius:10px;flex:none"></span>Foto bukti pengiriman tampil setelah pesanan diterima</div>
+                @endif</div>
             @elseif ($pesanan->jenis_layanan === Pesanan::LAYANAN_DINE_IN && $pesanan->nomor_meja)
               <div class="card soft" style="padding:16px"><div class="eyebrow" style="font-size:10px;margin-bottom:6px">Nomor meja</div><b style="font:700 28px var(--f-title)">{{ $pesanan->nomor_meja }}</b></div>
             @endif

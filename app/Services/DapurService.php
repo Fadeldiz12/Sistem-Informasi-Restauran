@@ -12,13 +12,25 @@ use Illuminate\Validation\ValidationException;
  */
 class DapurService
 {
-    public function mulaiMasak(TiketDapur $tiket): void
-    {
-        if ($tiket->status_masak !== TiketDapur::STATUS_ANTRE) {
-            throw ValidationException::withMessages(['tiket' => 'Tiket ini sudah mulai dimasak.']);
-        }
+    public function __construct(private BahanBakuService $bahan) {}
 
-        $tiket->update(['status_masak' => TiketDapur::STATUS_DIMASAK]);
+    /**
+     * Mulai masak: stok bahan baku berkurang otomatis sesuai resep menu.
+     *
+     * @return array<int, string> bahan yang stoknya tidak mencukupi (masakan tetap berjalan)
+     */
+    public function mulaiMasak(TiketDapur $tiket): array
+    {
+        return DB::transaction(function () use ($tiket) {
+            $tiket = TiketDapur::whereKey($tiket->getKey())->lockForUpdate()->firstOrFail();
+            if ($tiket->status_masak !== TiketDapur::STATUS_ANTRE) {
+                throw ValidationException::withMessages(['tiket' => 'Tiket ini sudah mulai dimasak.']);
+            }
+
+            $tiket->update(['status_masak' => TiketDapur::STATUS_DIMASAK]);
+
+            return $this->bahan->pakaiUntukPesanan($tiket->pesanan);
+        });
     }
 
     /**

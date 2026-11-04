@@ -32,9 +32,12 @@ class AntreanController extends Controller
 
     public function mulai(TiketDapur $tiket): RedirectResponse
     {
-        $this->dapur->mulaiMasak($tiket);
+        $kurang = $this->dapur->mulaiMasak($tiket);
+        $redirect = to_route('dapur.antrean', ['tiket' => $tiket->id])->with('status', $tiket->kode().' sedang dimasak · stok bahan baku dikurangi sesuai resep');
 
-        return to_route('dapur.antrean', ['tiket' => $tiket->id])->with('status', $tiket->kode().' sedang dimasak');
+        return $kurang
+            ? $redirect->with('error', 'Stok '.collect($kurang)->join(', ', ' dan ').' tidak mencukupi resep. Stok dihabiskan dan ditandai kritis, segera lakukan pemesanan ulang.')
+            : $redirect;
     }
 
     public function selesai(TiketDapur $tiket): RedirectResponse

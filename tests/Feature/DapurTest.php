@@ -12,6 +12,7 @@ use App\Models\ZonaPengiriman;
 use App\Services\PesananService;
 use Database\Seeders\BahanBakuSeeder;
 use Database\Seeders\MasterDataSeeder;
+use Database\Seeders\ResepSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Tests\TestCase;
@@ -166,5 +167,70 @@ class DapurTest extends TestCase
         $this->actingAs($this->dapur)->delete("/dapur/bahan-baku/{$b->id}")->assertSessionHas('status');
         $this->assertModelMissing($b);
         $this->assertSame(0, MutasiBahanBaku::where('id_bahan', $b->id)->count());
+    }
+
+    // ---------- resep: stok berkurang otomatis saat mulai masak
+
+    public function test_mulai_masak_mengurangi_stok_sesuai_resep(): void
+    {
+        $this->seed([BahanBakuSeeder::class, ResepSeeder::class]);
+        $menu = Menu::firstWhere('nama_menu', 'Pizza Beef Pepperoni');
+        $keju = BahanBaku::firstWhere('nama_bahan', 'Keju Mozzarella');
+        $tepung = BahanBaku::firstWhere('nama_bahan', 'Tepung Terigu');
+        $dAwal = (float) $tepung->rata_pemakaian;
+
+        $p = app(PesananService::class)->buat([['id_menu' => $menu->id, 'jumlah' => 2]], 'dine_in', kasir: $this->kasir, data: ['nomor_meja' => '01']);
+
+        $this->actingAs($this->dapur)->post("/dapur/tiket/{$p->tiketDapur->id}/mulai")
+            ->assertSessionHasNoErrors()->assertSessionMissing('error');
+
+        // 2 porsi × 0,15 kg keju, 2 × 0,25 kg tepung
+        $this->assertSame(6.2, (float) $keju->fresh()->stok);
+        $this->assertSame(41.5, (float) $tepung->fresh()->stok);
+        $this->assertGreaterThan($dAwal, (float) $tepung->fresh()->rata_pemakaian);
+        $this->assertDatabaseHas('mutasi_bahan_baku', ['id_bahan' => $keju->id, 'jenis' => MutasiBahanBaku::JENIS_PEMAKAIAN, 'jumlah' => 0.3, 'tanggal' => today()->toDateString().' 00:00:00']);
+    }
+
+    public function test_stok_tidak_cukup_tetap_boleh_masak_dan_habis(): void
+    {
+        $this->seed([BahanBakuSeeder::class, ResepSeeder::class]);
+        $menu = Menu::firstWhere('nama_menu', 'Pizza Beef Pepperoni');
+        $keju = BahanBaku::firstWhere('nama_bahan', 'Keju Mozzarella');
+        $keju->update(['stok' => 0.2]);
+
+        $p = app(PesananService::class)->buat([['id_menu' => $menu->id, 'jumlah' => 2]], 'dine_in', kasir: $this->kasir, data: ['nomor_meja' => '01']);
+
+        $this->actingAs($this->dapur)->post("/dapur/tiket/{$p->tiketDapur->id}/mulai")
+            ->assertSessionHasNoErrors()->assertSessionHas('error', fn ($m) => str_contains($m, 'Keju Mozzarella'));
+
+        $this->assertSame(TiketDapur::STATUS_DIMASAK, $p->tiketDapur->fresh()->status_masak);
+        $this->assertSame(0.0, (float) $keju->fresh()->stok);
+        $this->assertTrue($keju->fresh()->isStokKritis());
+    }
+
+    public function test_admin_mengatur_resep_menu(): void
+    {
+        $this->seed(BahanBakuSeeder::class);
+        $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+        $menu = Menu::firstWhere('nama_menu', 'Kentang Goreng');
+        $kentang = BahanBaku::firstWhere('nama_bahan', 'Kentang Beku');
+        $lemon = BahanBaku::firstWhere('nama_bahan', 'Lemon');
+        $isi = ['nama_menu' => $menu->nama_menu, 'id_kategori' => $menu->id_kategori, 'harga' => '28.000', 'tersedia' => 1];
+
+        $this->actingAs($admin)->put("/admin/menu/{$menu->id}", $isi + ['resep' => [
+            ['id_bahan' => $kentang->id, 'jumlah' => '0,2'],
+            ['id_bahan' => '', 'jumlah' => ''], // baris kosong diabaikan
+            ['id_bahan' => $lemon->id, 'jumlah' => '0.01'],
+        ]])->assertSessionHasNoErrors();
+        $this->assertSame(['0.20', '0.01'], $menu->resep()->orderBy('id')->pluck('jumlah')->all());
+
+        $this->actingAs($admin)->get('/admin/menu')->assertSee('Resep: 2 bahan baku');
+
+        // hapus satu bahan, takaran tidak valid ditolak
+        $this->actingAs($admin)->put("/admin/menu/{$menu->id}", $isi + ['resep' => [['id_bahan' => $kentang->id, 'jumlah' => '0.25']]]);
+        $this->assertSame(1, $menu->resep()->count());
+        $this->actingAs($admin)->put("/admin/menu/{$menu->id}", $isi + ['resep' => [['id_bahan' => $kentang->id, 'jumlah' => '0']]])
+            ->assertSessionHasErrors('resep.0.jumlah');
+        $this->assertSame('0.25', $menu->resep()->first()->jumlah);
     }
 }

@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\BahanBaku;
 use App\Models\Kategori;
 use App\Models\Menu;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -21,7 +23,7 @@ class MenuController extends Controller
         $q = trim((string) $request->query('q'));
 
         $menu = Menu::query()
-            ->with('kategori')
+            ->with(['kategori', 'resep'])
             ->when($kategoriId, fn ($query) => $query->where('id_kategori', $kategoriId))
             ->when($status, fn ($query) => $query->where('tersedia', $status === 'tersedia'))
             ->when($q !== '', fn ($query) => $query->where('nama_menu', 'like', "%{$q}%"))
@@ -38,15 +40,17 @@ class MenuController extends Controller
             'q' => $q,
             'totalMenu' => Menu::count(),
             'totalTersedia' => Menu::where('tersedia', true)->count(),
+            'bahan' => BahanBaku::orderBy('nama_bahan')->get(['id', 'nama_bahan', 'satuan']),
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
         $data = $this->validated($request);
+        $resep = $this->resepValid($request);
         $data['foto'] = $request->file('foto')?->store('menu', 'public');
 
-        Menu::create($data);
+        DB::transaction(fn () => $this->simpanResep(Menu::create($data), $resep));
 
         return back()->with('status', 'Menu berhasil ditambahkan.');
     }
@@ -54,13 +58,17 @@ class MenuController extends Controller
     public function update(Request $request, Menu $menu): RedirectResponse
     {
         $data = $this->validated($request);
+        $resep = $this->resepValid($request);
 
         if ($request->hasFile('foto')) {
             $this->hapusFoto($menu);
             $data['foto'] = $request->file('foto')->store('menu', 'public');
         }
 
-        $menu->update($data);
+        DB::transaction(function () use ($menu, $data, $resep) {
+            $menu->update($data);
+            $this->simpanResep($menu, $resep);
+        });
 
         return back()->with('status', 'Menu berhasil diperbarui.');
     }
@@ -108,6 +116,47 @@ class MenuController extends Controller
         $data['tersedia'] = $request->boolean('tersedia');
 
         return $data;
+    }
+
+    /**
+     * Baris resep: bahan + takaran per porsi. Baris kosong diabaikan, bahan yang sama dijumlahkan.
+     *
+     * @return array<int, float> id_bahan => jumlah
+     */
+    private function resepValid(Request $request): array
+    {
+        $baris = collect($request->input('resep', []))
+            ->filter(fn ($r) => is_array($r) && (filled($r['id_bahan'] ?? null) || filled($r['jumlah'] ?? null)))
+            ->map(fn ($r) => ['id_bahan' => $r['id_bahan'] ?? null, 'jumlah' => str_replace(',', '.', (string) ($r['jumlah'] ?? ''))])
+            ->values()->all();
+        $request->merge(['resep' => $baris]);
+
+        $request->validate([
+            'resep' => ['array', 'max:30'],
+            'resep.*.id_bahan' => ['required', 'integer', 'exists:bahan_baku,id'],
+            'resep.*.jumlah' => ['required', 'numeric', 'gt:0', 'max:99999'],
+        ], [], [
+            'resep.*.id_bahan' => 'bahan resep',
+            'resep.*.jumlah' => 'takaran resep',
+        ]);
+
+        $hasil = [];
+        foreach ($baris as $r) {
+            $hasil[(int) $r['id_bahan']] = round(($hasil[(int) $r['id_bahan']] ?? 0) + (float) $r['jumlah'], 2);
+        }
+
+        return $hasil;
+    }
+
+    /**
+     * @param  array<int, float>  $resep
+     */
+    private function simpanResep(Menu $menu, array $resep): void
+    {
+        $menu->resep()->whereNotIn('id_bahan', array_keys($resep) ?: [0])->delete();
+        foreach ($resep as $idBahan => $jumlah) {
+            $menu->resep()->updateOrCreate(['id_bahan' => $idBahan], ['jumlah' => $jumlah]);
+        }
     }
 
     private function hapusFoto(Menu $menu): void

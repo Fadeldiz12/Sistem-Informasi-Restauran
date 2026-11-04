@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\BahanBaku;
 use App\Models\MutasiBahanBaku;
+use App\Models\Pesanan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -74,6 +75,48 @@ class BahanBakuService
 
             return $mutasi;
         });
+    }
+
+    /**
+     * Pemakaian otomatis dari resep untuk satu pesanan (dipanggil saat dapur mulai memasak).
+     * Kebutuhan = jumlah porsi × takaran resep. Bila stok tidak cukup, masakan tetap boleh dibuat:
+     * stok dipakai sampai 0 (status kritis) dan nama bahannya dikembalikan sebagai peringatan.
+     *
+     * @return array<int, string> bahan yang stoknya tidak mencukupi
+     */
+    public function pakaiUntukPesanan(Pesanan $pesanan): array
+    {
+        $pesanan->loadMissing('detail.menu.resep');
+
+        $kebutuhan = [];
+        foreach ($pesanan->detail as $d) {
+            foreach ($d->menu?->resep ?? [] as $r) {
+                $kebutuhan[$r->id_bahan] = ($kebutuhan[$r->id_bahan] ?? 0) + $d->jumlah * (float) $r->jumlah;
+            }
+        }
+
+        $kurang = [];
+        DB::transaction(function () use ($kebutuhan, &$kurang) {
+            foreach ($kebutuhan as $idBahan => $butuh) {
+                $bahan = BahanBaku::whereKey($idBahan)->lockForUpdate()->first();
+                if (! $bahan) {
+                    continue;
+                }
+                $butuh = round($butuh, 2);
+                $pakai = min($butuh, (float) $bahan->stok);
+                if ($pakai < $butuh) {
+                    $kurang[] = $bahan->nama_bahan;
+                }
+                if ($pakai > 0) {
+                    $bahan->mutasi()->create(['jenis' => MutasiBahanBaku::JENIS_PEMAKAIAN, 'jumlah' => $pakai, 'tanggal' => today()]);
+                    $bahan->stok = round((float) $bahan->stok - $pakai, 2);
+                    $bahan->save();
+                }
+                $this->hitungUlang($bahan);
+            }
+        });
+
+        return $kurang;
     }
 
     public function hitungUlang(BahanBaku $bahan): BahanBaku

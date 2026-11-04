@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['id_owner', 'kategori', 'nominal', 'keterangan', 'tanggal'])]
 class Pengeluaran extends Model
 {
+    public const KATEGORI = ['Bahan baku', 'Gas', 'Utilitas', 'Gaji', 'Perawatan', 'Kemasan', 'Lainnya'];
+
     protected function casts(): array
     {
         return [
