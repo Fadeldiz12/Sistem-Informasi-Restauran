@@ -251,6 +251,24 @@
   .ovl { position: fixed; inset: 0; z-index: 100; background: rgba(40, 40, 40, .55); display: none; place-items: center; padding: 20px; }
   .ovl.on { display: grid; }
   .modal { width: min(420px, 100%); background: var(--cr); border-radius: 26px; padding: 30px 28px 26px; text-align: center; }
+
+  /* ---------- perbaikan hero di HP ---------- */
+  @media (max-width: 860px) {
+    .order { margin-top: 18px; }
+    .hero-text { padding-bottom: 8px; }
+    .hero-art { min-height: clamp(300px, 92vw, 380px); }
+    .hero-art .p1 { width: min(250px, 64vw); top: 46%; border-width: 9px; }
+    .hero-art .p2 { width: min(110px, 26vw); right: 5%; bottom: 8%; border-width: 6px; }
+    .hero-art .kt { left: 5%; top: 6%; font-size: 15px; }
+    .hero-art .stamp-note { left: 4%; bottom: 7%; transform: rotate(-3deg); }
+    .hero-art .stamp-note .stamp { padding: 10px 14px !important; }
+    .hero-art .stamp-note .stamp div:nth-child(2) { font-size: 20px !important; }
+  }
+  @media (max-width: 380px) {
+    .hero-text { padding-left: 20px; padding-right: 20px; }
+    .hero-text h1 { font-size: 30px; }
+    .hero-cta .btn { width: 100%; }
+  }
 </style>
 </head>
 <body>
