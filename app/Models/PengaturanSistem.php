@@ -19,6 +19,22 @@ class PengaturanSistem extends Model
     }
 
     /**
+     * Pajak dalam persen dari subtotal, contoh: 10 = 10%.
+     */
+    public function hitungPajak(float $subtotal): float
+    {
+        return round($subtotal * (float) $this->pajak / 100, 2);
+    }
+
+    /**
+     * Contoh: "10.00 – 22.00".
+     */
+    public function jamLabel(): string
+    {
+        return substr($this->jam_buka, 0, 5).' – '.substr($this->jam_tutup, 0, 5);
+    }
+
+    /**
      * Pengaturan sistem hanya 1 data; ambil yang pertama atau buat default.
      */
     public static function aktif(): self

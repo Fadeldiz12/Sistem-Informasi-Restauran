@@ -25,6 +25,15 @@ class ZonaPengiriman extends Model
     }
 
     /**
+     * Ongkir zona ini. Jarak pengiriman memakai radius_km zona,
+     * jadi ongkir = radius_km × tarif_per_km.
+     */
+    public function ongkir(): float
+    {
+        return $this->hitungOngkir((float) $this->radius_km);
+    }
+
+    /**
      * Hitung Ongkos Kirim: ongkir = jarak_km × tarif_per_km.
      */
     public function hitungOngkir(float $jarakKm): float

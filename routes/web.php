@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin;
 use App\Http\Controllers\Auth\AuthController;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -45,11 +46,30 @@ Route::middleware(['auth', 'role:'.User::ROLE_PELANGGAN])->name('pelanggan.')->g
 
 // Admin
 Route::middleware(['auth', 'role:'.User::ROLE_ADMIN])->prefix('admin')->name('admin.')->group(function () {
-    Route::view('/dashboard', 'admin.dashboard')->name('dashboard');
-    Route::view('/pengguna', 'admin.pengguna')->name('pengguna');
-    Route::view('/menu', 'admin.menu')->name('menu');
-    Route::view('/zona', 'admin.zona')->name('zona');
-    Route::view('/pengaturan', 'admin.pengaturan')->name('pengaturan');
+    Route::get('/dashboard', Admin\DashboardController::class)->name('dashboard');
+
+    Route::get('/pengguna', [Admin\PenggunaController::class, 'index'])->name('pengguna');
+    Route::post('/pengguna', [Admin\PenggunaController::class, 'store'])->name('pengguna.store');
+    Route::put('/pengguna/{user}', [Admin\PenggunaController::class, 'update'])->name('pengguna.update');
+    Route::delete('/pengguna/{user}', [Admin\PenggunaController::class, 'destroy'])->name('pengguna.destroy');
+
+    Route::get('/menu', [Admin\MenuController::class, 'index'])->name('menu');
+    Route::post('/menu', [Admin\MenuController::class, 'store'])->name('menu.store');
+    Route::put('/menu/{menu}', [Admin\MenuController::class, 'update'])->name('menu.update');
+    Route::patch('/menu/{menu}/tersedia', [Admin\MenuController::class, 'tersedia'])->name('menu.tersedia');
+    Route::delete('/menu/{menu}', [Admin\MenuController::class, 'destroy'])->name('menu.destroy');
+
+    Route::post('/kategori', [Admin\KategoriController::class, 'store'])->name('kategori.store');
+    Route::put('/kategori/{kategori}', [Admin\KategoriController::class, 'update'])->name('kategori.update');
+    Route::delete('/kategori/{kategori}', [Admin\KategoriController::class, 'destroy'])->name('kategori.destroy');
+
+    Route::get('/zona', [Admin\ZonaController::class, 'index'])->name('zona');
+    Route::post('/zona', [Admin\ZonaController::class, 'store'])->name('zona.store');
+    Route::put('/zona/{zona}', [Admin\ZonaController::class, 'update'])->name('zona.update');
+    Route::delete('/zona/{zona}', [Admin\ZonaController::class, 'destroy'])->name('zona.destroy');
+
+    Route::get('/pengaturan', [Admin\PengaturanController::class, 'edit'])->name('pengaturan');
+    Route::put('/pengaturan', [Admin\PengaturanController::class, 'update'])->name('pengaturan.update');
 });
 
 // Kasir
