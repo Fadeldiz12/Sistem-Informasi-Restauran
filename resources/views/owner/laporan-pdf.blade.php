@@ -30,7 +30,7 @@
 <body>
   <table class="kop" width="100%"><tr>
     <td width="64"><img src="{{ public_path('images/logo-192.png') }}" alt=""></td>
-    <td><div class="nama">{{ strtoupper(config('resto.nama', 'SIM Resto')) }}</div><div class="kecil">{{ config('resto.alamat') }}@if (config('resto.telepon')) · {{ config('resto.telepon') }}@endif</div></td>
+    <td><div class="nama">{{ strtoupper(config('resto.nama', 'Resto Flow')) }}</div><div class="kecil">{{ config('resto.alamat') }}@if (config('resto.telepon')) · {{ config('resto.telepon') }}@endif</div></td>
     <td style="text-align:right" class="kecil">Dicetak {{ now()->translatedFormat('d F Y, H:i') }}<br>oleh {{ auth()->user()?->nama }}</td>
   </tr></table>
 

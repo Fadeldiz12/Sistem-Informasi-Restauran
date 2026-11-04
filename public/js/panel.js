@@ -1,4 +1,4 @@
-/* SIM Resto — skrip bersama panel staf. Diambil dari UI REV2, disesuaikan untuk data dari server. */
+/* Resto Flow — skrip bersama panel staf. Diambil dari UI REV2, disesuaikan untuk data dari server. */
 (function () {
   var csrf = document.querySelector('meta[name="csrf-token"]').content;
   var toastEl = document.getElementById('toast');

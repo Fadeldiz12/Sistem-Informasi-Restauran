@@ -1,5 +1,5 @@
 <table>
-  <tr><td colspan="4"><b>Laporan Keuangan {{ config('resto.nama', 'SIM Resto') }}</b></td></tr>
+  <tr><td colspan="4"><b>Laporan Keuangan {{ config('resto.nama', 'Resto Flow') }}</b></td></tr>
   <tr><td colspan="4">Periode {{ $dari->translatedFormat('d F Y') }} – {{ $sampai->translatedFormat('d F Y') }}</td></tr>
   <tr><td colspan="4"></td></tr>
   <tr><th><b>Tanggal</b></th><th><b>Pendapatan</b></th><th><b>Pengeluaran</b></th><th><b>Laba</b></th></tr>

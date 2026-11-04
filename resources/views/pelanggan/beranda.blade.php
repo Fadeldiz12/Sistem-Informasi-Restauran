@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="csrf-token" content="{{ csrf_token() }}">
-<title>Beranda · SIM Resto</title>
+<title>Beranda · Resto Flow</title>
 @include('partials.favicon')
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -295,7 +295,7 @@
 
 <header>
   <div class="wrap">
-    <a class="logo" href="{{ route('pelanggan.beranda') }}"><img class="logo-mk" src="{{ asset('images/logo-192.png') }}" alt=""><span class="logo-tx"><b>SIM RESTO</b><small>PIZZA &amp; PASTA HOUSE</small></span></a>
+    <a class="logo" href="{{ route('pelanggan.beranda') }}"><img class="logo-mk" src="{{ asset('images/logo-192.png') }}" alt=""><span class="logo-tx"><b>RESTO FLOW</b><small>PIZZA &amp; PASTA HOUSE</small></span></a>
     @include('partials.pelanggan.nav')
     <div class="hd-right">
       <button class="icon-btn" aria-label="Cari menu"><svg class="ic"><use href="#i-search"/></svg></button>
@@ -438,14 +438,14 @@
     <path d="M0,7 L22,9 L45,5 L71,8 L96,6 L121,10 L149,6 L177,8 L203,5 L232,9 L258,6 L285,8 L311,5 L340,9 L366,7 L393,10 L420,6 L448,8 L475,5 L503,9 L530,6 L556,8 L584,5 L611,9 L637,7 L664,10 L690,6 L718,8 L745,5 L772,9 L799,6 L826,8 L852,5 L880,9 L907,7 L934,10 L960,6 L1000,8 L1000,19 L972,17 L944,21 L917,18 L889,20 L861,16 L834,19 L806,17 L779,21 L751,18 L723,20 L696,16 L668,19 L641,17 L613,21 L585,18 L558,20 L530,16 L503,19 L476,17 L448,21 L421,18 L393,20 L366,16 L338,19 L311,17 L283,21 L256,18 L228,20 L200,16 L173,19 L146,17 L118,21 L91,18 L63,20 L36,16 L0,19 Z" fill="#E7E0D6"/></svg>
   <div class="wrap">
     <div class="foot">
-      <div><a class="logo" href="#"><img class="logo-mk" src="{{ asset('images/logo-192.png') }}" alt=""><span class="logo-tx"><b>SIM RESTO</b><small>PIZZA &amp; PASTA HOUSE</small></span></a>
+      <div><a class="logo" href="#"><img class="logo-mk" src="{{ asset('images/logo-192.png') }}" alt=""><span class="logo-tx"><b>RESTO FLOW</b><small>PIZZA &amp; PASTA HOUSE</small></span></a>
         <p>Pesan pizza, pasta, dan menu favorit lainnya untuk Delivery, Take Away, atau Dine In.</p>
         <div class="hours"><small>JAM OPERASIONAL</small><b>10.00 – 22.00</b></div></div>
       <div><h4>Menu</h4><ul><li><a href="#">Pizza</a></li><li><a href="#">Pasta</a></li><li><a href="#">Burger</a></li><li><a href="#">Camilan</a></li><li><a href="#">Minuman</a></li></ul></div>
       <div><h4>Layanan</h4><ul><li><a href="#">Delivery</a></li><li><a href="#">Take Away</a></li><li><a href="#">Dine In</a></li><li><a href="{{ route('pelanggan.tracking') }}">Lacak Pesanan</a></li><li><a href="#">Zona Pengiriman</a></li></ul></div>
       <div><h4>Bantuan</h4><ul><li><a href="#">Pertanyaan Umum</a></li><li><a href="#">Cara Pembayaran</a></li><li><a href="#">Syarat &amp; Ketentuan</a></li><li><a href="#">0811 6000 1234</a></li></ul></div>
     </div>
-    <div class="copy"><span>© 2026 SIM Resto. Semua hak dilindungi.</span><span>Jl. Gatot Subroto No. 100, Medan</span></div>
+    <div class="copy"><span>© {{ date('Y') }} {{ config('resto.nama') }}. Semua hak dilindungi.</span><span>Jl. Gatot Subroto No. 100, Medan</span></div>
   </div>
 </footer>
 

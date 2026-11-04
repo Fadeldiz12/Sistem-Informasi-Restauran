@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Masuk · SIM Resto</title>
+<title>Masuk · Resto Flow</title>
 @include('partials.favicon')
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -187,7 +187,7 @@
 
   <section class="visual" aria-hidden="true">
     <div class="strip"></div>
-    <div class="logo"><img src="{{ asset('images/logo-192.png') }}" alt="Logo SIM Resto"><span class="lt"><b>SIM RESTO</b><small>Pizza &amp; Pasta House</small></span></div>
+    <div class="logo"><img src="{{ asset('images/logo-192.png') }}" alt="Logo Resto Flow"><span class="lt"><b>RESTO FLOW</b><small>Pizza &amp; Pasta House</small></span></div>
     <div class="plates">
       <div class="plate p1"><img src="https://images.unsplash.com/photo-1595854341625-f33ee10dbf94?w=900&q=80" alt=""></div>
       <div class="plate p2"><img src="https://images.unsplash.com/photo-1593560708920-61dd98c46a4e?w=600&q=80" alt=""></div>
