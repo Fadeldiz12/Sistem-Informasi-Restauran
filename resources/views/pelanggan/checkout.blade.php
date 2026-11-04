@@ -191,6 +191,13 @@
   .zone-opt:has(input:checked) { box-shadow: inset 0 0 0 2px var(--m); background: var(--pp); }
   .ro { opacity: .8; }
   .btn[disabled] { opacity: .5; cursor: not-allowed; }
+  @media (max-width: 640px) {
+    #svc.svc-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 8px; }
+    #svc .svc-opt { padding: 12px 10px; }
+    #svc .svc-opt small { display: none; }
+    #svc .svc-opt b { font-size: 14px; margin-top: 8px; }
+    #svc .svc-opt .ico { width: 36px; height: 36px; }
+  }
   .mi .ph-none { width: 48px; height: 48px; border-radius: 12px; display: grid; place-items: center; background: var(--bl); flex: none; }
 </style>
 @endpush

@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Struk {{ $pesanan->kode() }} · SIM Resto</title>
+@include('partials.favicon')
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=Raleway:wght@700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
 <style>
   :root { --m: #97173A; --cr: #F8F5E6; --m60: rgba(151, 23, 58, .6); --f-title: 'Poppins', sans-serif; --f-accent: 'Raleway', sans-serif; --f-body: 'Open Sans', sans-serif; }

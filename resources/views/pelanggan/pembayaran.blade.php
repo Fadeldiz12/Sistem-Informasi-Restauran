@@ -227,10 +227,10 @@
                 <div class="qris-box">
                   @if ($bayar->qris_url)<img src="{{ $bayar->qris_url }}" alt="Kode QRIS pembayaran">@endif
                   <ol class="langkah" style="flex:1;min-width:220px">
-                    <li>Buka aplikasi m-banking atau e-wallet (GoPay, OVO, DANA, ShopeePay, dll.).</li>
-                    <li>Pilih menu bayar / scan QRIS, lalu scan kode di samping.</li>
-                    <li>Pastikan nominal {{ $rp($bayar->jumlah) }}, lalu konfirmasi.</li>
-                    <li>Halaman ini berubah otomatis setelah pembayaran diterima.</li>
+                    <li><span>Buka aplikasi m-banking atau e-wallet (GoPay, OVO, DANA, ShopeePay, dll.).</span></li>
+                    <li><span>Pilih menu bayar / scan QRIS, lalu scan kode di samping.</span></li>
+                    <li><span>Pastikan nominal {{ $rp($bayar->jumlah) }}, lalu konfirmasi.</span></li>
+                    <li><span>Halaman ini berubah otomatis setelah pembayaran diterima.</span></li>
                   </ol>
                 </div>
               @else
@@ -238,14 +238,14 @@
                   <div style="min-width:0"><div class="eyebrow" style="font-size:10.5px">Nomor Virtual Account · {{ $bank[$bayar->bank] ?? strtoupper($bayar->bank) }}</div><div class="va-no" id="noVa">{{ $bayar->nomor_va }}</div><small style="font-size:12.5px;opacity:.72">a.n. {{ config('resto.nama') }} · {{ $rp($bayar->jumlah) }}</small></div>
                   <button class="btn o sm" type="button" id="salin">Salin</button></div></div></div>
                 <ol class="langkah">
-                  <li>Buka m-banking / ATM / internet banking {{ $bank[$bayar->bank] ?? '' }}.</li>
-                  <li>Pilih menu <b>Transfer → Virtual Account</b>, lalu masukkan nomor di atas.</li>
-                  <li>Periksa nama dan nominal {{ $rp($bayar->jumlah) }}, lalu konfirmasi.</li>
-                  <li>Halaman ini berubah otomatis setelah pembayaran diterima.</li>
+                  <li><span>Buka m-banking / ATM / internet banking {{ $bank[$bayar->bank] ?? '' }}.</span></li>
+                  <li><span>Pilih menu <b>Transfer → Virtual Account</b>, lalu masukkan nomor di atas.</span></li>
+                  <li><span>Periksa nama dan nominal {{ $rp($bayar->jumlah) }}, lalu konfirmasi.</span></li>
+                  <li><span>Halaman ini berubah otomatis setelah pembayaran diterima.</span></li>
                 </ol>
               @endif
-              <div class="state" style="margin:0;align-items:center"><span class="tunggu"><i></i>Menunggu pembayaran…</span>
-                @if ($bayar->kedaluwarsa_pada)<span style="margin-left:auto;font-size:13px">Berlaku <b id="sisa" data-sampai="{{ $bayar->kedaluwarsa_pada->toIso8601String() }}">-</b></span>@endif</div>
+              <div class="state" style="margin:0;align-items:center;flex-wrap:wrap"><span class="tunggu"><i></i>Menunggu pembayaran…</span>
+                @if ($bayar->kedaluwarsa_pada)<span style="margin-left:auto;font-size:13px;white-space:nowrap">Berlaku <b id="sisa" data-sampai="{{ $bayar->kedaluwarsa_pada->toIso8601String() }}">-</b></span>@endif</div>
               @if ($sandbox)
                 <div class="note"><svg class="ic"><use href="#i-info"/></svg><span>Mode uji coba (sandbox): tidak ada uang sungguhan. Bayar lewat <a href="https://simulator.sandbox.midtrans.com/" target="_blank" rel="noopener" style="text-decoration:underline;font-weight:700">simulator Midtrans</a> dengan {{ $bayar->metode === Pembayaran::METODE_QRIS ? 'menyalin URL gambar QRIS' : 'nomor VA di atas' }}.</span></div>
               @endif

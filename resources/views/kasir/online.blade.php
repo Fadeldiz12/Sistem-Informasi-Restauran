@@ -41,7 +41,7 @@
         <div class="stamp-out"><div class="stamp" style="padding:18px 24px"><div class="eyebrow">Detail pesanan online</div><div style="font:700 26px var(--f-title);margin-top:4px">{{ $pesanan->kode() }}</div><div style="font-size:12.5px;opacity:.7">Masuk {{ $pesanan->waktu_pesan->format('H:i') }} · {{ $pesanan->waktu_pesan->translatedFormat('l, j M Y') }}</div></div></div>
         <div style="display:grid;gap:8px;justify-items:end"><span class="pill b">Menunggu Konfirmasi</span><span class="pill m">@if ($pesanan->isDelivery())<svg class="ic" style="width:13px;height:13px"><use href="#i-truck"/></svg>@endif{{ $pesanan->layananDetail() }}</span></div></div>
       <div class="grid split" style="grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);padding:20px 24px">
-        <div><div class="eyebrow" style="margin-bottom:6px">Menu dipesan</div><table>
+        <div><div class="eyebrow" style="margin-bottom:6px">Menu dipesan</div><table class="plain" style="width:100%">
           @foreach ($pesanan->detail as $d)
             <tr><td><b>{{ $d->menu->nama_menu }}</b><div style="font-size:12px;opacity:.6">Catatan: {{ $d->catatan ?: '-' }}</div></td><td>{{ $d->jumlah }}×</td><td style="text-align:right"><b>{{ $rp($d->subtotal) }}</b></td></tr>
           @endforeach

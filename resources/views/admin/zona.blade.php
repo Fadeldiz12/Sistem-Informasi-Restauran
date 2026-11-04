@@ -35,7 +35,7 @@
 
   <div class="grid" style="margin-top:18px">
     <div class="card"><div class="card-head"><div><h2>Daftar Zona Pengiriman</h2><p>Ongkir = radius zona × tarif per km</p></div><button class="btn" id="btnAdd"><svg class="ic"><use href="#i-plus"/></svg>Tambah Zona</button></div>
-      <div class="tbl-wrap"><table><thead><tr><th>Zona</th><th>Jarak</th><th>Tarif per km</th><th>Ongkir</th><th>Penggunaan</th><th>Aksi</th></tr></thead><tbody>
+      <div class="tbl-wrap"><table class="tbl-stack"><thead><tr><th>Zona</th><th>Jarak</th><th>Tarif per km</th><th>Ongkir</th><th>Penggunaan</th><th>Aksi</th></tr></thead><tbody>
         @forelse ($baris as $i => $b)
           <tr data-id="{{ $b['z']->id }}" data-url="{{ route('admin.zona.update', $b['z']) }}" data-nama="{{ $b['z']->nama_zona }}" data-radius="{{ (float) $b['z']->radius_km }}" data-tarif="{{ (int) $b['z']->tarif_per_km }}">
             <td><div class="who"><span @class(['av', 'm' => $i % 2 === 1]) style="font-size:15px">{{ mb_substr($singkat($b['z']), 0, 2) }}</span><b>{{ $b['z']->nama_zona }}</b></div></td>

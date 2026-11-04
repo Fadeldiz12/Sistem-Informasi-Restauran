@@ -5,7 +5,7 @@
   $set = \App\Models\PengaturanSistem::aktif();
 @endphp
 <div class="struk">
-  <div style="text-align:center"><b style="font:700 22px var(--f-title)">{{ mb_strtoupper(config('resto.nama')) }}</b><div style="font-size:11.5px;opacity:.7">{{ config('resto.alamat') }}</div><div style="font-size:11.5px;opacity:.7">{{ config('resto.telepon') }}</div></div>
+  <div style="text-align:center"><img src="{{ asset('images/logo-192.png') }}" alt="" width="52" height="52" style="border-radius:50%;display:block;margin:0 auto 6px"><b style="font:700 22px var(--f-title)">{{ mb_strtoupper(config('resto.nama')) }}</b><div style="font-size:11.5px;opacity:.7">{{ config('resto.alamat') }}</div><div style="font-size:11.5px;opacity:.7">{{ config('resto.telepon') }}</div></div>
   <div class="sl"></div>
   <div class="sr"><span class="mut">No. pesanan</span><span>{{ $pesanan->kode() }}</span></div>
   <div class="sr"><span class="mut">Layanan</span><span>{{ $pesanan->layananDetail() }}</span></div>

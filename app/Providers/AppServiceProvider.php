@@ -9,6 +9,7 @@ use App\Models\Pesanan;
 use App\Models\User;
 use App\Models\ZonaPengiriman;
 use App\Support\Keranjang;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -27,6 +28,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Aplikasi berbahasa Indonesia: tanggal & pesan validasi selalu Bahasa Indonesia,
+        // walaupun APP_LOCALE di .env lama masih "en".
+        app()->setLocale('id');
+        Carbon::setLocale('id');
+
         // Jam operasional di sidebar semua panel staf
         View::composer('partials.panel.hours', function ($view) {
             $view->with('jamOperasional', PengaturanSistem::aktif()->jamLabel());
