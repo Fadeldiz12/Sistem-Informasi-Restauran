@@ -1,12 +1,8 @@
-<!doctype html>
-<html lang="id">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Checkout · SIM Resto</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Raleway:wght@600;700;800&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+@extends('layouts.pelanggan')
+
+@section('title', 'Checkout')
+
+@push('styles')
 <style>
   /* =========================================================
      PALET & FONT (sama dengan beranda)
@@ -171,51 +167,35 @@
   .modal .bot { padding: 0 28px 28px; display: grid; gap: 10px; }
   @media (max-width: 760px) { .svc-grid, .grid2 { grid-template-columns: 1fr; } }
 </style>
-</head>
-<body>
-<svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
-  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></symbol>
-  <symbol id="i-truck" viewBox="0 0 24 24"><path d="M2 6h11v10H2zM13 9h4l4 4v3h-8"/><circle cx="6" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></symbol>
-  <symbol id="i-bag" viewBox="0 0 24 24"><path d="M5 8h14l-1 13H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></symbol>
-  <symbol id="i-dine" viewBox="0 0 24 24"><path d="M6 3v7a2 2 0 0 0 4 0V3M8 12v9"/><path d="M17 3c-2.2 2-2.2 6.5 0 8.5V21"/></symbol>
-  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></symbol>
-  <symbol id="i-cart" viewBox="0 0 24 24"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2 3h3l2.6 12.2a1 1 0 0 0 1 .8h9.6a1 1 0 0 0 1-.8L21 7H6"/></symbol>
-  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
-  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
-  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol>
-  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></symbol>
-  <symbol id="i-arr" viewBox="0 0 24 24"><path d="M4 12h16M14 6l6 6-6 6"/></symbol>
-  <symbol id="i-arrl" viewBox="0 0 24 24"><path d="M20 12H4M10 6l-6 6 6 6"/></symbol>
-  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></symbol>
-  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/></symbol>
-  <symbol id="i-tag" viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="7.5" r="1.4"/></symbol>
-  <symbol id="i-receipt" viewBox="0 0 24 24"><path d="M5 3h14v18l-2.5-1.5L14 21l-2-1.5L10 21l-2.5-1.5L5 21z"/><path d="M9 8h6M9 12h6"/></symbol>
-  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 0 1 5 0c0 1.7-2.5 2-2.5 4M12 17h.01"/></symbol>
-  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></symbol>
-  <symbol id="i-phone" viewBox="0 0 24 24"><path d="M5 3h4l2 5-2.5 1.5a11 11 0 0 0 6 6L16 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 5a2 2 0 0 1 2-2z"/></symbol>
-  <symbol id="i-card" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></symbol>
-  <symbol id="i-cash" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.8"/></symbol>
-  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v4h16v-4"/></symbol>
-  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/></symbol>
-  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></symbol>
-  <symbol id="i-logout" viewBox="0 0 24 24"><path d="M15 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4"/><path d="M10 17l-5-5 5-5M5 12h11"/></symbol>
-  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></symbol>
-</svg>
-<div class="topbar"><div class="wrap">
-  <span><svg class="ic"><use href="#i-clock"/></svg>Buka hari ini 10.00 – 22.00 · Delivery tersedia untuk Zona A, B, C</span>
-  <nav><a href="{{ route('pelanggan.tracking') }}"><svg class="ic"><use href="#i-receipt"/></svg>Lacak Pesanan</a><a href="#"><svg class="ic"><use href="#i-help"/></svg>Bantuan</a></nav>
-</div></div>
-<header><div class="wrap">
-  <a class="logo" href="{{ route('pelanggan.beranda') }}"><b>SIM RESTO</b><small>PIZZA &amp; PASTA HOUSE</small></a>
-  @include('partials.pelanggan.nav')
-  <div class="hd-right">
-    <button class="icon-btn" aria-label="Cari menu"><svg class="ic"><use href="#i-search"/></svg></button>
-    @include('partials.profile-menu', ['trigger' => 'user'])
-    <a class="btn cart" href="{{ route('pelanggan.keranjang') }}"><svg class="ic"><use href="#i-cart"/></svg><span class="txt" id="hdTotal">Rp 236.000</span><span class="count" id="hdCount">5</span></a>
-  </div>
-</div>@include('partials.pelanggan.catstrip')
-</header>
+@endpush
+
+@use('App\Models\Pesanan')
+@php
+  $persen = fn ($v) => \App\Models\PengaturanSistem::persen($v);
+  $rp = fn ($n) => 'Rp '.number_format((float) $n, 0, ',', '.');
+  $layanan = old('jenis_layanan', Pesanan::LAYANAN_DELIVERY);
+  $zonaDipilih = (int) old('id_zona', $zona->first()?->id);
+  $u = auth()->user();
+  $prevRadius = 0;
+@endphp
+
+@push('styles')
+<style>
+  .zones { display: grid; gap: 8px; margin-top: 14px; }
+  .zone-opt { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 16px; box-shadow: inset 0 0 0 1.5px var(--m15); cursor: pointer; background: var(--cr); }
+  .zone-opt:hover { box-shadow: inset 0 0 0 1.5px var(--m); }
+  .zone-opt input { accent-color: #97173A; width: 18px; height: 18px; flex: none; }
+  .zone-opt .zn { flex: 1; min-width: 0; }
+  .zone-opt .zn b { display: block; font: 700 15px var(--f-title); }
+  .zone-opt .zn small { font-size: 12.5px; opacity: .7; }
+  .zone-opt:has(input:checked) { box-shadow: inset 0 0 0 2px var(--m); background: var(--pp); }
+  .ro { opacity: .8; }
+  .btn[disabled] { opacity: .5; cursor: not-allowed; }
+  .mi .ph-none { width: 48px; height: 48px; border-radius: 12px; display: grid; place-items: center; background: var(--bl); flex: none; }
+</style>
+@endpush
+
+@section('content')
 <main class="wrap">
   <div class="page-head">
     <div><div class="crumb"><a href="{{ route('pelanggan.beranda') }}">Beranda</a><span>/</span><a href="{{ route('pelanggan.keranjang') }}">Keranjang</a><span>/</span><span>Checkout</span></div><h1>Checkout</h1></div>
@@ -223,114 +203,130 @@
       <div class="s now"><span class="n">2</span><span>Checkout</span></div><div class="line"></div><div class="s next"><span class="n">3</span><span>Pembayaran</span></div></div>
   </div>
 
-  <div class="layout">
-    <div>
-      <!-- 1. Jenis layanan -->
-      <section class="card sec">
-        <div class="sec-title"><span class="no">1</span><div><h2>Pilih jenis layanan</h2><p>Isian di bawah menyesuaikan layanan yang dipilih.</p></div></div>
-        <div class="svc-grid" id="svc">
-          <button class="svc-opt" data-svc="dinein"><div class="top"><span class="ico"><svg class="ic"><use href="#i-dine"/></svg></span><span class="rad"></span></div><b>Dine In</b><small>Makan di restoran</small></button>
-          <button class="svc-opt" data-svc="takeaway"><div class="top"><span class="ico"><svg class="ic"><use href="#i-bag"/></svg></span><span class="rad"></span></div><b>Take Away</b><small>Ambil sendiri di kasir</small></button>
-          <button class="svc-opt on" data-svc="delivery"><div class="top"><span class="ico"><svg class="ic"><use href="#i-truck"/></svg></span><span class="rad"></span></div><b>Delivery</b><small>Diantar kurir, ongkir sesuai zona</small></button>
-        </div>
+  @if (! $buka)
+    <div class="flash" role="alert">Restoran sedang tutup. Pesanan bisa dibuat pada jam {{ $pengaturan->jamLabel() }}.</div>
+  @endif
+  @if (session('error'))<div class="flash" role="alert">{{ session('error') }}</div>@endif
+  @if ($errors->any())
+    <div class="flash" role="alert">@if ($errors->count() === 1){{ $errors->first() }}@else<ul>@foreach ($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>@endif</div>
+  @endif
 
-        <div class="svc-panel" data-panel="dinein">
-          <div class="grid2"><div class="field"><label>Nomor meja</label><div class="in"><svg class="ic"><use href="#i-dine"/></svg><input value="07" placeholder="Contoh: 07"></div></div>
-            <div class="field"><label>Jumlah tamu</label><div class="in"><svg class="ic"><use href="#i-user"/></svg><input value="2 orang"></div></div></div>
-          <div class="note" style="margin-top:14px"><svg class="ic"><use href="#i-info"/></svg>Nomor meja tertera di sudut meja. Pesanan langsung masuk antrean dapur setelah dikonfirmasi kasir.</div>
-        </div>
-
-        <div class="svc-panel" data-panel="takeaway">
-          <div class="field"><label>Waktu pengambilan</label>
-            <div class="chips" id="pickChips"><button class="on">Secepatnya (± 20 mnt)</button><button>12.30</button><button>13.00</button><button>13.30</button><button>Pilih jam lain</button></div></div>
-          <div class="note" style="margin-top:14px"><svg class="ic"><use href="#i-info"/></svg>Ambil pesanan di kasir dengan menyebutkan nomor pesanan.</div>
-        </div>
-
-        <div class="svc-panel on" data-panel="delivery">
-          <div class="field"><label>Alamat pengiriman</label><div class="in ta"><svg class="ic" style="margin-top:2px"><use href="#i-pin"/></svg><textarea>Jl. Sei Batang Hari No. 27, Kel. Babura, Kec. Medan Sunggal, Medan</textarea></div></div>
-          <div class="chips"><button class="on">Pakai alamat profil</button><button>Alamat lain</button></div>
-          <div class="stamp-out"><div class="stamp zone">
-            <div><div class="eyebrow" style="font-size:10.5px">Zona terdeteksi otomatis</div><div class="z">Zona B</div><small>Jarak ± 4,2 km · estimasi tiba 35–45 menit</small></div>
-            <span class="kt">Rp 15.000</span></div></div>
-        </div>
-      </section>
-
-      <!-- 2. Data pemesan -->
-      <section class="card sec">
-        <div class="sec-title"><span class="no">2</span><div><h2>Data pemesan</h2><p>Diambil dari profil akunmu.</p></div></div>
-        <div class="grid2">
-          <div class="field"><label>Nama</label><div class="in"><svg class="ic"><use href="#i-user"/></svg><input value="Rina Amalia"></div></div>
-          <div class="field"><label>Nomor HP</label><div class="in"><svg class="ic"><use href="#i-phone"/></svg><input value="0812 6543 2109"></div></div>
-        </div>
-        <div class="field" style="margin-top:16px"><label>Catatan pesanan (opsional)</label><div class="in ta"><textarea placeholder="Contoh: tolong telepon saat sampai"></textarea></div></div>
-      </section>
-
-      <!-- 3. Pembayaran (info) -->
-      <section class="card sec soft">
-        <div class="sec-title" style="margin-bottom:12px"><span class="no" style="background:var(--bl);color:var(--m)">3</span><div><h2>Pembayaran</h2><p>Dilakukan setelah pesanan dibuat.</p></div></div>
-        <div class="note"><svg class="ic"><use href="#i-shield"/></svg><span>Setelah konfirmasi, pesanan tersimpan dengan status <b>Menunggu Pembayaran</b>. Kamu bisa bayar tunai atau transfer lalu unggah bukti transfer.</span></div>
-      </section>
-    </div>
-
-    <aside class="summary">
-      <div class="sum-card">
-        <div class="sum-body">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><span class="eyebrow">Ringkasan pesanan</span><a href="{{ route('pelanggan.keranjang') }}" style="font:700 13px var(--f-accent);text-decoration:underline">Ubah</a></div>
-          <div class="mini">
-          <div class="mi"><img src="https://images.unsplash.com/photo-1534308983496-4fabb1a015ee?w=500&q=80" alt=""><div><b>Pizza Beef Pepperoni</b><span>1 × Rp 109.000 · Potong 12</span></div><span class="p">Rp 109.000</span></div>
-          <div class="mi"><img src="https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=500&q=80" alt=""><div><b>Penne Bolognese</b><span>1 × Rp 59.000</span></div><span class="p">Rp 59.000</span></div>
-          <div class="mi"><img src="https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=500&q=80" alt=""><div><b>Lemon Iced Tea</b><span>2 × Rp 18.000 · Es sedikit</span></div><span class="p">Rp 36.000</span></div>
-          <div class="mi"><img src="https://images.unsplash.com/photo-1624353365286-3f8d62daad51?w=500&q=80" alt=""><div><b>Choco Brownie Ice Cream</b><span>1 × Rp 32.000</span></div><span class="p">Rp 32.000</span></div>
+  <form method="post" action="{{ route('pelanggan.checkout.store') }}" id="fCheckout">
+    @csrf
+    <input type="hidden" name="jenis_layanan" id="jenisLayanan" value="{{ $layanan }}">
+    <div class="layout">
+      <div>
+        <!-- 1. Jenis layanan -->
+        <section class="card sec">
+          <div class="sec-title"><span class="no">1</span><div><h2>Pilih jenis layanan</h2><p>Isian di bawah menyesuaikan layanan yang dipilih.</p></div></div>
+          <div class="svc-grid" id="svc">
+            <button type="button" @class(['svc-opt', 'on' => $layanan === Pesanan::LAYANAN_DINE_IN]) data-svc="{{ Pesanan::LAYANAN_DINE_IN }}"><div class="top"><span class="ico"><svg class="ic"><use href="#i-dine"/></svg></span><span class="rad"></span></div><b>Dine In</b><small>Makan di restoran</small></button>
+            <button type="button" @class(['svc-opt', 'on' => $layanan === Pesanan::LAYANAN_TAKE_AWAY]) data-svc="{{ Pesanan::LAYANAN_TAKE_AWAY }}"><div class="top"><span class="ico"><svg class="ic"><use href="#i-bag"/></svg></span><span class="rad"></span></div><b>Take Away</b><small>Ambil sendiri di kasir</small></button>
+            <button type="button" @class(['svc-opt', 'on' => $layanan === Pesanan::LAYANAN_DELIVERY]) data-svc="{{ Pesanan::LAYANAN_DELIVERY }}" @disabled($zona->isEmpty())><div class="top"><span class="ico"><svg class="ic"><use href="#i-truck"/></svg></span><span class="rad"></span></div><b>Delivery</b><small>{{ $zona->isEmpty() ? 'Belum tersedia' : 'Diantar kurir, ongkir sesuai zona' }}</small></button>
           </div>
-          <div class="hr"></div>
-          <div class="sum-row"><span>Subtotal (5 item)</span><span>Rp 236.000</span></div>
-          <div class="sum-row"><span>Pajak (10%)</span><span>Rp 23.600</span></div>
-          <div class="sum-row"><span>Biaya layanan (5%)</span><span>Rp 11.800</span></div>
-          <div class="sum-row" id="ongRow"><span>Ongkos kirim (<span id="ongZone">Zona B</span>)</span><span id="ongVal">Rp 15.000</span></div>
-        </div>
-        <div class="sum-total">
-          <div class="t"><div><span class="eyebrow" style="opacity:.8">Total pembayaran</span><div style="margin-top:8px"><span class="pill b" id="svcBadge">Delivery</span></div></div><b id="grand">Rp 286.400</b></div>
-          <button class="btn cr blk" id="btnConfirm">Konfirmasi Pesanan <svg class="ic"><use href="#i-check"/></svg></button>
-          <small>Dengan menekan tombol ini, pesanan disimpan dan diteruskan ke kasir</small>
-        </div>
-      </div>
-      <a class="btn o blk" href="{{ route('pelanggan.keranjang') }}"><svg class="ic"><use href="#i-arrl"/></svg>Kembali ke Keranjang</a>
-    </aside>
-  </div>
-</main>
 
-<div class="ovl" id="ovl"><div class="modal">
-  <div class="top stripes" style="padding:0"><div style="padding:34px 28px 22px;background:linear-gradient(transparent,transparent)"><div class="stamp-out" style="display:inline-block"><div class="stamp" style="padding:24px 34px">
-    <div class="ok"><svg class="ic" style="width:36px;height:36px;stroke-width:2.6"><use href="#i-check"/></svg></div><h3>Pesanan Dibuat!</h3></div></div></div></div>
-  <div style="padding:22px 28px 6px"><div class="eyebrow" style="opacity:.7">Nomor pesanan</div><div class="ord">ORD-20261102-0143</div>
-    <span class="pill b" style="font-size:13px;padding:7px 14px">Menunggu Pembayaran</span>
-    <p style="font:500 14px var(--f-body);opacity:.75;margin:14px 0 18px">Selesaikan pembayaran agar pesanan dikonfirmasi kasir dan diteruskan ke dapur.</p></div>
-  <div class="bot"><a class="btn blk" href="{{ route('pelanggan.pembayaran') }}">Bayar Sekarang <svg class="ic"><use href="#i-arr"/></svg></a><a class="btn o blk" href="{{ route('pelanggan.beranda') }}">Kembali ke Beranda</a></div>
-</div></div>
-<footer>
-  <svg class="torn" viewBox="0 0 1000 24" preserveAspectRatio="none" aria-hidden="true"><rect width="1000" height="12" fill="#F8F5E6"/><rect y="12" width="1000" height="12" fill="#97173A"/>
-    <path d="M0,7 L24,9 L49,5 L76,8 L101,6 L128,10 L155,6 L183,8 L209,5 L238,9 L265,6 L292,8 L318,5 L347,9 L373,7 L400,10 L427,6 L455,8 L482,5 L510,9 L537,6 L563,8 L591,5 L618,9 L644,7 L671,10 L697,6 L725,8 L752,5 L779,9 L806,6 L833,8 L859,5 L887,9 L914,7 L941,10 L967,6 L1000,8 L1000,18 L972,16 L944,20 L917,17 L889,19 L861,15 L834,18 L806,16 L779,20 L751,17 L723,19 L696,15 L668,18 L641,16 L613,20 L585,17 L558,19 L530,15 L503,18 L476,16 L448,20 L421,17 L393,19 L366,15 L338,18 L311,16 L283,20 L256,17 L228,19 L200,15 L173,18 L146,16 L118,20 L91,17 L63,19 L36,15 L0,18 Z" fill="#E7E0D6"/></svg>
-  <div class="wrap copy"><b>SIM RESTO</b><span>© 2026 SIM Resto · Jl. Gatot Subroto No. 100, Medan · 0811 6000 1234</span></div>
-</footer>
+          <div @class(['svc-panel', 'on' => $layanan === Pesanan::LAYANAN_DINE_IN]) data-panel="{{ Pesanan::LAYANAN_DINE_IN }}">
+            <div class="field"><label for="meja">Nomor meja</label><div class="in"><svg class="ic"><use href="#i-dine"/></svg><input id="meja" name="nomor_meja" value="{{ old('nomor_meja') }}" maxlength="10" placeholder="Contoh: 07"></div></div>
+            <div class="note" style="margin-top:14px"><svg class="ic"><use href="#i-info"/></svg>Nomor meja tertera di sudut meja. Pesanan masuk antrean dapur setelah dikonfirmasi kasir.</div>
+          </div>
+
+          <div @class(['svc-panel', 'on' => $layanan === Pesanan::LAYANAN_TAKE_AWAY]) data-panel="{{ Pesanan::LAYANAN_TAKE_AWAY }}">
+            <div class="note"><svg class="ic"><use href="#i-info"/></svg>Ambil pesanan di kasir dengan menyebutkan nomor pesanan. Pantau statusnya di halaman Lacak Pesanan.</div>
+          </div>
+
+          <div @class(['svc-panel', 'on' => $layanan === Pesanan::LAYANAN_DELIVERY]) data-panel="{{ Pesanan::LAYANAN_DELIVERY }}">
+            <div class="field"><label for="alamat">Alamat pengiriman</label><div class="in ta"><svg class="ic" style="margin-top:2px"><use href="#i-pin"/></svg><textarea id="alamat" name="alamat" maxlength="500" placeholder="Nama jalan, nomor rumah, kelurahan, kecamatan">{{ old('alamat', $u->alamat) }}</textarea></div></div>
+            @if ($u->alamat)
+              <div class="chips" id="addrChips"><button type="button" class="on" data-addr="profil">Pakai alamat profil</button><button type="button" data-addr="lain">Alamat lain</button></div>
+            @endif
+            <div class="eyebrow" style="font-size:10.5px;margin-top:16px">Pilih zona sesuai jarak alamat dari restoran</div>
+            <div class="zones">
+              @foreach ($zona as $z)
+                <label class="zone-opt"><input type="radio" name="id_zona" value="{{ $z->id }}" data-ongkir="{{ $z->ongkir() }}" data-nama="{{ $z->nama_zona }}" @checked($zonaDipilih === $z->id)>
+                  <span class="zn"><b>{{ $z->nama_zona }}</b><small>{{ rtrim(rtrim(number_format($prevRadius, 1, ',', '.'), '0'), ',') }} – {{ rtrim(rtrim(number_format((float) $z->radius_km, 1, ',', '.'), '0'), ',') }} km dari restoran</small></span>
+                  <span class="kt">{{ $rp($z->ongkir()) }}</span></label>
+                @php $prevRadius = (float) $z->radius_km; @endphp
+              @endforeach
+            </div>
+            <div class="note" style="margin-top:14px"><svg class="ic"><use href="#i-info"/></svg>Alamat lebih dari {{ rtrim(rtrim(number_format($prevRadius, 1, ',', '.'), '0'), ',') }} km belum bisa diantar. Silakan pilih Take Away.</div>
+          </div>
+        </section>
+
+        <!-- 2. Data pemesan -->
+        <section class="card sec">
+          <div class="sec-title"><span class="no">2</span><div><h2>Data pemesan</h2><p>Diambil dari profil akunmu.</p></div></div>
+          <div class="grid2">
+            <div class="field"><label>Nama</label><div class="in ro"><svg class="ic"><use href="#i-user"/></svg><input value="{{ $u->nama }}" readonly></div></div>
+            <div class="field"><label>Nomor HP</label><div class="in ro"><svg class="ic"><use href="#i-phone"/></svg><input value="{{ $u->no_hp }}" readonly></div></div>
+          </div>
+          <div class="note" style="margin-top:14px"><svg class="ic"><use href="#i-edit"/></svg>Catatan untuk tiap menu (mis. "pedas", "es sedikit") diisi di halaman Keranjang.</div>
+        </section>
+
+        <!-- 3. Pembayaran (info) -->
+        <section class="card sec soft">
+          <div class="sec-title" style="margin-bottom:12px"><span class="no" style="background:var(--bl);color:var(--m)">3</span><div><h2>Pembayaran</h2><p>Dilakukan setelah pesanan dibuat.</p></div></div>
+          <div class="note"><svg class="ic"><use href="#i-shield"/></svg><span>Setelah konfirmasi, pesanan tersimpan dengan status <b>Menunggu Konfirmasi</b>. Kamu bisa bayar tunai, transfer, atau QRIS lalu unggah bukti pembayaran.</span></div>
+        </section>
+      </div>
+
+      <aside class="summary">
+        <div class="sum-card">
+          <div class="sum-body">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><span class="eyebrow">Ringkasan pesanan</span><a href="{{ route('pelanggan.keranjang') }}" style="font:700 13px var(--f-accent);text-decoration:underline">Ubah</a></div>
+            <div class="mini">
+              @foreach ($items as $it)
+                <div class="mi">@if ($it['menu']->fotoUrl())<img src="{{ $it['menu']->fotoUrl() }}" alt="">@else<span class="ph-none"><svg class="ic"><use href="#i-dine"/></svg></span>@endif
+                  <div><b>{{ $it['menu']->nama_menu }}</b><span>{{ $it['jumlah'] }} × {{ $rp($it['menu']->harga) }}@if ($it['catatan']) · {{ $it['catatan'] }}@endif</span></div><span class="p">{{ $rp($it['subtotal']) }}</span></div>
+              @endforeach
+            </div>
+            <div class="hr"></div>
+            <div class="sum-row"><span>Subtotal ({{ $ringkasan['jumlah'] }} item)</span><span>{{ $rp($hitung['subtotal']) }}</span></div>
+            <div class="sum-row"><span>Pajak ({{ $persen($pengaturan->pajak) }}%)</span><span>{{ $rp($hitung['pajak']) }}</span></div>
+            <div class="sum-row"><span>Biaya layanan ({{ $persen($pengaturan->biaya_layanan) }}%)</span><span>{{ $rp($hitung['biaya_layanan']) }}</span></div>
+            <div class="sum-row" id="ongRow"><span>Ongkos kirim (<span id="ongZone">-</span>)</span><span id="ongVal">Rp 0</span></div>
+          </div>
+          <div class="sum-total">
+            <div class="t"><div><span class="eyebrow" style="opacity:.8">Total pembayaran</span><div style="margin-top:8px"><span class="pill b" id="svcBadge">{{ Pesanan::LABEL_LAYANAN[$layanan] }}</span></div></div><b id="grand">{{ $rp($hitung['total']) }}</b></div>
+            <button class="btn cr blk" id="btnConfirm" type="submit" @disabled(! $buka)>Konfirmasi Pesanan <svg class="ic"><use href="#i-check"/></svg></button>
+            <small>{{ $buka ? 'Dengan menekan tombol ini, pesanan disimpan dan diteruskan ke kasir' : 'Restoran sedang tutup' }}</small>
+          </div>
+        </div>
+        <a class="btn o blk" href="{{ route('pelanggan.keranjang') }}"><svg class="ic"><use href="#i-arrl"/></svg>Kembali ke Keranjang</a>
+      </aside>
+    </div>
+  </form>
+</main>
+@endsection
+
+@push('scripts')
 <script>
-  const SUB = 236000, TAX = 23600, SVC = 11800, ONG = 15000;
-  const rp = n => 'Rp ' + n.toLocaleString('id-ID');
-  const label = { dinein: 'Dine In', takeaway: 'Take Away', delivery: 'Delivery' };
-  document.querySelectorAll('.svc-opt').forEach(b => b.addEventListener('click', () => {
-    const s = b.dataset.svc;
-    document.querySelectorAll('.svc-opt').forEach(x => x.classList.toggle('on', x === b));
-    document.querySelectorAll('.svc-panel').forEach(p => p.classList.toggle('on', p.dataset.panel === s));
-    const ong = s === 'delivery' ? ONG : 0;
-    ongRow.style.display = s === 'delivery' ? '' : 'none';
-    grand.textContent = rp(SUB + TAX + SVC + ong); svcBadge.textContent = label[s];
-  }));
-  document.querySelectorAll('.chips').forEach(g => g.addEventListener('click', e => {
-    const b = e.target.closest('button'); if (!b) return;
-    g.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
-  }));
-  btnConfirm.addEventListener('click', () => ovl.classList.add('on'));
-  ovl.addEventListener('click', e => { if (e.target === ovl) ovl.classList.remove('on'); });
+  (function () {
+    var dasar = {{ (float) $hitung['total'] }}, label = @json(Pesanan::LABEL_LAYANAN), alamatProfil = @json($u->alamat);
+    function zonaDipilih() { return document.querySelector('[name=id_zona]:checked'); }
+    function hitung() {
+      var s = jenisLayanan.value, z = zonaDipilih(), ong = s === 'delivery' && z ? +z.dataset.ongkir : 0;
+      ongRow.style.display = s === 'delivery' ? '' : 'none';
+      ongZone.textContent = z ? z.dataset.nama : '-'; ongVal.textContent = rp(ong);
+      grand.textContent = rp(dasar + ong); svcBadge.textContent = label[s];
+    }
+    document.querySelectorAll('.svc-opt').forEach(function (b) {
+      b.addEventListener('click', function () {
+        if (b.disabled) return;
+        jenisLayanan.value = b.dataset.svc;
+        document.querySelectorAll('.svc-opt').forEach(function (x) { x.classList.toggle('on', x === b); });
+        document.querySelectorAll('.svc-panel').forEach(function (p) { p.classList.toggle('on', p.dataset.panel === b.dataset.svc); });
+        hitung();
+      });
+    });
+    document.querySelectorAll('[name=id_zona]').forEach(function (r) { r.addEventListener('change', hitung); });
+    var chips = document.getElementById('addrChips');
+    chips && chips.addEventListener('click', function (e) {
+      var b = e.target.closest('button'); if (!b) return;
+      chips.querySelectorAll('button').forEach(function (x) { x.classList.toggle('on', x === b); });
+      alamat.value = b.dataset.addr === 'profil' ? alamatProfil : ''; alamat.focus();
+    });
+    fCheckout.addEventListener('submit', function () { btnConfirm.disabled = true; });
+    hitung();
+  })();
 </script>
-@include('partials.logout')
-</body>
-</html>
+@endpush

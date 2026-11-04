@@ -75,7 +75,7 @@
     <div class="chips" data-filter-for="tbPesanan"><button class="on" data-f="all">Semua</button>@foreach (Pesanan::LABEL_LAYANAN as $kode => $label)<button data-f="{{ $kode }}">{{ $label }}</button>@endforeach</div></div>
     <div class="tbl-wrap"><table><thead><tr><th>No. pesanan</th><th>Pelanggan</th><th>Layanan</th><th>Total</th><th>Status</th><th class="hide-md">Masuk</th></tr></thead><tbody id="tbPesanan">
       @forelse ($pesananTerbaru as $p)
-        <tr data-f="{{ $p->jenis_layanan }}"><td><b>{{ $p->kode() }}</b></td><td>{{ $p->pelanggan?->nama ?? 'Pesanan di tempat' }}</td><td>{{ $p->layananLabel() }}</td><td>{{ $rp($p->total) }}</td><td><span class="pill {{ $p->statusPill() }}">{{ $p->statusLabel() }}</span></td><td class="hide-md">{{ $p->waktu_pesan->isToday() ? $p->waktu_pesan->format('H:i') : $p->waktu_pesan->translatedFormat('d M H:i') }}</td></tr>
+        <tr data-f="{{ $p->jenis_layanan }}"><td><b>{{ $p->kode() }}</b></td><td>{{ $p->namaPemesan() }}</td><td>{{ $p->layananDetail() }}</td><td>{{ $rp($p->total) }}</td><td><span class="pill {{ $p->statusPill() }}">{{ $p->statusLabel() }}</span></td><td class="hide-md">{{ $p->waktu_pesan->isToday() ? $p->waktu_pesan->format('H:i') : $p->waktu_pesan->translatedFormat('d M H:i') }}</td></tr>
       @empty
         <tr><td colspan="6"><div class="empty">Belum ada pesanan.</div></td></tr>
       @endforelse

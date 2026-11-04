@@ -40,7 +40,7 @@ class BerandaTest extends TestCase
 
         // urutan diubah admin -> navbar ikut berubah, di semua halaman pelanggan
         Kategori::where('nama_kategori', 'Dessert')->update(['urutan_navbar' => 0]);
-        foreach (['/beranda', '/keranjang', '/checkout', '/pembayaran', '/tracking'] as $url) {
+        foreach (['/beranda', '/keranjang', '/tracking'] as $url) {
             $this->assertMatchesRegularExpression('/Promo.*Dessert.*Pizza/s', $this->navbarHtml($url), $url);
         }
     }

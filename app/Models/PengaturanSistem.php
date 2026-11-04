@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Table;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 
 #[Table('pengaturan_sistem')]
 #[Fillable(['pajak', 'biaya_layanan', 'jam_buka', 'jam_tutup'])]
@@ -40,6 +41,21 @@ class PengaturanSistem extends Model
     public static function persen(float|string|null $nilai): string
     {
         return rtrim(rtrim(number_format((float) $nilai, 2, ',', ''), '0'), ',');
+    }
+
+    /**
+     * Apakah restoran sedang buka (dipakai untuk membatasi pesanan pelanggan).
+     */
+    public function sedangBuka(?\DateTimeInterface $waktu = null): bool
+    {
+        $jam = ($waktu ? Carbon::instance($waktu) : now())->format('H:i:s');
+
+        return $jam >= $this->normalJam($this->jam_buka) && $jam < $this->normalJam($this->jam_tutup);
+    }
+
+    private function normalJam(string $jam): string
+    {
+        return strlen($jam) === 5 ? $jam.':00' : $jam;
     }
 
     /**

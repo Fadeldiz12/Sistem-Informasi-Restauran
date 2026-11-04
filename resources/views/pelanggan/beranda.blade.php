@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="csrf-token" content="{{ csrf_token() }}">
 <title>Beranda · SIM Resto</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -203,6 +204,10 @@
   .copy { border-top: 1px solid rgba(248, 245, 230, .2); padding: 18px 0 26px; display: flex; justify-content: space-between; font: 600 13px var(--f-accent); opacity: .8; flex-wrap: wrap; gap: 10px; }
 
   /* ---------- tambahan versi dinamis ---------- */
+  .p-toast { position: fixed; z-index: 120; left: 50%; bottom: 28px; transform: translate(-50%, 20px); opacity: 0; visibility: hidden; background: var(--m); color: var(--cr);
+             border-radius: 999px; padding: 12px 20px; font: 600 14px var(--f-accent); transition: .3s; max-width: calc(100vw - 32px); text-align: center; }
+  .p-toast.on { transform: translate(-50%, 0); opacity: 1; visibility: visible; }
+  .add.busy { opacity: .6; pointer-events: none; }
   [hidden] { display: none !important; }
   #menu { scroll-margin-top: 96px; }
   #promo { scroll-margin-top: 96px; }
@@ -259,12 +264,7 @@
   <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 0 1 5 0c0 1.7-2.5 2-2.5 4M12 17h.01"/></symbol>
 </svg>
 
-<div class="topbar">
-  <div class="wrap">
-    <span><svg class="ic"><use href="#i-clock"/></svg>Buka hari ini 10.00 – 22.00 · Delivery tersedia untuk Zona A, B, C</span>
-    <nav><a href="#lacak"><svg class="ic"><use href="#i-receipt"/></svg>Lacak Pesanan</a><a href="#"><svg class="ic"><use href="#i-help"/></svg>Bantuan</a></nav>
-  </div>
-</div>
+@include('partials.pelanggan.topbar')
 
 <header>
   <div class="wrap">
@@ -273,7 +273,7 @@
     <div class="hd-right">
       <button class="icon-btn" aria-label="Cari menu"><svg class="ic"><use href="#i-search"/></svg></button>
       @include('partials.profile-menu', ['trigger' => 'user'])
-      <a class="btn cart" href="{{ route('pelanggan.keranjang') }}"><svg class="ic"><use href="#i-cart"/></svg><span class="txt" id="cartTotal">Rp 0</span><span class="count" id="cartCount">0</span></a>
+      @include('partials.pelanggan.cart-button')
     </div>
   </div>
   @include('partials.pelanggan.catstrip')
@@ -315,9 +315,9 @@
           <button data-mode="dinein"><svg class="ic"><use href="#i-dine"/></svg>Dine In</button>
         </div>
         <label class="addr"><svg class="ic"><use href="#i-pin" id="addrIcon"/></svg>
-          <span style="flex:1;min-width:0"><span class="lbl" id="addrLbl">Kirim ke</span><input id="addrIn" value="Jl. Sei Batang Hari No. 27, Medan Sunggal"></span></label>
-        <div class="zone" id="zoneInfo"><span class="pill b">Zona B · Ongkir Rp 15.000</span><span>Estimasi tiba 35–45 menit</span></div>
-        <a class="btn" href="#menu">Mulai Pesan</a>
+          <span style="flex:1;min-width:0"><span class="lbl" id="addrLbl">Kirim ke</span><input id="addrIn" value="{{ auth()->user()->alamat }}" placeholder="Alamat pengiriman (isi di checkout)" readonly></span></label>
+        <div class="zone" id="zoneInfo"></div>
+        <a class="btn" href="#menu" data-kat="">Mulai Pesan</a>
       </div>
     </div>
   </section>
@@ -342,17 +342,17 @@
         <article class="promo">
           <div class="ph"><img src="https://images.unsplash.com/photo-1513104890138-7c749659a591?w=800&q=80" alt=""><span class="kt m">PAKET BERDUA</span></div>
           <div class="bd"><h3>1 Pizza Reguler + 2 Lemon Iced Tea</h3><p>Pilih pizza reguler favoritmu, lengkap dengan dua minuman segar.</p>
-            <div class="ft"><span class="price">Rp 109.000<s>Rp 145.000</s></span><a class="btn sm" href="#">Pesan</a></div></div>
+            <div class="ft"><span class="price">Rp 109.000<s>Rp 145.000</s></span><a class="btn sm" href="#menu" data-kat="">Pesan</a></div></div>
         </article>
         <article class="promo f">
           <div class="ph"><img src="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&q=80" alt=""><span class="kt">PAKET KELUARGA</span></div>
           <div class="bd"><h3>2 Pizza Large + Kentang + 4 Minuman</h3><p>Pas untuk 4–5 orang. Berlaku untuk semua jenis layanan.</p>
-            <div class="ft"><span class="price">Rp 289.000<s style="color:inherit">Rp 372.000</s></span><a class="btn sm" href="#">Pesan</a></div></div>
+            <div class="ft"><span class="price">Rp 289.000<s style="color:inherit">Rp 372.000</s></span><a class="btn sm" href="#menu" data-kat="">Pesan</a></div></div>
         </article>
         <article class="promo">
           <div class="ph"><img src="https://images.unsplash.com/photo-1563379926898-05f4575a45d8?w=800&q=80" alt=""><span class="kt m">MAKAN SIANG</span></div>
           <div class="bd"><h3>Pasta + Minuman Pilihan</h3><p>Paket makan siang Senin–Jumat pukul 11.00–15.00.</p>
-            <div class="ft"><span class="price">Rp 65.000<s>Rp 77.000</s></span><a class="btn sm" href="#">Pesan</a></div></div>
+            <div class="ft"><span class="price">Rp 65.000<s>Rp 77.000</s></span><a class="btn sm" href="#menu" data-kat="">Pesan</a></div></div>
         </article>
       </div>
     </div>
@@ -386,16 +386,20 @@
       <div class="track">
         <div><span class="pill b">LACAK PESANAN</span><h2>Pantau pesananmu dari dapur sampai depan pintu</h2>
           <p>Status pesanan diperbarui secara real-time: dikonfirmasi kasir, dimasak sesuai antrean, hingga diantar kurir.</p>
-          <div class="hero-cta"><a class="btn cr" href="#">Lacak Pesanan <svg class="ic"><use href="#i-arr"/></svg></a></div></div>
+          <div class="hero-cta"><a class="btn cr" href="{{ route('pelanggan.tracking') }}">Lacak Pesanan <svg class="ic"><use href="#i-arr"/></svg></a></div></div>
         <div class="stamp-out"><div class="stamp" style="padding:28px 30px">
-          <div class="order-mini"><div><span class="eyebrow" style="font-size:10.5px">Pesanan aktif</span><b>ORD-20261102-0143</b><span style="font-size:13px;opacity:.7">Delivery · 5 item · Kurir Andi Pratama</span></div><span class="pill m">Dalam Perjalanan</span></div>
-          <div class="steps">
-            <div class="step done"><span class="dot"><svg class="ic" style="width:16px;height:16px;stroke-width:2.6"><use href="#i-check"/></svg></span>Dikonfirmasi<small>10:47</small></div>
-            <div class="step done"><span class="dot"><svg class="ic" style="width:16px;height:16px;stroke-width:2.6"><use href="#i-check"/></svg></span>Dimasak<small>10:52</small></div>
-            <div class="step done"><span class="dot"><svg class="ic" style="width:16px;height:16px;stroke-width:2.6"><use href="#i-check"/></svg></span>Siap Diantar<small>11:08</small></div>
-            <div class="step now"><span class="dot"><svg class="ic" style="width:15px;height:15px"><use href="#i-truck"/></svg></span>Dalam Perjalanan<small>11:14</small></div>
-            <div class="step"><span class="dot"></span>Diterima<small>—</small></div>
-          </div>
+          @if ($pesananAktif)
+            @php $tl = \App\Support\TimelinePesanan::untuk($pesananAktif); @endphp
+            <div class="order-mini"><div><span class="eyebrow" style="font-size:10.5px">Pesanan aktif</span><b>{{ $pesananAktif->kode() }}</b><span style="font-size:13px;opacity:.7">{{ $pesananAktif->layananDetail() }} · {{ $pesananAktif->detail->sum('jumlah') }} item</span></div><span class="pill m">{{ $pesananAktif->statusLabel() }}</span></div>
+            <div class="steps">
+              @foreach ($tl as $l)
+                <div class="step {{ $l['state'] }}"><span class="dot">@if ($l['state'] === 'done')<svg class="ic" style="width:16px;height:16px;stroke-width:2.6"><use href="#i-check"/></svg>@elseif ($l['state'] === 'now' && $l['ikon'])<svg class="ic" style="width:15px;height:15px"><use href="#{{ $l['ikon'] }}"/></svg>@endif</span>{{ $l['label'] }}<small>{{ $l['waktu'] ?? '—' }}</small></div>
+              @endforeach
+            </div>
+          @else
+            <div class="order-mini"><div><span class="eyebrow" style="font-size:10.5px">Pesanan aktif</span><b>Belum ada pesanan</b><span style="font-size:13px;opacity:.7">Pesanan yang sedang berjalan tampil di sini</span></div></div>
+          @endif
+</div>
         </div></div>
       </div>
     </div>
@@ -418,14 +422,21 @@
   </div>
 </footer>
 
+<div class="p-toast" id="pToast" role="status"></div>
+<script src="{{ asset('js/pelanggan.js') }}?v={{ filemtime(public_path('js/pelanggan.js')) }}"></script>
+@php
+  $infoZona = $ongkirMin !== null
+      ? '<span class="pill b">Ongkir mulai Rp '.number_format($ongkirMin, 0, ',', '.').'</span><span>Pilih zona saat checkout</span>'
+      : '<span class="pill b">Delivery belum tersedia</span>';
+@endphp
 <script>
   // Ganti isian sesuai jenis layanan (sesuai alur Pilih Jenis Layanan)
   const modes = {
-    delivery: { lbl: 'Kirim ke', val: 'Jl. Sei Batang Hari No. 27, Medan Sunggal', icon: '#i-pin',
-                zone: '<span class="pill b">Zona B · Ongkir Rp 15.000</span><span>Estimasi tiba 35–45 menit</span>' },
-    takeaway: { lbl: 'Waktu pengambilan', val: 'Hari ini, 12.30', icon: '#i-clock',
+    delivery: { lbl: 'Kirim ke', val: @json(auth()->user()->alamat ?? ''), icon: '#i-pin',
+                zone: @json($infoZona) },
+    takeaway: { lbl: 'Ambil di kasir', val: 'Secepatnya setelah pesanan siap', icon: '#i-clock',
                 zone: '<span class="pill b">Tanpa ongkir</span><span>Siap ± 20 menit setelah dikonfirmasi</span>' },
-    dinein:   { lbl: 'Nomor meja', val: 'Meja 07', icon: '#i-dine',
+    dinein:   { lbl: 'Nomor meja', val: 'Isi nomor meja saat checkout', icon: '#i-dine',
                 zone: '<span class="pill b">Makan di restoran</span><span>Pesanan langsung masuk antrean dapur</span>' }
   };
   document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => {
@@ -461,12 +472,15 @@
   window.addEventListener('popstate', () => pilihKategori(slugDariUrl()));
   if (slugDariUrl()) document.getElementById('menu').scrollIntoView({ block: 'start' });
 
-  // Tambah ke keranjang
-  let count = 0, total = 0;
-  const rp = n => 'Rp ' + n.toLocaleString('id-ID');
-  document.querySelectorAll('.add[data-p]').forEach(b => b.addEventListener('click', () => {
-    count++; total += +b.dataset.p; cartCount.textContent = count; cartTotal.textContent = rp(total);
+  // Tambah ke keranjang (disimpan di session)
+  document.querySelectorAll('.add[data-id]').forEach(b => b.addEventListener('click', () => {
+    b.classList.add('busy');
+    sendJson(@json(route('pelanggan.keranjang.store')), 'POST', { id_menu: +b.dataset.id })
+      .then(r => { setCart(r); pToast(r.message); })
+      .catch(err => pToast(err.message))
+      .finally(() => b.classList.remove('busy'));
   }));
+  document.getElementById('zoneInfo').innerHTML = modes.delivery.zone;
 </script>
 <script>
 </script>

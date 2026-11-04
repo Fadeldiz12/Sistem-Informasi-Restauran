@@ -1,12 +1,8 @@
-<!doctype html>
-<html lang="id">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Keranjang · SIM Resto</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Raleway:wght@600;700;800&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+@extends('layouts.pelanggan')
+
+@section('title', 'Keranjang')
+
+@push('styles')
 <style>
   /* =========================================================
      PALET & FONT (sama dengan beranda)
@@ -158,51 +154,26 @@
     .it .notes { display: flex; } .it .notes input { width: 100%; }
   }
 </style>
-</head>
-<body>
-<svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
-  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></symbol>
-  <symbol id="i-truck" viewBox="0 0 24 24"><path d="M2 6h11v10H2zM13 9h4l4 4v3h-8"/><circle cx="6" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></symbol>
-  <symbol id="i-bag" viewBox="0 0 24 24"><path d="M5 8h14l-1 13H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></symbol>
-  <symbol id="i-dine" viewBox="0 0 24 24"><path d="M6 3v7a2 2 0 0 0 4 0V3M8 12v9"/><path d="M17 3c-2.2 2-2.2 6.5 0 8.5V21"/></symbol>
-  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></symbol>
-  <symbol id="i-cart" viewBox="0 0 24 24"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2 3h3l2.6 12.2a1 1 0 0 0 1 .8h9.6a1 1 0 0 0 1-.8L21 7H6"/></symbol>
-  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
-  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
-  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol>
-  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></symbol>
-  <symbol id="i-arr" viewBox="0 0 24 24"><path d="M4 12h16M14 6l6 6-6 6"/></symbol>
-  <symbol id="i-arrl" viewBox="0 0 24 24"><path d="M20 12H4M10 6l-6 6 6 6"/></symbol>
-  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></symbol>
-  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/></symbol>
-  <symbol id="i-tag" viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="7.5" r="1.4"/></symbol>
-  <symbol id="i-receipt" viewBox="0 0 24 24"><path d="M5 3h14v18l-2.5-1.5L14 21l-2-1.5L10 21l-2.5-1.5L5 21z"/><path d="M9 8h6M9 12h6"/></symbol>
-  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 0 1 5 0c0 1.7-2.5 2-2.5 4M12 17h.01"/></symbol>
-  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></symbol>
-  <symbol id="i-phone" viewBox="0 0 24 24"><path d="M5 3h4l2 5-2.5 1.5a11 11 0 0 0 6 6L16 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 5a2 2 0 0 1 2-2z"/></symbol>
-  <symbol id="i-card" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></symbol>
-  <symbol id="i-cash" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.8"/></symbol>
-  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v4h16v-4"/></symbol>
-  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/></symbol>
-  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></symbol>
-  <symbol id="i-logout" viewBox="0 0 24 24"><path d="M15 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4"/><path d="M10 17l-5-5 5-5M5 12h11"/></symbol>
-  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></symbol>
-</svg>
-<div class="topbar"><div class="wrap">
-  <span><svg class="ic"><use href="#i-clock"/></svg>Buka hari ini 10.00 – 22.00 · Delivery tersedia untuk Zona A, B, C</span>
-  <nav><a href="{{ route('pelanggan.tracking') }}"><svg class="ic"><use href="#i-receipt"/></svg>Lacak Pesanan</a><a href="#"><svg class="ic"><use href="#i-help"/></svg>Bantuan</a></nav>
-</div></div>
-<header><div class="wrap">
-  <a class="logo" href="{{ route('pelanggan.beranda') }}"><b>SIM RESTO</b><small>PIZZA &amp; PASTA HOUSE</small></a>
-  @include('partials.pelanggan.nav')
-  <div class="hd-right">
-    <button class="icon-btn" aria-label="Cari menu"><svg class="ic"><use href="#i-search"/></svg></button>
-    @include('partials.profile-menu', ['trigger' => 'user'])
-    <a class="btn cart" href="{{ route('pelanggan.keranjang') }}"><svg class="ic"><use href="#i-cart"/></svg><span class="txt" id="hdTotal">Rp 236.000</span><span class="count" id="hdCount">5</span></a>
-  </div>
-</div>@include('partials.pelanggan.catstrip')
-</header>
+@endpush
+
+@php
+  $set = \App\Models\PengaturanSistem::aktif();
+  $persen = fn ($v) => \App\Models\PengaturanSistem::persen($v);
+@endphp
+
+@push('styles')
+<style>
+  .cart-empty { padding: 40px 20px; text-align: center; }
+  .cart-empty b { display: block; font: 600 20px var(--f-title); margin-bottom: 6px; }
+  .cart-empty p { opacity: .7; margin-bottom: 18px; }
+  .it .ph .ph-none, .rc .ph-none { width: 100%; height: 100%; display: grid; place-items: center; background: var(--bl); }
+  .rc .ph-none { width: 56px; height: 56px; border-radius: 14px; flex: none; }
+  .btn[aria-disabled="true"] { opacity: .5; pointer-events: none; }
+  .it.busy { opacity: .6; pointer-events: none; }
+</style>
+@endpush
+
+@section('content')
 <main class="wrap">
   <div class="page-head">
     <div><div class="crumb"><a href="{{ route('pelanggan.beranda') }}">Beranda</a><span>/</span><span>Keranjang</span></div><h1>Keranjang Belanja</h1></div>
@@ -210,74 +181,59 @@
       <div class="s next"><span class="n">2</span><span>Checkout</span></div><div class="line"></div><div class="s next"><span class="n">3</span><span>Pembayaran</span></div></div>
   </div>
 
+  @if (session('error'))<div class="flash" role="alert">{{ session('error') }}</div>@endif
+
   <div class="layout">
     <div>
       <section class="card">
-        <div class="card-head"><h2>Menu dipesan <span class="pill b" id="menuCount" style="margin-left:6px;vertical-align:3px">4 menu</span></h2><a class="btn o sm" href="#" id="clearAll"><svg class="ic"><use href="#i-trash"/></svg>Kosongkan</a></div>
+        <div class="card-head"><h2>Menu dipesan <span class="pill b" id="menuCount" style="margin-left:6px;vertical-align:3px">{{ $ringkasan['menu'] }} menu</span></h2>
+          <button class="btn o sm" type="button" id="clearAll" @if ($items->isEmpty()) hidden @endif><svg class="ic"><use href="#i-trash"/></svg>Kosongkan</button></div>
         <div class="items" id="cartItems">
-      <article class="it" data-id="pep" data-price="109000">
-        <div class="ph"><img src="https://images.unsplash.com/photo-1534308983496-4fabb1a015ee?w=500&q=80" alt="Pizza Beef Pepperoni"></div>
-        <div><div class="cat">Pizza · Reguler</div><h3>Pizza Beef Pepperoni</h3>
-          <label class="notes"><svg class="ic" style="width:15px;height:15px"><use href="#i-edit"/></svg><input value="Potong 12" placeholder="Tambah catatan untuk dapur"></label>
-          <div class="unit">Rp 109.000 / porsi</div></div>
-        <div class="right"><b class="line-total">Rp 109.000</b>
-          <div class="row"><div class="qty"><button class="minus" aria-label="Kurangi"><svg class="ic"><use href="#i-minus"/></svg></button><b class="q">1</b><button class="plus" aria-label="Tambah"><svg class="ic"><use href="#i-plus"/></svg></button></div>
-          <button class="del" aria-label="Hapus"><svg class="ic"><use href="#i-trash"/></svg></button></div></div>
-      </article>
-      <article class="it" data-id="pen" data-price="59000">
-        <div class="ph"><img src="https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=500&q=80" alt="Penne Bolognese"></div>
-        <div><div class="cat">Pasta</div><h3>Penne Bolognese</h3>
-          <label class="notes"><svg class="ic" style="width:15px;height:15px"><use href="#i-edit"/></svg><input value="" placeholder="Tambah catatan untuk dapur"></label>
-          <div class="unit">Rp 59.000 / porsi</div></div>
-        <div class="right"><b class="line-total">Rp 59.000</b>
-          <div class="row"><div class="qty"><button class="minus" aria-label="Kurangi"><svg class="ic"><use href="#i-minus"/></svg></button><b class="q">1</b><button class="plus" aria-label="Tambah"><svg class="ic"><use href="#i-plus"/></svg></button></div>
-          <button class="del" aria-label="Hapus"><svg class="ic"><use href="#i-trash"/></svg></button></div></div>
-      </article>
-      <article class="it" data-id="tea" data-price="18000">
-        <div class="ph"><img src="https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=500&q=80" alt="Lemon Iced Tea"></div>
-        <div><div class="cat">Minuman</div><h3>Lemon Iced Tea</h3>
-          <label class="notes"><svg class="ic" style="width:15px;height:15px"><use href="#i-edit"/></svg><input value="Es sedikit" placeholder="Tambah catatan untuk dapur"></label>
-          <div class="unit">Rp 18.000 / porsi</div></div>
-        <div class="right"><b class="line-total">Rp 36.000</b>
-          <div class="row"><div class="qty"><button class="minus" aria-label="Kurangi"><svg class="ic"><use href="#i-minus"/></svg></button><b class="q">2</b><button class="plus" aria-label="Tambah"><svg class="ic"><use href="#i-plus"/></svg></button></div>
-          <button class="del" aria-label="Hapus"><svg class="ic"><use href="#i-trash"/></svg></button></div></div>
-      </article>
-      <article class="it" data-id="brw" data-price="32000">
-        <div class="ph"><img src="https://images.unsplash.com/photo-1624353365286-3f8d62daad51?w=500&q=80" alt="Choco Brownie Ice Cream"></div>
-        <div><div class="cat">Dessert</div><h3>Choco Brownie Ice Cream</h3>
-          <label class="notes"><svg class="ic" style="width:15px;height:15px"><use href="#i-edit"/></svg><input value="" placeholder="Tambah catatan untuk dapur"></label>
-          <div class="unit">Rp 32.000 / porsi</div></div>
-        <div class="right"><b class="line-total">Rp 32.000</b>
-          <div class="row"><div class="qty"><button class="minus" aria-label="Kurangi"><svg class="ic"><use href="#i-minus"/></svg></button><b class="q">1</b><button class="plus" aria-label="Tambah"><svg class="ic"><use href="#i-plus"/></svg></button></div>
-          <button class="del" aria-label="Hapus"><svg class="ic"><use href="#i-trash"/></svg></button></div></div>
-      </article>
+          @foreach ($items as $it)
+            @php $m = $it['menu']; @endphp
+            <article class="it" data-id="{{ $m->id }}" data-price="{{ (int) $m->harga }}" data-url="{{ route('pelanggan.keranjang.update', $m->id) }}" data-del="{{ route('pelanggan.keranjang.destroy', $m->id) }}">
+              <div class="ph">@if ($m->fotoUrl())<img src="{{ $m->fotoUrl() }}" alt="{{ $m->nama_menu }}">@else<span class="ph-none"><svg class="ic"><use href="#i-dine"/></svg></span>@endif</div>
+              <div><div class="cat">{{ $m->kategori->nama_kategori }}</div><h3>{{ $m->nama_menu }}</h3>
+                <label class="notes"><svg class="ic" style="width:15px;height:15px"><use href="#i-edit"/></svg><input class="js-note" value="{{ $it['catatan'] }}" maxlength="255" placeholder="Tambah catatan untuk dapur"></label>
+                <div class="unit">Rp {{ number_format($m->harga, 0, ',', '.') }} / porsi</div></div>
+              <div class="right"><b class="line-total">Rp {{ number_format($it['subtotal'], 0, ',', '.') }}</b>
+                <div class="row"><div class="qty"><button class="minus" type="button" aria-label="Kurangi"><svg class="ic"><use href="#i-minus"/></svg></button><b class="q">{{ $it['jumlah'] }}</b><button class="plus" type="button" aria-label="Tambah"><svg class="ic"><use href="#i-plus"/></svg></button></div>
+                <button class="del" type="button" aria-label="Hapus"><svg class="ic"><use href="#i-trash"/></svg></button></div></div>
+            </article>
+          @endforeach
+        </div>
+        <div class="cart-empty" id="cartEmpty" @if ($items->isNotEmpty()) hidden @endif>
+          <b>Keranjang masih kosong</b><p>Pilih menu favoritmu di beranda, lalu kembali ke sini.</p>
+          <a class="btn" href="{{ route('pelanggan.beranda') }}#menu">Lihat Menu</a>
         </div>
         <a class="add-more" href="{{ route('pelanggan.beranda') }}#menu"><svg class="ic"><use href="#i-plus"/></svg>Tambah menu lain</a>
       </section>
 
-      <section class="reco">
-        <div class="card-head" style="margin-bottom:14px"><div><div class="eyebrow">Biar makin lengkap</div><h2 style="font:600 20px var(--f-title)">Sering dipesan bersama</h2></div></div>
-        <div class="reco-grid">
-          <div class="rc"><img src="https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=300&q=75" alt="Kentang Goreng"><div><b>Kentang Goreng</b><span>Rp 28.000</span></div><button class="addb" aria-label="Tambah Kentang Goreng"><svg class="ic"><use href="#i-plus"/></svg></button></div>
-          <div class="rc"><img src="https://images.unsplash.com/photo-1550304943-4f24f54ddde9?w=300&q=75" alt="Caesar Salad"><div><b>Caesar Salad</b><span>Rp 42.000</span></div><button class="addb" aria-label="Tambah Caesar Salad"><svg class="ic"><use href="#i-plus"/></svg></button></div>
-          <div class="rc"><img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=300&q=75" alt="Classic Beef Burger"><div><b>Classic Beef Burger</b><span>Rp 55.000</span></div><button class="addb" aria-label="Tambah Classic Beef Burger"><svg class="ic"><use href="#i-plus"/></svg></button></div>
-        </div>
-      </section>
+      @if ($rekomendasi->isNotEmpty())
+        <section class="reco">
+          <div class="card-head" style="margin-bottom:14px"><div><div class="eyebrow">Biar makin lengkap</div><h2 style="font:600 20px var(--f-title)">Coba juga</h2></div></div>
+          <div class="reco-grid">
+            @foreach ($rekomendasi as $r)
+              <div class="rc">@if ($r->fotoUrl())<img src="{{ $r->fotoUrl() }}" alt="{{ $r->nama_menu }}">@else<span class="ph-none"><svg class="ic"><use href="#i-dine"/></svg></span>@endif
+                <div><b>{{ $r->nama_menu }}</b><span>Rp {{ number_format($r->harga, 0, ',', '.') }}</span></div>
+                <button class="addb" type="button" data-add="{{ $r->id }}" aria-label="Tambah {{ $r->nama_menu }}"><svg class="ic"><use href="#i-plus"/></svg></button></div>
+            @endforeach
+          </div>
+        </section>
+      @endif
     </div>
 
     <aside class="summary">
       <div class="sum-card">
         <div class="sum-body">
           <div class="eyebrow" style="margin-bottom:12px">Ringkasan sementara</div>
-          <div class="sum-row"><span>Subtotal (<span id="sumQty">5</span> item)</span><b id="sumSub">Rp 236.000</b></div>
-          <div class="sum-row"><span class="mut">Pajak 10% &amp; biaya layanan 5%</span><span class="mut">dihitung di checkout</span></div>
+          <div class="sum-row"><span>Subtotal (<span id="sumQty">{{ $ringkasan['jumlah'] }}</span> item)</span><b id="sumSub">Rp {{ number_format($ringkasan['subtotal'], 0, ',', '.') }}</b></div>
+          <div class="sum-row"><span class="mut">Pajak {{ $persen($set->pajak) }}% &amp; biaya layanan {{ $persen($set->biaya_layanan) }}%</span><span class="mut">dihitung di checkout</span></div>
           <div class="sum-row"><span class="mut">Ongkos kirim</span><span class="mut">sesuai zona</span></div>
-          <div class="field" style="margin:14px 0 10px"><label>Kode promo</label>
-            <div class="promo-in"><div class="in"><svg class="ic"><use href="#i-tag"/></svg><input placeholder="Masukkan kode"></div><button class="btn b">Pakai</button></div></div>
         </div>
         <div class="sum-total">
-          <div class="t"><span class="eyebrow" style="opacity:.8">Subtotal</span><b id="sumBig">Rp 236.000</b></div>
-          <a class="btn cr blk" href="{{ route('pelanggan.checkout') }}">Lanjut ke Checkout <svg class="ic"><use href="#i-arr"/></svg></a>
+          <div class="t"><span class="eyebrow" style="opacity:.8">Subtotal</span><b id="sumBig">Rp {{ number_format($ringkasan['subtotal'], 0, ',', '.') }}</b></div>
+          <a class="btn cr blk" id="toCheckout" href="{{ route('pelanggan.checkout') }}" @if ($items->isEmpty()) aria-disabled="true" @endif>Lanjut ke Checkout <svg class="ic"><use href="#i-arr"/></svg></a>
           <small>Pilih Dine In, Take Away, atau Delivery di langkah berikutnya</small>
         </div>
       </div>
@@ -288,29 +244,59 @@
     </aside>
   </div>
 </main>
-<footer>
-  <svg class="torn" viewBox="0 0 1000 24" preserveAspectRatio="none" aria-hidden="true"><rect width="1000" height="12" fill="#F8F5E6"/><rect y="12" width="1000" height="12" fill="#97173A"/>
-    <path d="M0,7 L24,9 L49,5 L76,8 L101,6 L128,10 L155,6 L183,8 L209,5 L238,9 L265,6 L292,8 L318,5 L347,9 L373,7 L400,10 L427,6 L455,8 L482,5 L510,9 L537,6 L563,8 L591,5 L618,9 L644,7 L671,10 L697,6 L725,8 L752,5 L779,9 L806,6 L833,8 L859,5 L887,9 L914,7 L941,10 L967,6 L1000,8 L1000,18 L972,16 L944,20 L917,17 L889,19 L861,15 L834,18 L806,16 L779,20 L751,17 L723,19 L696,15 L668,18 L641,16 L613,20 L585,17 L558,19 L530,15 L503,18 L476,16 L448,20 L421,17 L393,19 L366,15 L338,18 L311,16 L283,20 L256,17 L228,19 L200,15 L173,18 L146,16 L118,20 L91,17 L63,19 L36,15 L0,18 Z" fill="#E7E0D6"/></svg>
-  <div class="wrap copy"><b>SIM RESTO</b><span>© 2026 SIM Resto · Jl. Gatot Subroto No. 100, Medan · 0811 6000 1234</span></div>
-</footer>
+@endsection
+
+@push('scripts')
 <script>
-  const rp = n => 'Rp ' + n.toLocaleString('id-ID');
-  function recalc() {
-    let sub = 0, qty = 0, rows = document.querySelectorAll('.it');
-    rows.forEach(r => { const q = +r.querySelector('.q').textContent, p = +r.dataset.price;
-      sub += p * q; qty += q; r.querySelector('.line-total').textContent = rp(p * q); });
-    sumSub.textContent = sumBig.textContent = hdTotal.textContent = rp(sub);
-    sumQty.textContent = hdCount.textContent = qty; menuCount.textContent = rows.length + ' menu';
-  }
-  cartItems.addEventListener('click', e => {
-    const r = e.target.closest('.it'); if (!r) return; const q = r.querySelector('.q');
-    if (e.target.closest('.plus')) q.textContent = +q.textContent + 1;
-    if (e.target.closest('.minus') && +q.textContent > 1) q.textContent = +q.textContent - 1;
-    if (e.target.closest('.del')) r.remove();
-    recalc();
-  });
-  clearAll.addEventListener('click', e => { e.preventDefault(); document.querySelectorAll('.it').forEach(r => r.remove()); recalc(); });
+  (function () {
+    var list = document.getElementById('cartItems');
+    function ringkas(r) {
+      setCart(r);
+      sumQty.textContent = r.jumlah; sumSub.textContent = sumBig.textContent = rp(r.subtotal);
+      menuCount.textContent = r.menu + ' menu';
+      var kosong = r.menu === 0;
+      cartEmpty.hidden = !kosong; clearAll.hidden = kosong;
+      if (kosong) toCheckout.setAttribute('aria-disabled', 'true'); else toCheckout.removeAttribute('aria-disabled');
+    }
+    function baris(row) {
+      var q = +row.querySelector('.q').textContent;
+      row.querySelector('.line-total').textContent = rp(q * +row.dataset.price);
+    }
+    list.addEventListener('click', function (e) {
+      var row = e.target.closest('.it'); if (!row) return;
+      var q = row.querySelector('.q'), n = +q.textContent;
+      if (e.target.closest('.plus') || e.target.closest('.minus')) {
+        var baru = e.target.closest('.plus') ? Math.min(n + 1, 50) : Math.max(n - 1, 1);
+        if (baru === n) return;
+        q.textContent = baru; baris(row);
+        sendJson(row.dataset.url, 'PATCH', { jumlah: baru }).then(ringkas).catch(function (err) { q.textContent = n; baris(row); pToast(err.message); });
+      }
+      if (e.target.closest('.del')) {
+        row.classList.add('busy');
+        sendJson(row.dataset.del, 'DELETE').then(function (r) { row.remove(); ringkas(r); pToast(r.message); })
+          .catch(function (err) { row.classList.remove('busy'); pToast(err.message); });
+      }
+    });
+    /* catatan disimpan otomatis setelah berhenti mengetik */
+    list.addEventListener('input', function (e) {
+      if (!e.target.classList.contains('js-note')) return;
+      var row = e.target.closest('.it'), inp = e.target;
+      clearTimeout(inp._t);
+      inp._t = setTimeout(function () { sendJson(row.dataset.url, 'PATCH', { catatan: inp.value }).catch(function (err) { pToast(err.message); }); }, 600);
+    });
+    clearAll.addEventListener('click', function () {
+      if (!confirm('Kosongkan semua menu di keranjang?')) return;
+      sendJson(@json(route('pelanggan.keranjang.clear')), 'DELETE').then(function (r) {
+        list.querySelectorAll('.it').forEach(function (x) { x.remove(); }); ringkas(r); pToast(r.message);
+      }).catch(function (err) { pToast(err.message); });
+    });
+    document.querySelectorAll('[data-add]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        b.disabled = true;
+        sendJson(@json(route('pelanggan.keranjang.store')), 'POST', { id_menu: +b.dataset.add }).then(function () { location.reload(); })
+          .catch(function (err) { b.disabled = false; pToast(err.message); });
+      });
+    });
+  })();
 </script>
-@include('partials.logout')
-</body>
-</html>
+@endpush

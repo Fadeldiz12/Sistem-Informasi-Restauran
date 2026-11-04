@@ -3,14 +3,16 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Attributes\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Table('pesanan')]
-#[Fillable(['id_pelanggan', 'id_kasir', 'jenis_layanan', 'waktu_pesan', 'subtotal', 'ongkir', 'total', 'status'])]
+#[Fillable(['id_pelanggan', 'id_kasir', 'jenis_layanan', 'nomor_meja', 'nama_pemesan', 'waktu_pesan', 'subtotal', 'ongkir', 'total', 'status'])]
 class Pesanan extends Model
 {
     public const LAYANAN_DINE_IN = 'dine_in';
@@ -115,6 +117,87 @@ class Pesanan extends Model
             self::STATUS_SELESAI, self::STATUS_DIBATALKAN => 'p',
             default => '',
         };
+    }
+
+    /**
+     * Nama yang ditampilkan: akun pelanggan, nama pembeli langsung, atau nomor meja.
+     */
+    public function namaPemesan(): string
+    {
+        return $this->pelanggan?->nama
+            ?? ($this->nama_pemesan ?: ($this->nomor_meja ? 'Meja '.$this->nomor_meja : 'Pembeli di tempat'));
+    }
+
+    /**
+     * Contoh: "Dine In · Meja 07", "Delivery · Zona B", "Take Away".
+     */
+    public function layananDetail(): string
+    {
+        $tambahan = match ($this->jenis_layanan) {
+            self::LAYANAN_DINE_IN => $this->nomor_meja ? 'Meja '.$this->nomor_meja : null,
+            self::LAYANAN_DELIVERY => $this->pengiriman?->zona?->nama_zona,
+            default => null,
+        };
+
+        return $this->layananLabel().($tambahan ? ' · '.$tambahan : '');
+    }
+
+    /**
+     * Pajak + biaya layanan yang tersimpan di total (total - subtotal - ongkir).
+     */
+    public function pajakDanLayanan(): float
+    {
+        return round((float) $this->total - (float) $this->subtotal - (float) $this->ongkir, 2);
+    }
+
+    public function isOnline(): bool
+    {
+        return $this->id_pelanggan !== null;
+    }
+
+    public function isLunas(): bool
+    {
+        return $this->pembayaran?->status_bayar === Pembayaran::STATUS_LUNAS;
+    }
+
+    /**
+     * Label pembayaran untuk daftar: "Belum dipilih", "Bayar Tunai", "Menunggu Verifikasi", "Lunas", "Ditolak".
+     */
+    public function bayarLabel(): string
+    {
+        $bayar = $this->pembayaran;
+
+        if (! $bayar) {
+            return $this->isOnline() ? 'Belum Bayar' : 'Belum Lunas';
+        }
+
+        return match ($bayar->status_bayar) {
+            Pembayaran::STATUS_LUNAS => 'Lunas',
+            Pembayaran::STATUS_DITOLAK => 'Bukti Ditolak',
+            default => $bayar->metode === Pembayaran::METODE_TUNAI ? 'Bayar Tunai' : 'Menunggu Verifikasi',
+        };
+    }
+
+    /**
+     * Pesanan yang menunggu diproses kasir di menu Pembayaran:
+     * pesanan di tempat yang belum lunas, atau pembayaran pelanggan yang menunggu (tunai / verifikasi bukti).
+     */
+    #[Scope]
+    protected function belumLunas(Builder $query): void
+    {
+        $query->where('status', '!=', self::STATUS_DIBATALKAN)->where(fn ($w) => $w
+            ->where(fn ($a) => $a->whereNull('id_pelanggan')
+                ->whereDoesntHave('pembayaran', fn ($b) => $b->where('status_bayar', Pembayaran::STATUS_LUNAS)))
+            ->orWhereHas('pembayaran', fn ($b) => $b->where('status_bayar', Pembayaran::STATUS_MENUNGGU)));
+    }
+
+    /**
+     * Pesanan online yang menunggu konfirmasi kasir (FIFO: paling lama di atas).
+     */
+    #[Scope]
+    protected function menungguKonfirmasi(Builder $query): void
+    {
+        $query->whereNotNull('id_pelanggan')->where('status', self::STATUS_MENUNGGU)->orderBy('waktu_pesan')->orderBy('id');
     }
 
     public function isDelivery(): bool
