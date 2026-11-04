@@ -197,13 +197,13 @@
           <div style="margin:20px 24px 0;display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:12px 16px;border-radius:16px;background:var(--pp)">
             <svg class="ic"><use href="#i-card"/></svg>
             <span style="flex:1;min-width:200px;font-size:13.5px">
-              @if (! $pesanan->pembayaran) Pesanan belum dibayar. Pilih metode pembayaran agar kasir bisa mengonfirmasi.
-              @elseif ($pesanan->pembayaran->status_bayar === Pembayaran::STATUS_DITOLAK) <b>Bukti pembayaran ditolak.</b> Unggah ulang bukti yang benar.
+              @if (! $pesanan->pembayaran) Pesanan belum dibayar. Pilih Virtual Account, QRIS, atau tunai.
+              @elseif ($pesanan->pembayaran->status_bayar === Pembayaran::STATUS_DITOLAK || $pesanan->pembayaran->isKedaluwarsa()) <b>Pembayaran gagal / kedaluwarsa.</b> Pilih metode pembayaran lagi.
               @elseif ($pesanan->pembayaran->metode === Pembayaran::METODE_TUNAI) Pembayaran tunai {{ $pesanan->isDelivery() ? 'ke kurir saat pesanan tiba' : 'di kasir' }}.
-              @else Bukti pembayaran menunggu verifikasi kasir. @endif
+              @else Selesaikan pembayaran <b>{{ $pesanan->pembayaran->metodeLabel() }}</b>. Pesanan langsung masuk dapur setelah lunas. @endif
             </span>
             @if (! $pesanan->pembayaran || $pesanan->pembayaran->status_bayar !== Pembayaran::STATUS_LUNAS)
-              <a class="btn sm" href="{{ route('pelanggan.pembayaran', $pesanan) }}">{{ $pesanan->pembayaran ? 'Ubah Pembayaran' : 'Bayar Sekarang' }}</a>
+              <a class="btn sm" href="{{ route('pelanggan.pembayaran', $pesanan) }}">{{ $pesanan->pembayaran?->isOtomatis() && $pesanan->bayarLabel() === 'Menunggu Pembayaran' ? 'Lihat Cara Bayar' : ($pesanan->pembayaran ? 'Ubah Pembayaran' : 'Bayar Sekarang') }}</a>
             @endif
           </div>
         @endif

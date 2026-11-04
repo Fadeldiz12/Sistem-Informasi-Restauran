@@ -24,7 +24,7 @@ class PengaturanSistem extends Model
      */
     public function hitungPajak(float $subtotal): float
     {
-        return round($subtotal * (float) $this->pajak / 100, 2);
+        return round($subtotal * (float) $this->pajak / 100);
     }
 
     /**
@@ -32,7 +32,7 @@ class PengaturanSistem extends Model
      */
     public function hitungBiayaLayanan(float $subtotal): float
     {
-        return round($subtotal * (float) $this->biaya_layanan / 100, 2);
+        return round($subtotal * (float) $this->biaya_layanan / 100);
     }
 
     /**

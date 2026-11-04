@@ -13,6 +13,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // webhook Midtrans tidak membawa token CSRF (keasliannya dicek lewat signature)
+        $middleware->validateCsrfTokens(except: ['midtrans/notifikasi']);
+
         $middleware->alias([
             'role' => EnsureUserHasRole::class,
         ]);

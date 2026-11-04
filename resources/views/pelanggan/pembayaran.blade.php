@@ -144,24 +144,51 @@
   $bayar = $pesanan->pembayaran;
   $lunas = $bayar?->status_bayar === Pembayaran::STATUS_LUNAS;
   $batal = $pesanan->status === Pesanan::STATUS_DIBATALKAN;
-  $ditolak = $bayar?->status_bayar === Pembayaran::STATUS_DITOLAK;
+  $gagal = $bayar && ($bayar->status_bayar === Pembayaran::STATUS_DITOLAK || $bayar->isKedaluwarsa());
+  $menungguOtomatis = $bayar?->isOtomatis() && ! $lunas && ! $gagal;
+  $tunai = $bayar?->metode === Pembayaran::METODE_TUNAI && ! $lunas;
   $bisaBayar = ! $lunas && ! $batal;
-  $metode = old('metode', $bayar?->metode ?? Pembayaran::METODE_TRANSFER);
-  $statusLabel = $batal ? 'Pesanan Dibatalkan' : ($lunas ? 'Lunas' : ($ditolak ? 'Bukti Ditolak · Unggah Ulang' : ($bayar ? ($bayar->metode === Pembayaran::METODE_TUNAI ? 'Bayar Tunai di Kasir' : 'Menunggu Verifikasi') : 'Menunggu Pembayaran')));
+  $metode = old('metode', $bayar && ! $gagal ? $bayar->metode : ($midtransAktif ? Pembayaran::METODE_TRANSFER : Pembayaran::METODE_TUNAI));
+  $bankPilih = old('bank', $bayar?->bank ?? array_key_first($bank));
+  $statusLabel = $batal ? 'Pesanan Dibatalkan' : $pesanan->bayarLabel();
 @endphp
 
 @push('styles')
 <style>
+  /* dialog "Pesanan Dibuat" */
+  .modal .top { padding: 34px 28px 22px; }
+  .modal .ok { width: 74px; height: 74px; border-radius: 50%; background: var(--m); color: var(--cr); display: grid; place-items: center; margin: 0 auto 16px; }
+  .modal h3 { font: 700 28px var(--f-title); }
+  .modal .ord { font: 700 22px var(--f-title); margin: 6px 0 12px; }
+  .modal .bot { padding: 0 28px 28px; display: grid; gap: 10px; }
+  .modal .btn.blk { width: 100%; }
+
   #pay.g3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-  @media (max-width: 640px) { #pay.g3 { grid-template-columns: 1fr; } }
-  .upl input[type=file] { display: none; }
-  .upl .pv { width: 64px; height: 64px; border-radius: 14px; object-fit: cover; flex: none; }
-  .qris { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
-  .qris .qr { width: 132px; height: 132px; border-radius: 16px; background: var(--cr); box-shadow: inset 0 0 0 1.5px var(--m); padding: 10px; flex: none; }
+  .opt[disabled] { opacity: .5; cursor: not-allowed; }
+  .banks { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .banks button { height: 42px; min-width: 88px; padding: 0 16px; border-radius: 14px; box-shadow: inset 0 0 0 1.5px var(--m15); font: 700 14px var(--f-title); background: var(--cr); }
+  .banks button.on { box-shadow: inset 0 0 0 2px var(--m); background: var(--pp); }
   .btn[disabled] { opacity: .5; cursor: not-allowed; }
   .state { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: 16px; background: var(--pp); margin-bottom: 18px; font: 500 14px/1.5 var(--f-body); }
   .state.bad { background: var(--m); color: var(--cr); }
   .state.ok { background: var(--bl); }
+  .instr { display: grid; gap: 16px; }
+  .va-box { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .va-no { font: 700 clamp(22px, 3.4vw, 30px) var(--f-title); letter-spacing: .04em; word-break: break-all; }
+  .qris-box { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+  .qris-box img { width: 220px; height: 220px; border-radius: 18px; background: #fff; padding: 10px; box-shadow: inset 0 0 0 1.5px var(--m15); flex: none; object-fit: contain; }
+  .langkah { display: grid; gap: 8px; counter-reset: l; font-size: 13.5px; }
+  .langkah li { list-style: none; display: flex; gap: 10px; align-items: flex-start; }
+  .langkah li::before { counter-increment: l; content: counter(l); width: 22px; height: 22px; flex: none; border-radius: 50%; background: var(--m); color: var(--cr); display: grid; place-items: center; font: 700 11.5px var(--f-title); }
+  .tunggu { display: flex; gap: 10px; align-items: center; font: 600 13.5px var(--f-accent); }
+  .tunggu i { width: 10px; height: 10px; border-radius: 50%; background: var(--m); animation: denyut 1.2s infinite; flex: none; }
+  @keyframes denyut { 0%, 100% { opacity: .25; transform: scale(.8); } 50% { opacity: 1; transform: scale(1.1); } }
+  .ganti summary { cursor: pointer; font: 700 14px var(--f-accent); text-decoration: underline; margin-top: 4px; list-style: none; }
+  .ganti summary::-webkit-details-marker { display: none; }
+  @media (max-width: 640px) {
+    #pay.g3 { grid-template-columns: 1fr; gap: 4px; }
+    .qris-box img { width: 100%; height: auto; max-width: 260px; margin: 0 auto; }
+  }
 </style>
 @endpush
 
@@ -173,130 +200,125 @@
   </div>
 
   @if ($errors->any())
-    <div class="flash" role="alert">@if ($errors->count() === 1){{ $errors->first() }}@else<ul>@foreach ($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>@endif</div>
+    <div class="flash" role="alert">{{ $errors->first() }}</div>
   @endif
 
-  <form method="post" action="{{ route('pelanggan.pembayaran.store', $pesanan) }}" enctype="multipart/form-data" id="fBayar">
-    @csrf
-    <input type="hidden" name="metode" id="metode" value="{{ $metode }}">
-    <div class="layout">
-      <div>
-        <section class="card" style="padding:0;overflow:hidden;margin-bottom:20px">
-          <div class="stripes" style="padding:20px 24px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap">
-            <div class="stamp-out"><div class="stamp" style="padding:16px 22px"><div class="eyebrow">{{ $lunas ? 'Pesanan sudah dibayar' : 'Nomor pesanan' }}</div><div style="font:700 22px var(--f-title);margin-top:4px">{{ $pesanan->kode() }}</div><div style="font-size:12.5px;opacity:.72">{{ $pesanan->layananDetail() }} · {{ $pesanan->detail->sum('jumlah') }} item</div></div></div>
-            <span class="pill b" style="font-size:13px;padding:8px 16px;background:var(--cr);box-shadow:inset 0 0 0 1.4px var(--m)">{{ $statusLabel }}</span></div>
-        </section>
+  <div class="layout">
+    <div>
+      <section class="card" style="padding:0;overflow:hidden;margin-bottom:20px">
+        <div class="stripes" style="padding:20px 24px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap">
+          <div class="stamp-out"><div class="stamp" style="padding:16px 22px"><div class="eyebrow">{{ $lunas ? 'Pesanan sudah dibayar' : 'Nomor pesanan' }}</div><div style="font:700 22px var(--f-title);margin-top:4px">{{ $pesanan->kode() }}</div><div style="font-size:12.5px;opacity:.72">{{ $pesanan->layananDetail() }} · {{ $pesanan->detail->sum('jumlah') }} item</div></div></div>
+          <span class="pill b" style="font-size:13px;padding:8px 16px;background:var(--cr);box-shadow:inset 0 0 0 1.4px var(--m)" id="stLabel">{{ $statusLabel }}</span></div>
+      </section>
 
-        <section class="card">
-          @if ($batal)
-            <div class="state bad"><svg class="ic"><use href="#i-info"/></svg><span>Pesanan ini dibatalkan oleh kasir, jadi tidak perlu dibayar. Silakan buat pesanan baru dari beranda.</span></div>
-            <a class="btn" href="{{ route('pelanggan.beranda') }}#menu">Pesan Lagi</a>
-          @elseif ($lunas)
-            <div class="state ok"><svg class="ic"><use href="#i-check"/></svg><span>Pembayaran <b>{{ $bayar->metodeLabel() }}</b> sudah diverifikasi kasir{{ $bayar->waktu_bayar ? ' pada '.$bayar->waktu_bayar->translatedFormat('d M Y H:i') : '' }}. Terima kasih!</span></div>
-            <a class="btn" href="{{ route('pelanggan.tracking', ['pesanan' => $pesanan->id]) }}">Lacak Pesanan <svg class="ic"><use href="#i-arr"/></svg></a>
+      <section class="card">
+        @if ($batal)
+          <div class="state bad"><svg class="ic"><use href="#i-info"/></svg><span>Pesanan ini dibatalkan, jadi tidak perlu dibayar. Silakan buat pesanan baru dari beranda.</span></div>
+          <a class="btn" href="{{ route('pelanggan.beranda') }}#menu">Pesan Lagi</a>
+        @elseif ($lunas)
+          <div class="state ok"><svg class="ic"><use href="#i-check"/></svg><span>Pembayaran <b>{{ $bayar->metodeLabel() }}</b> berhasil{{ $bayar->waktu_bayar ? ' pada '.$bayar->waktu_bayar->translatedFormat('d M Y H:i') : '' }}. Pesananmu sudah diteruskan ke dapur. Terima kasih!</span></div>
+          <a class="btn" href="{{ route('pelanggan.tracking', ['pesanan' => $pesanan->id]) }}">Lacak Pesanan <svg class="ic"><use href="#i-arr"/></svg></a>
+        @else
+          @if ($menungguOtomatis)
+            {{-- instruksi VA / QRIS --}}
+            <div class="instr" id="instr">
+              <div class="card-head" style="margin-bottom:0"><div><h2>Selesaikan pembayaran {{ $bayar->metodeLabel() }}</h2><p style="font-size:13.5px;opacity:.7;margin-top:2px">Bayar tepat <b>{{ $rp($bayar->jumlah) }}</b> · status diperbarui otomatis</p></div></div>
+              @if ($bayar->metode === Pembayaran::METODE_QRIS)
+                <div class="qris-box">
+                  @if ($bayar->qris_url)<img src="{{ $bayar->qris_url }}" alt="Kode QRIS pembayaran">@endif
+                  <ol class="langkah" style="flex:1;min-width:220px">
+                    <li>Buka aplikasi m-banking atau e-wallet (GoPay, OVO, DANA, ShopeePay, dll.).</li>
+                    <li>Pilih menu bayar / scan QRIS, lalu scan kode di samping.</li>
+                    <li>Pastikan nominal {{ $rp($bayar->jumlah) }}, lalu konfirmasi.</li>
+                    <li>Halaman ini berubah otomatis setelah pembayaran diterima.</li>
+                  </ol>
+                </div>
+              @else
+                <div class="stripes" style="border-radius:20px;padding:12px"><div class="stamp-out"><div class="stamp va-box" style="padding:16px 18px">
+                  <div style="min-width:0"><div class="eyebrow" style="font-size:10.5px">Nomor Virtual Account · {{ $bank[$bayar->bank] ?? strtoupper($bayar->bank) }}</div><div class="va-no" id="noVa">{{ $bayar->nomor_va }}</div><small style="font-size:12.5px;opacity:.72">a.n. {{ config('resto.nama') }} · {{ $rp($bayar->jumlah) }}</small></div>
+                  <button class="btn o sm" type="button" id="salin">Salin</button></div></div></div>
+                <ol class="langkah">
+                  <li>Buka m-banking / ATM / internet banking {{ $bank[$bayar->bank] ?? '' }}.</li>
+                  <li>Pilih menu <b>Transfer → Virtual Account</b>, lalu masukkan nomor di atas.</li>
+                  <li>Periksa nama dan nominal {{ $rp($bayar->jumlah) }}, lalu konfirmasi.</li>
+                  <li>Halaman ini berubah otomatis setelah pembayaran diterima.</li>
+                </ol>
+              @endif
+              <div class="state" style="margin:0;align-items:center"><span class="tunggu"><i></i>Menunggu pembayaran…</span>
+                @if ($bayar->kedaluwarsa_pada)<span style="margin-left:auto;font-size:13px">Berlaku <b id="sisa" data-sampai="{{ $bayar->kedaluwarsa_pada->toIso8601String() }}">-</b></span>@endif</div>
+              @if ($sandbox)
+                <div class="note"><svg class="ic"><use href="#i-info"/></svg><span>Mode uji coba (sandbox): tidak ada uang sungguhan. Bayar lewat <a href="https://simulator.sandbox.midtrans.com/" target="_blank" rel="noopener" style="text-decoration:underline;font-weight:700">simulator Midtrans</a> dengan {{ $bayar->metode === Pembayaran::METODE_QRIS ? 'menyalin URL gambar QRIS' : 'nomor VA di atas' }}.</span></div>
+              @endif
+            </div>
+            <details class="ganti" style="margin-top:18px" @if ($errors->any()) open @endif><summary>Ganti metode pembayaran</summary>
           @else
-            @if ($ditolak)
-              <div class="state bad"><svg class="ic"><use href="#i-info"/></svg><span>Bukti pembayaran sebelumnya <b>ditolak</b> kasir. Periksa nominal dan tujuan transfer, lalu unggah bukti yang benar.</span></div>
-            @elseif ($bayar)
-              <div class="state"><svg class="ic"><use href="#i-info"/></svg><span>Metode saat ini: <b>{{ $bayar->metodeLabel() }}</b> · {{ $statusLabel }}. Kamu masih bisa mengganti metode atau bukti pembayaran sebelum diverifikasi.</span></div>
+            @if ($gagal)
+              <div class="state bad"><svg class="ic"><use href="#i-info"/></svg><span>Pembayaran sebelumnya <b>gagal atau kedaluwarsa</b>. Silakan pilih metode pembayaran lagi.</span></div>
+            @elseif ($tunai)
+              <div class="state"><svg class="ic"><use href="#i-cash"/></svg><span>Kamu memilih <b>bayar tunai</b>. {{ $pesanan->isDelivery() ? 'Siapkan uang saat pesanan diantar kurir.' : 'Bayar di kasir saat mengambil pesanan.' }} Pesanan menunggu konfirmasi kasir.</span></div>
             @endif
-            <div class="card-head" style="margin-bottom:6px"><div><h2>Pilih metode pembayaran</h2><p style="font-size:13.5px;opacity:.7;margin-top:2px">Tunai, transfer, atau QRIS</p></div></div>
-            <div class="g2 g3" id="pay">
-              <button type="button" @class(['opt', 'on' => $metode === Pembayaran::METODE_TRANSFER]) data-p="transfer"><div class="top"><span class="ico"><svg class="ic"><use href="#i-card"/></svg></span><span class="rad"></span></div><b>Transfer</b><small>Unggah foto bukti transfer</small></button>
-              <button type="button" @class(['opt', 'on' => $metode === Pembayaran::METODE_QRIS]) data-p="qris"><div class="top"><span class="ico"><svg class="ic"><use href="#i-qr"/></svg></span><span class="rad"></span></div><b>QRIS</b><small>Scan lalu unggah bukti</small></button>
+          @endif
+
+          <form method="post" action="{{ route('pelanggan.pembayaran.store', $pesanan) }}" id="fBayar">
+            @csrf
+            <input type="hidden" name="metode" id="metode" value="{{ $metode }}">
+            <input type="hidden" name="bank" id="bankIn" value="{{ $bankPilih }}">
+            <div class="card-head" style="margin:14px 0 6px"><div><h2>Pilih metode pembayaran</h2><p style="font-size:13.5px;opacity:.7;margin-top:2px">Virtual Account &amp; QRIS terverifikasi otomatis</p></div></div>
+            <div class="g3" id="pay">
+              <button type="button" @class(['opt', 'on' => $metode === Pembayaran::METODE_TRANSFER]) data-p="transfer" @disabled(! $midtransAktif)><div class="top"><span class="ico"><svg class="ic"><use href="#i-card"/></svg></span><span class="rad"></span></div><b>Virtual Account</b><small>BCA, BNI, BRI, Permata</small></button>
+              <button type="button" @class(['opt', 'on' => $metode === Pembayaran::METODE_QRIS]) data-p="qris" @disabled(! $midtransAktif)><div class="top"><span class="ico"><svg class="ic"><use href="#i-qr"/></svg></span><span class="rad"></span></div><b>QRIS</b><small>Semua m-banking &amp; e-wallet</small></button>
               <button type="button" @class(['opt', 'on' => $metode === Pembayaran::METODE_TUNAI]) data-p="tunai"><div class="top"><span class="ico"><svg class="ic"><use href="#i-cash"/></svg></span><span class="rad"></span></div><b>Tunai</b><small>{{ $pesanan->isDelivery() ? 'Bayar ke kurir / kasir' : 'Bayar di kasir' }}</small></button>
             </div>
-
+            @unless ($midtransAktif)
+              <div class="note" style="margin-top:14px"><svg class="ic"><use href="#i-info"/></svg><span>Pembayaran Virtual Account &amp; QRIS belum diaktifkan. Untuk sementara gunakan tunai.</span></div>
+            @endunless
             <div @class(['panel', 'on' => $metode === Pembayaran::METODE_TRANSFER]) data-panel="transfer">
-              <div class="stripes" style="border-radius:20px;padding:12px"><div class="stamp-out"><div class="stamp" style="padding:16px 18px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
-                <div><div class="eyebrow" style="font-size:10.5px">Nomor rekening restoran · {{ $rekening['bank'] }}</div><div style="font:700 clamp(19px,2vw,24px) var(--f-title);margin-top:2px" id="noRek">{{ $rekening['nomor'] }}</div><small style="font-size:12.5px;opacity:.72">a.n. {{ $rekening['atas_nama'] }} · transfer sesuai total {{ $rp($pesanan->total) }}</small></div>
-                <button class="btn o sm" type="button" id="salin">Salin</button></div></div></div>
+              <div class="eyebrow" style="font-size:10.5px">Pilih bank</div>
+              <div class="banks" id="banks">@foreach ($bank as $kode => $nama)<button type="button" data-bank="{{ $kode }}" @class(['on' => $bankPilih === $kode])>{{ $nama }}</button>@endforeach</div>
+              <div class="note" style="margin-top:14px"><svg class="ic"><use href="#i-info"/></svg><span>Nomor Virtual Account dibuat khusus untuk pesanan ini. Tidak perlu unggah bukti, pembayaran dicek otomatis.</span></div>
             </div>
             <div @class(['panel', 'on' => $metode === Pembayaran::METODE_QRIS]) data-panel="qris">
-              <div class="qris">
-                @if (config('resto.qris_gambar'))
-                  <img class="qr" src="{{ asset(config('resto.qris_gambar')) }}" alt="Kode QRIS restoran">
-                @else
-                  {{-- contoh pola QR; ganti dengan gambar QRIS asli lewat RESTO_QRIS_GAMBAR di .env --}}
-                  @php
-                    $sel = [];
-                    for ($i = 0; $i < 170; $i++) {
-                        $x = ($i * 7 + 3) % 29; $y = ($i * 11 + 5) % 29;
-                        if (! (($x < 8 && $y < 8) || ($x > 20 && $y < 8) || ($x < 8 && $y > 20))) { $sel[] = [$x, $y]; }
-                    }
-                  @endphp
-                  <svg class="qr" viewBox="0 0 29 29" aria-label="Kode QRIS restoran" shape-rendering="crispEdges">
-                    @foreach ([[0, 0], [22, 0], [0, 22]] as $k)
-                      <rect x="{{ $k[0] }}" y="{{ $k[1] }}" width="7" height="7" fill="#97173A"/><rect x="{{ $k[0] + 1 }}" y="{{ $k[1] + 1 }}" width="5" height="5" fill="#F8F5E6"/><rect x="{{ $k[0] + 2 }}" y="{{ $k[1] + 2 }}" width="3" height="3" fill="#97173A"/>
-                    @endforeach
-                    @foreach ($sel as $s)<rect x="{{ $s[0] }}" y="{{ $s[1] }}" width="1" height="1" fill="#97173A"/>@endforeach
-                  </svg>
-                @endif
-                <div style="flex:1;min-width:200px"><b style="font:700 17px var(--f-title)">QRIS {{ config('resto.nama') }}</b><p style="font-size:13.5px;opacity:.75;margin-top:4px">Scan dengan aplikasi bank atau e-wallet, bayar sesuai total <b>{{ $rp($pesanan->total) }}</b>, lalu unggah tangkapan layar bukti pembayaran.</p></div>
-              </div>
+              <div class="note"><svg class="ic"><use href="#i-info"/></svg><span>Kode QRIS dibuat khusus untuk pesanan ini dan bisa dibayar dari aplikasi bank atau e-wallet apa saja. Tidak perlu unggah bukti.</span></div>
             </div>
             <div @class(['panel', 'on' => $metode === Pembayaran::METODE_TUNAI]) data-panel="tunai">
-              <div class="note"><svg class="ic"><use href="#i-info"/></svg><span>Status pembayaran disimpan sebagai <b>Bayar Tunai</b>. {{ $pesanan->isDelivery() ? 'Siapkan uang saat pesanan diantar kurir.' : 'Lakukan pembayaran di kasir saat mengambil atau setelah makan.' }}</span></div>
+              <div class="note"><svg class="ic"><use href="#i-info"/></svg><span>{{ $pesanan->isDelivery() ? 'Bayar tunai ke kurir saat pesanan tiba.' : 'Bayar tunai di kasir.' }} Kasir akan mengonfirmasi pesananmu.</span></div>
             </div>
-
-            <div class="field" id="buktiWrap" style="margin-top:18px" @if ($metode === Pembayaran::METODE_TUNAI) hidden @endif><label>Foto bukti pembayaran</label>
-              <div class="upl">
-                @if ($bayar?->buktiUrl() && ! $ditolak)<img class="pv" id="pv" src="{{ $bayar->buktiUrl() }}" alt="">@else<img class="pv" id="pv" src="" alt="" hidden>@endif
-                <div class="upl-ic" id="pvNone" @if ($bayar?->buktiUrl() && ! $ditolak) hidden @endif><svg class="ic"><use href="#i-upload"/></svg></div>
-                <div style="flex:1;min-width:0"><b style="font:600 14.5px var(--f-title)" id="fileName">{{ $bayar?->bukti_bayar && ! $ditolak ? 'Bukti sudah diunggah' : 'Belum ada file' }}</b><div style="font-size:12.5px;opacity:.7">Format JPG/PNG/WEBP, maksimal 2 MB</div></div>
-                <button class="btn o sm" type="button" id="pick">{{ $bayar?->bukti_bayar && ! $ditolak ? 'Ganti' : 'Pilih foto' }}</button>
-                <input type="file" name="bukti_bayar" id="bukti" accept="image/jpeg,image/png,image/webp"></div>
-              <div class="note" style="margin-top:14px"><svg class="ic"><use href="#i-info"/></svg><span>Setelah dikirim, status pembayaran menjadi <b>Menunggu Verifikasi</b> dan kasir menerima notifikasi pembayaran.</span></div>
-            </div>
-          @endif
-        </section>
-      </div>
-
-      <aside class="summary">
-        <div class="sum-card">
-          <div class="sum-body"><div class="eyebrow" style="margin-bottom:12px">Rincian tagihan</div>
-            @foreach ($pesanan->detail as $d)
-              <div class="sum-row"><span>{{ $d->jumlah }}× {{ $d->menu->nama_menu }}</span><span>{{ $rp($d->subtotal) }}</span></div>
-            @endforeach
-            <div class="hr" style="border-top:1.5px dashed var(--m60);margin:12px 0 6px;opacity:.6"></div>
-            <div class="sum-row"><span>Subtotal</span><span>{{ $rp($pesanan->subtotal) }}</span></div>
-            <div class="sum-row"><span>Pajak &amp; biaya layanan</span><span>{{ $rp($pesanan->pajakDanLayanan()) }}</span></div>
-            @if ($pesanan->isDelivery())<div class="sum-row"><span>Ongkos kirim ({{ $pesanan->pengiriman?->zona?->nama_zona }})</span><span>{{ $rp($pesanan->ongkir) }}</span></div>@endif
-          </div>
-          <div class="sum-total"><div class="t"><span class="eyebrow" style="opacity:.8">Total pembayaran</span><b>{{ $rp($pesanan->total) }}</b></div>
-            @if ($bisaBayar)
-              <button class="btn cr blk" id="kirim" type="submit">{{ $bayar && ! $ditolak ? 'Perbarui Pembayaran' : 'Kirim Pembayaran' }} <svg class="ic"><use href="#i-check"/></svg></button>
-              <small>Kasir memverifikasi pembayaran transfer/QRIS</small>
-            @else
-              <a class="btn cr blk" href="{{ route('pelanggan.tracking', ['pesanan' => $pesanan->id]) }}">Lacak Pesanan <svg class="ic"><use href="#i-arr"/></svg></a>
-            @endif
-          </div>
-        </div>
-      </aside>
+            <button class="btn blk" type="submit" id="kirim" style="margin-top:18px;width:100%">Lanjutkan Pembayaran <svg class="ic"><use href="#i-arr"/></svg></button>
+          </form>
+          @if ($menungguOtomatis)</details>@endif
+        @endif
+      </section>
     </div>
-  </form>
+
+    <aside class="summary">
+      <div class="sum-card">
+        <div class="sum-body"><div class="eyebrow" style="margin-bottom:12px">Rincian tagihan</div>
+          @foreach ($pesanan->detail as $d)
+            <div class="sum-row"><span>{{ $d->jumlah }}× {{ $d->menu->nama_menu }}</span><span>{{ $rp($d->subtotal) }}</span></div>
+          @endforeach
+          <div class="hr" style="border-top:1.5px dashed var(--m60);margin:12px 0 6px;opacity:.6"></div>
+          <div class="sum-row"><span>Subtotal</span><span>{{ $rp($pesanan->subtotal) }}</span></div>
+          <div class="sum-row"><span>Pajak &amp; biaya layanan</span><span>{{ $rp($pesanan->pajakDanLayanan()) }}</span></div>
+          @if ($pesanan->isDelivery())<div class="sum-row"><span>Ongkos kirim ({{ $pesanan->pengiriman?->zona?->nama_zona }})</span><span>{{ $rp($pesanan->ongkir) }}</span></div>@endif
+        </div>
+        <div class="sum-total"><div class="t"><span class="eyebrow" style="opacity:.8">Total pembayaran</span><b>{{ $rp($pesanan->total) }}</b></div>
+          <a class="btn cr blk" href="{{ route('pelanggan.tracking', ['pesanan' => $pesanan->id]) }}">Lacak Pesanan <svg class="ic"><use href="#i-arr"/></svg></a>
+          <small>{{ $lunas ? 'Pembayaran sudah diterima' : 'Status pesanan bisa dipantau kapan saja' }}</small></div>
+      </div>
+    </aside>
+  </div>
 </main>
 @endsection
 
 @push('modals')
 @if (session('pesanan_baru'))
 <div class="ovl on" id="ovlBaru"><div class="modal">
-  <div class="top stripes" style="padding:0"><div style="padding:34px 28px 22px"><div class="stamp-out" style="display:inline-block"><div class="stamp" style="padding:24px 34px">
-    <div class="ok"><svg class="ic" style="width:36px;height:36px;stroke-width:2.6"><use href="#i-check"/></svg></div><h3>Pesanan Dibuat!</h3></div></div></div></div>
+  <div class="top stripes"><div class="stamp-out" style="display:inline-block"><div class="stamp" style="padding:24px 34px">
+    <div class="ok"><svg class="ic" style="width:36px;height:36px;stroke-width:2.6"><use href="#i-check"/></svg></div><h3>Pesanan Dibuat!</h3></div></div></div>
   <div style="padding:22px 28px 6px"><div class="eyebrow" style="opacity:.7">Nomor pesanan</div><div class="ord">{{ $pesanan->kode() }}</div>
     <span class="pill b" style="font-size:13px;padding:7px 14px">Menunggu Pembayaran</span>
-    <p style="font:500 14px var(--f-body);opacity:.75;margin:14px 0 18px">Pilih metode pembayaran agar pesanan dikonfirmasi kasir dan diteruskan ke dapur.</p></div>
+    <p style="font:500 14px/1.5 var(--f-body);opacity:.75;margin:14px 0 18px">Pilih metode pembayaran. Pembayaran Virtual Account &amp; QRIS dicek otomatis dan pesanan langsung diteruskan ke dapur.</p></div>
   <div class="bot"><button class="btn blk" type="button" data-close-ovl>Bayar Sekarang <svg class="ic"><use href="#i-arr"/></svg></button><a class="btn o blk" href="{{ route('pelanggan.beranda') }}">Kembali ke Beranda</a></div>
-</div></div>
-@endif
-@if (session('pembayaran_terkirim'))
-<div class="ovl on" id="ovlKirim"><div class="modal">
-  <div class="stripes" style="padding:30px 28px 22px"><div class="stamp-out" style="display:inline-block"><div class="stamp" style="padding:22px 32px">
-    <div style="width:68px;height:68px;border-radius:50%;background:var(--m);color:var(--cr);display:grid;place-items:center;margin:0 auto 12px"><svg class="ic" style="width:32px;height:32px;stroke-width:2.6"><use href="#i-check"/></svg></div>
-    <div style="font:700 24px var(--f-title)">Pembayaran Terkirim</div></div></div></div>
-  <div style="padding:20px 28px 26px"><span class="pill b" style="font-size:13px;padding:7px 14px">{{ session('pembayaran_terkirim') === Pembayaran::METODE_TUNAI ? 'Bayar Tunai' : 'Menunggu Verifikasi' }}</span>
-    <p style="font-size:14px;opacity:.75;margin:14px 0 18px">Kasir telah menerima notifikasi pembayaran. Status pesanan bisa dipantau di halaman lacak pesanan.</p>
-    <a class="btn blk" href="{{ route('pelanggan.tracking', ['pesanan' => $pesanan->id]) }}">Lacak Pesanan <svg class="ic"><use href="#i-arr"/></svg></a></div>
 </div></div>
 @endif
 @endpush
@@ -307,30 +329,50 @@
     document.querySelectorAll('.ovl').forEach(function (o) {
       o.addEventListener('click', function (e) { if (e.target === o || e.target.closest('[data-close-ovl]')) o.classList.remove('on'); });
     });
-    var form = document.getElementById('fBayar'); if (!document.getElementById('pay')) return;
-    var punyaBukti = @json((bool) ($bayar?->bukti_bayar && ! $ditolak));
-    document.querySelectorAll('#pay .opt').forEach(function (b) {
-      b.addEventListener('click', function () {
-        metode.value = b.dataset.p;
-        document.querySelectorAll('#pay .opt').forEach(function (x) { x.classList.toggle('on', x === b); });
-        document.querySelectorAll('.panel').forEach(function (x) { x.classList.toggle('on', x.dataset.panel === b.dataset.p); });
-        buktiWrap.hidden = b.dataset.p === 'tunai';
-      });
+
+    /* pilih metode & bank */
+    var pay = document.getElementById('pay');
+    pay && pay.addEventListener('click', function (e) {
+      var b = e.target.closest('.opt'); if (!b || b.disabled) return;
+      metode.value = b.dataset.p;
+      pay.querySelectorAll('.opt').forEach(function (x) { x.classList.toggle('on', x === b); });
+      document.querySelectorAll('.panel').forEach(function (x) { x.classList.toggle('on', x.dataset.panel === b.dataset.p); });
     });
-    pick.addEventListener('click', function () { bukti.click(); });
-    bukti.addEventListener('change', function () {
-      var f = bukti.files[0]; if (!f) return;
-      if (f.size > 2 * 1024 * 1024) { pToast('Ukuran foto maksimal 2 MB'); bukti.value = ''; return; }
-      pv.src = URL.createObjectURL(f); pv.hidden = false; pvNone.hidden = true; fileName.textContent = f.name; pick.textContent = 'Ganti';
+    var banks = document.getElementById('banks');
+    banks && banks.addEventListener('click', function (e) {
+      var b = e.target.closest('button'); if (!b) return;
+      bankIn.value = b.dataset.bank; banks.querySelectorAll('button').forEach(function (x) { x.classList.toggle('on', x === b); });
     });
+    var f = document.getElementById('fBayar');
+    f && f.addEventListener('submit', function () { kirim.disabled = true; kirim.textContent = 'Memproses…'; });
+
     var salin = document.getElementById('salin');
     salin && salin.addEventListener('click', function () {
-      navigator.clipboard && navigator.clipboard.writeText(noRek.textContent.replace(/\s/g, '')).then(function () { pToast('Nomor rekening disalin'); });
+      var no = noVa.textContent.trim();
+      (navigator.clipboard ? navigator.clipboard.writeText(no) : Promise.reject()).then(function () { pToast('Nomor VA disalin'); }, function () { pToast(no); });
     });
-    form.addEventListener('submit', function (e) {
-      if (metode.value !== 'tunai' && !bukti.files.length && !punyaBukti) { e.preventDefault(); pToast('Unggah foto bukti pembayaran dulu'); return; }
-      kirim.disabled = true;
-    });
+
+    /* hitung mundur masa berlaku */
+    var sisa = document.getElementById('sisa');
+    if (sisa) {
+      var sampai = new Date(sisa.dataset.sampai).getTime();
+      var tik = function () {
+        var d = Math.max(0, Math.floor((sampai - Date.now()) / 1000));
+        sisa.textContent = Math.floor(d / 3600) ? Math.floor(d / 3600) + ' j ' + Math.floor(d % 3600 / 60) + ' m' : Math.floor(d / 60) + ' m ' + String(d % 60).padStart(2, '0') + ' d';
+        if (!d) location.reload();
+      };
+      tik(); setInterval(tik, 1000);
+    }
+
+    /* cek status pembayaran otomatis */
+    @if ($menungguOtomatis)
+      var cek = function () {
+        sendJson(@json(route('pelanggan.pembayaran.status', $pesanan)), 'GET').then(function (r) {
+          if (r.lunas || r.gagal) location.reload(); else setTimeout(cek, 5000);
+        }).catch(function () { setTimeout(cek, 8000); });
+      };
+      setTimeout(cek, 3000);
+    @endif
   })();
 </script>
 @endpush

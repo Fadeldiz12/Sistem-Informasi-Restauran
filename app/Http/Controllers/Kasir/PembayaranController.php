@@ -49,13 +49,6 @@ class PembayaranController extends Controller
             : $redirect;
     }
 
-    public function tolakBukti(Request $request, Pesanan $pesanan): RedirectResponse
-    {
-        $this->pesanan->tolakBukti($pesanan, $request->user());
-
-        return to_route('kasir.pembayaran')->with('status', "Bukti pembayaran {$pesanan->kode()} ditolak · pelanggan diminta unggah ulang");
-    }
-
     /**
      * Halaman struk yang bisa dicetak.
      */

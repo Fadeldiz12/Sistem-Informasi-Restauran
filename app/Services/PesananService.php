@@ -9,16 +9,17 @@ use App\Models\Pesanan;
 use App\Models\TiketDapur;
 use App\Models\User;
 use App\Models\ZonaPengiriman;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use RuntimeException;
 
 /**
  * Aturan inti pesanan: hitung total, buat pesanan, konfirmasi/tolak, dan pembayaran.
  */
 class PesananService
 {
+    public function __construct(private MidtransService $midtrans) {}
+
     /**
      * Total = subtotal + pajak% + biaya layanan% + ongkir.
      *
@@ -134,8 +135,8 @@ class PesananService
         if (! $bayar) {
             throw ValidationException::withMessages(['pesanan' => 'Pelanggan belum memilih metode pembayaran.']);
         }
-        if ($bayar->status_bayar === Pembayaran::STATUS_DITOLAK) {
-            throw ValidationException::withMessages(['pesanan' => 'Bukti pembayaran ditolak. Tunggu pelanggan mengunggah ulang.']);
+        if ($bayar->metode !== Pembayaran::METODE_TUNAI) {
+            throw ValidationException::withMessages(['pesanan' => 'Pesanan VA/QRIS otomatis masuk dapur setelah lunas, tidak perlu dikonfirmasi.']);
         }
 
         DB::transaction(function () use ($pesanan, $kasir) {
@@ -152,9 +153,11 @@ class PesananService
     }
 
     /**
-     * Pelanggan memilih metode pembayaran (dan mengunggah bukti untuk transfer/QRIS).
+     * Pelanggan memilih metode pembayaran.
+     * - Tunai: dibayar di kasir / ke kurir, kasir yang menandai lunas.
+     * - Transfer (Virtual Account) & QRIS: dibuat lewat Midtrans dan lunas otomatis.
      */
-    public function pilihPembayaran(Pesanan $pesanan, string $metode, ?UploadedFile $bukti): Pembayaran
+    public function pilihPembayaran(Pesanan $pesanan, string $metode, ?string $bank = null): Pembayaran
     {
         if ($pesanan->status === Pesanan::STATUS_DIBATALKAN) {
             throw ValidationException::withMessages(['metode' => 'Pesanan ini sudah dibatalkan.']);
@@ -164,27 +167,86 @@ class PesananService
         }
 
         $lama = $pesanan->pembayaran;
-        $path = $lama?->bukti_bayar;
 
         if ($metode === Pembayaran::METODE_TUNAI) {
-            $path = null;
-        } elseif ($bukti) {
-            $path = $bukti->store('bukti-bayar', 'local');
-        } elseif (! $path || $lama?->status_bayar === Pembayaran::STATUS_DITOLAK) {
-            throw ValidationException::withMessages(['bukti_bayar' => 'Unggah foto bukti pembayaran.']);
+            $this->batalkanTransaksiLama($lama);
+
+            return $pesanan->pembayaran()->updateOrCreate([], [
+                'metode' => $metode, 'jumlah' => $pesanan->total, 'status_bayar' => Pembayaran::STATUS_MENUNGGU,
+                'waktu_bayar' => null, 'bukti_bayar' => null,
+                'kode_transaksi' => null, 'bank' => null, 'nomor_va' => null, 'qris_url' => null, 'kedaluwarsa_pada' => null,
+            ]);
         }
 
-        if ($lama?->bukti_bayar && $lama->bukti_bayar !== $path) {
-            Storage::disk('local')->delete($lama->bukti_bayar);
+        // VA / QRIS yang sama dan masih berlaku dipakai lagi (tidak membuat transaksi baru)
+        if ($lama?->isOtomatis() && $lama->metode === $metode && $lama->bank === ($metode === Pembayaran::METODE_QRIS ? null : $bank)
+            && $lama->status_bayar === Pembayaran::STATUS_MENUNGGU && ! $lama->isKedaluwarsa()) {
+            return $lama;
         }
 
-        return $pesanan->pembayaran()->updateOrCreate([], [
-            'metode' => $metode,
-            'jumlah' => $pesanan->total,
-            'bukti_bayar' => $path,
-            'status_bayar' => Pembayaran::STATUS_MENUNGGU,
-            'waktu_bayar' => $metode === Pembayaran::METODE_TUNAI ? null : now(),
+        try {
+            $hasil = $this->midtrans->charge($pesanan->loadMissing('pelanggan'), $metode, $bank);
+        } catch (RuntimeException $e) {
+            throw ValidationException::withMessages(['metode' => $e->getMessage()]);
+        }
+
+        $this->batalkanTransaksiLama($lama);
+
+        return $pesanan->pembayaran()->updateOrCreate([], $hasil + [
+            'metode' => $metode, 'jumlah' => $pesanan->total, 'status_bayar' => Pembayaran::STATUS_MENUNGGU,
+            'waktu_bayar' => null, 'bukti_bayar' => null,
         ]);
+    }
+
+    /**
+     * Terapkan status dari Midtrans (notifikasi atau cek status).
+     * Lunas → pesanan online yang masih menunggu langsung diproses dan tiket dikirim ke dapur.
+     */
+    public function terapkanStatusGateway(Pembayaran $bayar, ?string $status, ?string $fraud = null): Pembayaran
+    {
+        if ($bayar->status_bayar === Pembayaran::STATUS_LUNAS) {
+            return $bayar;
+        }
+
+        $lunas = $status === 'settlement' || ($status === 'capture' && in_array($fraud, [null, 'accept'], true));
+        $gagal = in_array($status, ['expire', 'cancel', 'deny', 'failure'], true);
+
+        if ($lunas) {
+            DB::transaction(function () use ($bayar) {
+                $bayar->update(['status_bayar' => Pembayaran::STATUS_LUNAS, 'waktu_bayar' => now()]);
+
+                $pesanan = $bayar->pesanan()->lockForUpdate()->first();
+                if ($pesanan && $pesanan->status === Pesanan::STATUS_MENUNGGU) {
+                    $pesanan->update(['status' => Pesanan::STATUS_DIPROSES]);
+                    $this->kirimTiketDapur($pesanan);
+                }
+            });
+        } elseif ($gagal) {
+            $bayar->update(['status_bayar' => Pembayaran::STATUS_DITOLAK]);
+        }
+
+        return $bayar->refresh();
+    }
+
+    /**
+     * Cek status VA/QRIS ke Midtrans (dipakai halaman pembayaran pelanggan, aman untuk localhost tanpa webhook).
+     */
+    public function cekStatusGateway(Pembayaran $bayar): Pembayaran
+    {
+        if (! $bayar->isOtomatis() || $bayar->status_bayar !== Pembayaran::STATUS_MENUNGGU) {
+            return $bayar;
+        }
+
+        $res = $this->midtrans->status($bayar->kode_transaksi);
+
+        return $this->terapkanStatusGateway($bayar, $res['transaction_status'], $res['fraud_status']);
+    }
+
+    private function batalkanTransaksiLama(?Pembayaran $lama): void
+    {
+        if ($lama?->isOtomatis() && $lama->status_bayar === Pembayaran::STATUS_MENUNGGU) {
+            $this->midtrans->batal($lama->kode_transaksi);
+        }
     }
 
     /**
@@ -209,19 +271,6 @@ class PesananService
             'status_bayar' => Pembayaran::STATUS_LUNAS,
             'waktu_bayar' => now(),
         ]);
-    }
-
-    /**
-     * Kasir menolak bukti transfer/QRIS; pelanggan diminta mengunggah ulang.
-     */
-    public function tolakBukti(Pesanan $pesanan, User $kasir): void
-    {
-        $bayar = $pesanan->pembayaran;
-        if (! $bayar || $bayar->metode === Pembayaran::METODE_TUNAI || $bayar->status_bayar !== Pembayaran::STATUS_MENUNGGU) {
-            throw ValidationException::withMessages(['pesanan' => 'Tidak ada bukti pembayaran yang menunggu verifikasi.']);
-        }
-
-        $bayar->update(['status_bayar' => Pembayaran::STATUS_DITOLAK, 'id_kasir' => $kasir->id]);
     }
 
     /**

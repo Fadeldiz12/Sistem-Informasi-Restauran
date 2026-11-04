@@ -17,9 +17,9 @@ class DashboardController extends Controller
 
         // notifikasi: gabungan kejadian terbaru yang perlu diperhatikan kasir
         $notif = collect()
-            ->merge(Pembayaran::with('pesanan.pelanggan')->where('status_bayar', Pembayaran::STATUS_MENUNGGU)->where('metode', '!=', Pembayaran::METODE_TUNAI)
-                ->latest('waktu_bayar')->limit(5)->get()
-                ->map(fn ($b) => ['ikon' => 'i-wallet', 'm' => true, 'judul' => 'Bukti '.strtolower($b->metodeLabel()).' baru · '.$b->pesanan->kode(), 'ket' => $b->pesanan->namaPemesan().' · Rp '.number_format($b->jumlah, 0, ',', '.'), 'waktu' => $b->waktu_bayar ?? $b->updated_at, 'url' => route('kasir.pembayaran', ['pesanan' => $b->id_pesanan])]))
+            ->merge(Pembayaran::with('pesanan.pelanggan')->where('status_bayar', Pembayaran::STATUS_LUNAS)->whereNotNull('kode_transaksi')
+                ->whereDate('waktu_bayar', today())->latest('waktu_bayar')->limit(5)->get()
+                ->map(fn ($b) => ['ikon' => 'i-wallet', 'm' => true, 'judul' => $b->metodeLabel().' lunas · '.$b->pesanan->kode(), 'ket' => $b->pesanan->namaPemesan().' · Rp '.number_format($b->jumlah, 0, ',', '.').' · otomatis ke dapur', 'waktu' => $b->waktu_bayar, 'url' => route('kasir.dashboard').'#berjalan']))
             ->merge(Pesanan::menungguKonfirmasi()->with('pelanggan', 'pengiriman.zona')->limit(5)->get()
                 ->map(fn ($p) => ['ikon' => 'i-bell', 'm' => false, 'judul' => 'Pesanan online masuk · '.$p->kode(), 'ket' => $p->layananDetail(), 'waktu' => $p->waktu_pesan, 'url' => route('kasir.online', ['pesanan' => $p->id])]))
             ->merge(Pesanan::where('status', Pesanan::STATUS_SIAP)->where('jenis_layanan', '!=', Pesanan::LAYANAN_DELIVERY)->with('pelanggan')->latest('updated_at')->limit(5)->get()

@@ -6,13 +6,12 @@
 @section('title', 'Pembayaran')
 @section('crumb', 'Kasir / Pembayaran')
 @section('heading', 'Proses Pembayaran')
-@section('sub', 'Pembayaran tunai, verifikasi transfer & QRIS, dan cetak struk')
+@section('sub', 'Pembayaran tunai di kasir dan cetak struk · VA & QRIS online lunas otomatis')
 
 @php
   $rp = fn ($n) => 'Rp '.number_format((float) $n, 0, ',', '.');
   $bayar = $pesanan?->pembayaran;
   $metode = old('metode', $bayar?->metode ?? Pembayaran::METODE_TUNAI);
-  $punyaBukti = (bool) $bayar?->bukti_bayar;
   $total = (float) ($pesanan?->total ?? 0);
   // pilihan cepat: uang pas, lalu dibulatkan ke atas ke 10rb, 50rb, 100rb
   $cepat = collect([$total, ceil($total / 10000) * 10000, ceil($total / 50000) * 50000, ceil($total / 100000) * 100000])->unique()->values();
@@ -26,7 +25,6 @@
   .key { height: 48px; border-radius: 14px; box-shadow: inset 0 0 0 1.4px var(--m15); font: 700 20px var(--f-title); }
   .key:hover { background: var(--pp); }
   .mt { display: none; } .mt.on { display: block; }
-  .bukti-big { width: 96px; height: 120px; border-radius: 12px; object-fit: cover; box-shadow: inset 0 0 0 1.2px var(--m); flex: none; background: var(--cr); }
   .btn[disabled] { opacity: .45; cursor: not-allowed; }
   .struk .sl { border-top: 1.5px dashed var(--m60); margin: 12px 0; }
   .struk .sr { display: flex; justify-content: space-between; gap: 10px; padding: 2px 0; }
@@ -73,13 +71,7 @@
           <div class="stamp-out" style="margin-top:16px"><div class="stamp" style="padding:16px 20px;background:var(--bl);display:flex;justify-content:space-between;align-items:center"><span class="eyebrow">Kembalian</span><b id="chg" style="font:700 28px var(--f-title)">Rp 0</b></div></div></div>
 
         <div @class(['mt', 'on' => $metode !== Pembayaran::METODE_TUNAI]) data-mt="nontunai" style="margin-top:16px">
-          @if ($punyaBukti)
-            <div style="display:flex;gap:14px;align-items:center;padding:14px;border-radius:18px;background:var(--bl)"><a href="{{ $bayar->buktiUrl() }}" target="_blank" rel="noopener"><img class="bukti-big" src="{{ $bayar->buktiUrl() }}" alt="Bukti pembayaran"></a>
-              <div style="flex:1"><b style="font:600 14px var(--f-title)">Bukti {{ strtolower($bayar->metodeLabel()) }} pelanggan</b><div style="font-size:12.5px;opacity:.75">Diunggah {{ $bayar->waktu_bayar?->translatedFormat('d M H:i') }} · cek nominal {{ $rp($total) }}</div><a class="btn o sm" href="{{ $bayar->buktiUrl() }}" target="_blank" rel="noopener" style="margin-top:8px;background:var(--cr)"><svg class="ic" style="width:15px;height:15px"><use href="#i-eye"/></svg>Buka bukti</a></div></div>
-            <div class="seg" id="valid" style="margin-top:14px"><button type="button" class="on" data-v="1">Bukti valid</button><button type="button" data-v="0">Tidak valid · minta unggah ulang</button></div>
-          @else
-            <div class="note"><svg class="ic"><use href="#i-info"/></svg><span>Belum ada bukti dari pelanggan. Untuk pembeli di tempat, pastikan dana masuk (cek mutasi atau aplikasi QRIS) sebelum menandai lunas.</span></div>
-          @endif
+          <div class="note"><svg class="ic"><use href="#i-info"/></svg><span>Untuk pembeli di tempat yang membayar transfer / QRIS restoran: pastikan dana sudah masuk (cek mutasi atau aplikasi QRIS) sebelum menandai lunas.</span></div>
         </div>
       </div>
 
@@ -87,12 +79,10 @@
         <div class="card" style="padding:14px" id="padWrap"><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px" id="pad">@foreach (['1','2','3','4','5','6','7','8','9','000','0','⌫'] as $k)<button type="button" class="key" data-k="{{ $k }}">{{ $k }}</button>@endforeach</div></div>
         <label class="card soft" style="display:flex;gap:10px;align-items:center;padding:14px 16px;font:600 13px var(--f-body);cursor:pointer"><span class="toggle"><input type="checkbox" name="cetak" value="1" checked><i></i></span>Cetak struk setelah lunas</label>
         <button class="btn lg" type="submit" id="btnLunas"><svg class="ic"><use href="#i-check"/></svg>Tandai Lunas</button>
-        <button class="btn o lg" type="submit" id="btnTolak" form="fTolak" hidden><svg class="ic"><use href="#i-x"/></svg>Tolak Bukti</button>
         <p style="font-size:12px;opacity:.6;text-align:center">Pembayaran lunas otomatis dicatat sebagai pemasukan untuk laporan owner.</p>
       </div>
     </div>
   </form>
-  @if ($punyaBukti)<form method="post" action="{{ route('kasir.pembayaran.tolak', $pesanan) }}" id="fTolak">@csrf</form>@endif
   @endif
 @endsection
 
@@ -115,7 +105,7 @@
 @if ($pesanan)
 <script>
   (function () {
-    var total = {{ $total }}, valid = true;
+    var total = {{ $total }};
     var cash = document.getElementById('cash');
     var num = function (s) { return +String(s || '').replace(/\D/g, '') || 0; };
     function setMetode(m) {
@@ -132,9 +122,7 @@
       tombol();
     }
     function tombol() {
-      var tunai = metode.value === 'tunai', tolak = !tunai && !valid;
-      btnLunas.hidden = tolak; btnTolak.hidden = !tolak;
-      btnLunas.disabled = tunai && num(cash.value) < total;
+      btnLunas.disabled = metode.value === 'tunai' && num(cash.value) < total;
     }
     mtd.addEventListener('click', function (e) { var b = e.target.closest('button'); if (b) setMetode(b.dataset.m); });
     quick.addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; cash.value = (+b.dataset.v).toLocaleString('id-ID'); chgCalc(); });
@@ -143,8 +131,6 @@
       v = k === '⌫' ? v.slice(0, -1) : (v + k).replace(/^0+/, ''); cash.value = v ? (+v).toLocaleString('id-ID') : ''; chgCalc();
     });
     cash.addEventListener('input', function () { var v = num(cash.value); cash.value = v ? v.toLocaleString('id-ID') : ''; chgCalc(); });
-    var vs = document.getElementById('valid');
-    vs && vs.addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; valid = b.dataset.v === '1'; tombol(); });
     fLunas.addEventListener('submit', function () { btnLunas.disabled = true; });
     setMetode(metode.value); chgCalc();
   })();

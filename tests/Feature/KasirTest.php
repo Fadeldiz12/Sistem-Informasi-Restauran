@@ -10,7 +10,6 @@ use App\Models\User;
 use App\Models\ZonaPengiriman;
 use Database\Seeders\MasterDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -36,15 +35,14 @@ class KasirTest extends TestCase
         $this->pizza = Menu::where('nama_menu', 'Pizza Beef Pepperoni')->first();
     }
 
-    private function pesananOnline(string $layanan = 'take_away', ?string $metode = 'transfer'): Pesanan
+    private function pesananOnline(string $layanan = 'take_away', ?string $metode = 'tunai'): Pesanan
     {
         $this->actingAs($this->pelanggan)->postJson('/keranjang', ['id_menu' => $this->pizza->id]);
         $data = ['jenis_layanan' => $layanan] + ($layanan === 'delivery' ? ['alamat' => 'Jl. Karya 8', 'id_zona' => ZonaPengiriman::first()->id] : []);
         $this->actingAs($this->pelanggan)->post('/checkout', $data);
         $p = Pesanan::latest('id')->firstOrFail();
         if ($metode) {
-            $this->actingAs($this->pelanggan)->post("/pesanan/{$p->id}/pembayaran", ['metode' => $metode]
-                + ($metode === 'tunai' ? [] : ['bukti_bayar' => UploadedFile::fake()->image('bukti.jpg')]));
+            $this->actingAs($this->pelanggan)->post("/pesanan/{$p->id}/pembayaran", ['metode' => $metode]);
         }
 
         return $p->fresh();
@@ -64,7 +62,7 @@ class KasirTest extends TestCase
     public function test_konfirmasi_pesanan_online_membuat_tiket_dapur(): void
     {
         $p = $this->pesananOnline();
-        $this->actingAs($this->kasir)->get('/kasir/online')->assertSee($p->kode())->assertSee('Sari Wulandari')->assertSee('Menunggu Verifikasi');
+        $this->actingAs($this->kasir)->get('/kasir/online')->assertSee($p->kode())->assertSee('Sari Wulandari')->assertSee('Bayar Tunai');
 
         $this->actingAs($this->kasir)->post("/kasir/online/{$p->id}/terima")->assertSessionHasNoErrors()->assertSessionHas('status');
 
@@ -103,23 +101,12 @@ class KasirTest extends TestCase
 
     // ---------- pembayaran
 
-    public function test_verifikasi_bukti_transfer_valid_dan_tidak_valid(): void
+    public function test_pesanan_online_tunai_dibayar_di_kasir(): void
     {
         $p = $this->pesananOnline();
-        $this->actingAs($this->kasir)->get("/kasir/pembayaran?pesanan={$p->id}")->assertSee('Bukti transfer pelanggan');
+        $this->actingAs($this->kasir)->get("/kasir/pembayaran?pesanan={$p->id}")->assertSee($p->kode())->assertSee('Sari Wulandari');
 
-        // tidak valid -> ditolak, pelanggan unggah ulang, konfirmasi diblokir selama ditolak
-        $this->actingAs($this->kasir)->post("/kasir/pembayaran/{$p->id}/tolak-bukti")->assertSessionHasNoErrors();
-        $this->assertSame(Pembayaran::STATUS_DITOLAK, $p->fresh()->pembayaran->status_bayar);
-        $this->actingAs($this->kasir)->post("/kasir/online/{$p->id}/terima")->assertSessionHasErrors('pesanan');
-        $this->actingAs($this->pelanggan)->get("/pesanan/{$p->id}/pembayaran")->assertSee('ditolak');
-        $this->actingAs($this->pelanggan)->post("/pesanan/{$p->id}/pembayaran", ['metode' => 'transfer'])->assertSessionHasErrors('bukti_bayar');
-        $this->actingAs($this->pelanggan)->post("/pesanan/{$p->id}/pembayaran", ['metode' => 'transfer', 'bukti_bayar' => UploadedFile::fake()->image('baru.jpg')])
-            ->assertSessionHasNoErrors();
-        $this->assertSame(Pembayaran::STATUS_MENUNGGU, $p->fresh()->pembayaran->status_bayar);
-
-        // valid -> lunas
-        $this->actingAs($this->kasir)->post("/kasir/pembayaran/{$p->id}/lunas", ['metode' => 'transfer'])->assertSessionHasNoErrors();
+        $this->actingAs($this->kasir)->post("/kasir/pembayaran/{$p->id}/lunas", ['metode' => 'tunai', 'uang_diterima' => '200000'])->assertSessionHasNoErrors();
         $bayar = $p->fresh()->pembayaran;
         $this->assertSame([Pembayaran::STATUS_LUNAS, $this->kasir->id], [$bayar->status_bayar, $bayar->id_kasir]);
         $this->assertNotNull($bayar->waktu_bayar);
@@ -218,6 +205,6 @@ class KasirTest extends TestCase
             ->assertSee('Dine In 1 · Take Away 1 · Delivery 0')
             ->assertSee('1 pembayaran lunas')
             ->assertSee('Rp 125.350')
-            ->assertSee('Bukti transfer baru');
+            ->assertSee('Pesanan online masuk');
     }
 }

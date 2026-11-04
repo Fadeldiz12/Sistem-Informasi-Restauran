@@ -265,7 +265,7 @@
         <!-- 3. Pembayaran (info) -->
         <section class="card sec soft">
           <div class="sec-title" style="margin-bottom:12px"><span class="no" style="background:var(--bl);color:var(--m)">3</span><div><h2>Pembayaran</h2><p>Dilakukan setelah pesanan dibuat.</p></div></div>
-          <div class="note"><svg class="ic"><use href="#i-shield"/></svg><span>Setelah konfirmasi, pesanan tersimpan dengan status <b>Menunggu Konfirmasi</b>. Kamu bisa bayar tunai, transfer, atau QRIS lalu unggah bukti pembayaran.</span></div>
+          <div class="note"><svg class="ic"><use href="#i-shield"/></svg><span>Setelah konfirmasi, pesanan tersimpan dengan status <b>Menunggu Pembayaran</b>. Bayar dengan Virtual Account atau QRIS (dicek otomatis, langsung masuk dapur), atau tunai di kasir.</span></div>
         </section>
       </div>
 
