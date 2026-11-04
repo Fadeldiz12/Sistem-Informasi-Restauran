@@ -17,8 +17,8 @@ class DashboardController extends Controller
     {
         $hariIni = Pesanan::query()->whereDate('waktu_pesan', today());
 
-        $perStatus = (clone $hariIni)->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status');
-        $perLayanan = (clone $hariIni)->selectRaw('jenis_layanan, count(*) as total')->groupBy('jenis_layanan')->pluck('total', 'jenis_layanan');
+        $perStatus = (clone $hariIni)->selectRaw('status, count(*) as jumlah')->groupBy('status')->pluck('jumlah', 'status');
+        $perLayanan = (clone $hariIni)->selectRaw('jenis_layanan, count(*) as jumlah')->groupBy('jenis_layanan')->pluck('jumlah', 'jenis_layanan');
         $totalHariIni = $perStatus->sum();
         $totalKemarin = Pesanan::whereDate('waktu_pesan', today()->subDay())->count();
 
@@ -39,7 +39,7 @@ class DashboardController extends Controller
             'pengaturan' => PengaturanSistem::aktif(),
             'bahanKritis' => BahanBaku::stokKritis()->count(),
             'menungguKonfirmasi' => Pesanan::where('status', Pesanan::STATUS_MENUNGGU)->count(),
-            'pesananTerbaru' => Pesanan::with('pelanggan')->latest('waktu_pesan')->latest('id')->limit(6)->get(),
+            'pesananTerbaru' => Pesanan::with(['pelanggan', 'pengiriman.zona'])->latest('waktu_pesan')->latest('id')->limit(6)->get(),
         ]);
     }
 }

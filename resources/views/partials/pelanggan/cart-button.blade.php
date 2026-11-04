@@ -1,0 +1,2 @@
+{{-- Tombol keranjang di header; angka diperbarui lewat JS (data-cart-total / data-cart-count) --}}
+<a class="btn cart" href="{{ route('pelanggan.keranjang') }}" aria-label="Keranjang"><svg class="ic"><use href="#i-cart"/></svg><span class="txt" data-cart-total>Rp {{ number_format($keranjangInfo['subtotal'] ?? 0, 0, ',', '.') }}</span><span class="count" data-cart-count>{{ $keranjangInfo['jumlah'] ?? 0 }}</span></a>

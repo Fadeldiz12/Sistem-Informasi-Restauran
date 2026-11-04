@@ -95,7 +95,7 @@ class AuthTest extends TestCase
             'no_hp' => '081265432109', 'alamat' => 'Jl. Gatot Subroto No. 12',
         ]);
 
-        foreach (['/beranda', '/keranjang', '/checkout', '/pembayaran', '/tracking'] as $url) {
+        foreach (['/beranda', '/keranjang', '/tracking'] as $url) {
             $this->actingAs($pelanggan)->get($url)->assertOk()
                 ->assertSee('data-pm', false)
                 ->assertSeeInOrder(['Rina Amalia', 'rina@example.com', '081265432109', 'Jl. Gatot Subroto No. 12'])

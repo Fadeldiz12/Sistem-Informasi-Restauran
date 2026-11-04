@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Admin;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\BuktiBayarController;
+use App\Http\Controllers\Kasir;
 use App\Http\Controllers\Pelanggan;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -39,11 +41,25 @@ Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->n
 // Pelanggan
 Route::middleware(['auth', 'role:'.User::ROLE_PELANGGAN])->name('pelanggan.')->group(function () {
     Route::get('/beranda', Pelanggan\BerandaController::class)->name('beranda');
-    Route::view('/keranjang', 'pelanggan.keranjang')->name('keranjang');
-    Route::view('/checkout', 'pelanggan.checkout')->name('checkout');
-    Route::view('/pembayaran', 'pelanggan.pembayaran')->name('pembayaran');
-    Route::view('/tracking', 'pelanggan.tracking')->name('tracking');
+
+    Route::get('/keranjang', [Pelanggan\KeranjangController::class, 'index'])->name('keranjang');
+    Route::post('/keranjang', [Pelanggan\KeranjangController::class, 'store'])->name('keranjang.store');
+    Route::delete('/keranjang', [Pelanggan\KeranjangController::class, 'clear'])->name('keranjang.clear');
+    Route::patch('/keranjang/{menu}', [Pelanggan\KeranjangController::class, 'update'])->whereNumber('menu')->name('keranjang.update');
+    Route::delete('/keranjang/{menu}', [Pelanggan\KeranjangController::class, 'destroy'])->whereNumber('menu')->name('keranjang.destroy');
+
+    Route::get('/checkout', [Pelanggan\CheckoutController::class, 'create'])->name('checkout');
+    Route::post('/checkout', [Pelanggan\CheckoutController::class, 'store'])->middleware('throttle:10,1')->name('checkout.store');
+
+    Route::get('/pembayaran', [Pelanggan\PembayaranController::class, 'terakhir'])->name('pembayaran.terakhir');
+    Route::get('/pesanan/{pesanan}/pembayaran', [Pelanggan\PembayaranController::class, 'show'])->name('pembayaran');
+    Route::post('/pesanan/{pesanan}/pembayaran', [Pelanggan\PembayaranController::class, 'store'])->name('pembayaran.store');
+
+    Route::get('/tracking', Pelanggan\TrackingController::class)->name('tracking');
 });
+
+// Bukti pembayaran (privat): pemilik pesanan, kasir, owner, admin
+Route::get('/bukti-bayar/{pembayaran}', BuktiBayarController::class)->middleware('auth')->name('bukti.bayar');
 
 // Admin
 Route::middleware(['auth', 'role:'.User::ROLE_ADMIN])->prefix('admin')->name('admin.')->group(function () {
@@ -75,10 +91,20 @@ Route::middleware(['auth', 'role:'.User::ROLE_ADMIN])->prefix('admin')->name('ad
 
 // Kasir
 Route::middleware(['auth', 'role:'.User::ROLE_KASIR])->prefix('kasir')->name('kasir.')->group(function () {
-    Route::view('/dashboard', 'kasir.dashboard')->name('dashboard');
-    Route::view('/input', 'kasir.input')->name('input');
-    Route::view('/online', 'kasir.online')->name('online');
-    Route::view('/pembayaran', 'kasir.pembayaran')->name('pembayaran');
+    Route::get('/dashboard', Kasir\DashboardController::class)->name('dashboard');
+
+    Route::get('/input', [Kasir\InputPesananController::class, 'create'])->name('input');
+    Route::post('/input', [Kasir\InputPesananController::class, 'store'])->name('input.store');
+
+    Route::get('/online', [Kasir\PesananOnlineController::class, 'index'])->name('online');
+    Route::post('/online/{pesanan}/terima', [Kasir\PesananOnlineController::class, 'terima'])->name('online.terima');
+    Route::post('/online/{pesanan}/tolak', [Kasir\PesananOnlineController::class, 'tolak'])->name('online.tolak');
+
+    Route::get('/pembayaran', [Kasir\PembayaranController::class, 'index'])->name('pembayaran');
+    Route::post('/pembayaran/{pesanan}/lunas', [Kasir\PembayaranController::class, 'lunas'])->name('pembayaran.lunas');
+    Route::post('/pembayaran/{pesanan}/tolak-bukti', [Kasir\PembayaranController::class, 'tolakBukti'])->name('pembayaran.tolak');
+    Route::get('/pesanan/{pesanan}/struk', [Kasir\PembayaranController::class, 'struk'])->name('struk');
+    Route::post('/pesanan/{pesanan}/selesai', [Kasir\PembayaranController::class, 'selesai'])->name('selesai');
 });
 
 // Dapur

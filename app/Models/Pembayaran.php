@@ -31,6 +31,22 @@ class Pembayaran extends Model
         ];
     }
 
+    public const LABEL_METODE = [
+        self::METODE_TUNAI => 'Tunai',
+        self::METODE_TRANSFER => 'Transfer',
+        self::METODE_QRIS => 'QRIS',
+    ];
+
+    public function metodeLabel(): string
+    {
+        return self::LABEL_METODE[$this->metode] ?? $this->metode;
+    }
+
+    public function buktiUrl(): ?string
+    {
+        return $this->bukti_bayar ? route('bukti.bayar', $this) : null;
+    }
+
     public function pesanan(): BelongsTo
     {
         return $this->belongsTo(Pesanan::class, 'id_pesanan');

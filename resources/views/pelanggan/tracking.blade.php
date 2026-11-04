@@ -1,12 +1,8 @@
-<!doctype html>
-<html lang="id">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Lacak Pesanan · SIM Resto</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Raleway:wght@600;700;800&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+@extends('layouts.pelanggan')
+
+@section('title', 'Lacak Pesanan')
+
+@push('styles')
 <style>
   /* =========================================================
      PALET & FONT (sama dengan beranda)
@@ -142,84 +138,126 @@
   @media (max-width: 1100px) { .split2, .flows { grid-template-columns: minmax(0, 1fr); } }
   @media (max-width: 900px) { .split { grid-template-columns: minmax(0, 1fr); } }
 </style>
-</head>
-<body>
-<svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
-  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></symbol>
-  <symbol id="i-truck" viewBox="0 0 24 24"><path d="M2 6h11v10H2zM13 9h4l4 4v3h-8"/><circle cx="6" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></symbol>
-  <symbol id="i-bag" viewBox="0 0 24 24"><path d="M5 8h14l-1 13H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></symbol>
-  <symbol id="i-dine" viewBox="0 0 24 24"><path d="M6 3v7a2 2 0 0 0 4 0V3M8 12v9"/><path d="M17 3c-2.2 2-2.2 6.5 0 8.5V21"/></symbol>
-  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></symbol>
-  <symbol id="i-cart" viewBox="0 0 24 24"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2 3h3l2.6 12.2a1 1 0 0 0 1 .8h9.6a1 1 0 0 0 1-.8L21 7H6"/></symbol>
-  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
-  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
-  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol>
-  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></symbol>
-  <symbol id="i-arr" viewBox="0 0 24 24"><path d="M4 12h16M14 6l6 6-6 6"/></symbol>
-  <symbol id="i-arrl" viewBox="0 0 24 24"><path d="M20 12H4M10 6l-6 6 6 6"/></symbol>
-  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></symbol>
-  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/></symbol>
-  <symbol id="i-tag" viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="7.5" r="1.4"/></symbol>
-  <symbol id="i-receipt" viewBox="0 0 24 24"><path d="M5 3h14v18l-2.5-1.5L14 21l-2-1.5L10 21l-2.5-1.5L5 21z"/><path d="M9 8h6M9 12h6"/></symbol>
-  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 0 1 5 0c0 1.7-2.5 2-2.5 4M12 17h.01"/></symbol>
-  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></symbol>
-  <symbol id="i-phone" viewBox="0 0 24 24"><path d="M5 3h4l2 5-2.5 1.5a11 11 0 0 0 6 6L16 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 5a2 2 0 0 1 2-2z"/></symbol>
-  <symbol id="i-card" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></symbol>
-  <symbol id="i-cash" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.8"/></symbol>
-  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v4h16v-4"/></symbol>
-  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/></symbol>
-  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></symbol>
-  <symbol id="i-logout" viewBox="0 0 24 24"><path d="M15 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4"/><path d="M10 17l-5-5 5-5M5 12h11"/></symbol>
-  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></symbol>
-</svg>
-<div class="topbar"><div class="wrap">
-  <span><svg class="ic"><use href="#i-clock"/></svg>Buka hari ini 10.00 – 22.00 · Delivery tersedia untuk Zona A, B, C</span>
-  <nav><a href="{{ route('pelanggan.tracking') }}"><svg class="ic"><use href="#i-receipt"/></svg>Lacak Pesanan</a><a href="#"><svg class="ic"><use href="#i-help"/></svg>Bantuan</a></nav>
-</div></div>
-<header><div class="wrap">
-  <a class="logo" href="{{ route('pelanggan.beranda') }}"><b>SIM RESTO</b><small>PIZZA &amp; PASTA HOUSE</small></a>
-  @include('partials.pelanggan.nav')
-  <div class="hd-right">
-    <button class="icon-btn" aria-label="Cari menu"><svg class="ic"><use href="#i-search"/></svg></button>
-    @include('partials.profile-menu', ['trigger' => 'user'])
-    <a class="btn cart" href="{{ route('pelanggan.keranjang') }}"><svg class="ic"><use href="#i-cart"/></svg><span class="txt" id="hdTotal">Rp 0</span><span class="count" id="hdCount">0</span></a>
-  </div>
-</div>@include('partials.pelanggan.catstrip')
-</header>
+@endpush
+
+@use('App\Models\Pesanan')
+@use('App\Models\Pembayaran')
+@php
+  $rp = fn ($n) => 'Rp '.number_format((float) $n, 0, ',', '.');
+  $waktu = fn ($t) => $t->isToday() ? 'Hari ini '.$t->format('H:i') : ($t->isYesterday() ? 'Kemarin '.$t->format('H:i') : $t->translatedFormat('d M Y'));
+  $aktif = $pesanan && ! in_array($pesanan->status, [Pesanan::STATUS_SELESAI, Pesanan::STATUS_DIBATALKAN], true);
+  $pillStatus = fn ($p) => match ($p->status) {
+      Pesanan::STATUS_SELESAI => 'o', Pesanan::STATUS_DIBATALKAN => 'o', Pesanan::STATUS_DIANTAR, Pesanan::STATUS_SIAP => 'm', default => 'b',
+  };
+  $statusTeks = function ($p) {
+      if ($p->status === Pesanan::STATUS_DIPROSES && $p->tiketDapur?->status_masak === \App\Models\TiketDapur::STATUS_DIMASAK) return 'Sedang Dimasak';
+      if ($p->status === Pesanan::STATUS_DIANTAR) return 'Dalam Perjalanan';
+      return $p->statusLabel();
+  };
+@endphp
+
+@push('styles')
+<style>
+  .od { text-decoration: none; color: inherit; display: block; }
+  .od > div:first-child { flex-wrap: wrap; } .od b { white-space: nowrap; }
+  .empty-track { padding: 40px 20px; text-align: center; }
+  .empty-track b { display: block; font: 600 20px var(--f-title); margin-bottom: 6px; }
+  .empty-track p { opacity: .7; margin-bottom: 18px; }
+  .batal-note { margin: 0 24px 4px; padding: 12px 16px; border-radius: 14px; background: var(--m); color: var(--cr); font: 600 13.5px/1.5 var(--f-body); }
+</style>
+@endpush
+
+@section('content')
 <main class="wrap">
   <div class="page-head"><div><div class="crumb"><a href="{{ route('pelanggan.beranda') }}">Beranda</a><span>/</span><span>Lacak Pesanan</span></div><h1>Lacak Status Pesanan</h1></div></div>
+
+  @if ($daftar->isEmpty())
+    <section class="card empty-track">
+      <b>Belum ada pesanan</b><p>Pesanan yang kamu buat akan muncul di sini beserta status terbarunya.</p>
+      <a class="btn" href="{{ route('pelanggan.beranda') }}#menu">Pesan Sekarang</a>
+    </section>
+  @else
   <div class="split">
-    <aside class="card"><div class="card-head" style="margin-bottom:4px"><h2>Pesanan saya</h2><span class="pill b">3</span></div><button class="od on"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b style="font:700 16px var(--f-title)">ORD-0143</b><span class="pill b">Dalam Perjalanan</span></div><div style="font-size:13px;opacity:.8;margin-top:6px">Hari ini 10:42 · Delivery · 5 item</div></button><button class="od"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b style="font:700 16px var(--f-title)">ORD-0139</b><span class="pill o">Selesai</span></div><div style="font-size:13px;opacity:.8;margin-top:6px">Kemarin 19:05 · Take Away · 2 item</div></button><button class="od"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b style="font:700 16px var(--f-title)">ORD-0127</b><span class="pill o">Selesai</span></div><div style="font-size:13px;opacity:.8;margin-top:6px">30 Okt 2026 · Dine In · Meja 07</div></button></aside>
+    <aside class="card"><div class="card-head" style="margin-bottom:4px"><h2>Pesanan saya</h2><span class="pill b">{{ $daftar->count() }}</span></div>
+      @foreach ($daftar as $p)
+        <a @class(['od', 'on' => $pesanan->id === $p->id]) href="{{ route('pelanggan.tracking', ['pesanan' => $p->id]) }}"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b style="font:700 16px var(--f-title)">{{ $p->kode() }}</b><span class="pill {{ $pillStatus($p) }}">{{ $statusTeks($p) }}</span></div>
+          <div style="font-size:13px;opacity:.8;margin-top:6px">{{ $waktu($p->waktu_pesan) }} · {{ $p->layananDetail() }} · {{ $p->detail->sum('jumlah') }} item</div></a>
+      @endforeach
+    </aside>
+
     <div style="display:grid;gap:clamp(16px,1.6vw,24px)">
       <section class="card" style="padding:0;overflow:hidden">
         <div class="stripes" style="padding:22px 24px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap">
-          <div class="stamp-out"><div class="stamp" style="padding:18px 24px"><div class="eyebrow">Nomor pesanan</div><div style="font:700 24px var(--f-title);margin-top:4px">ORD-20261102-0143</div><div style="font-size:12.5px;opacity:.7">Delivery · Zona B · Transfer (Lunas)</div></div></div>
-          <span class="pill m" style="font-size:13px;padding:8px 16px"><svg class="ic" style="width:15px;height:15px"><use href="#i-truck"/></svg>Dalam Perjalanan</span></div>
+          <div class="stamp-out"><div class="stamp" style="padding:18px 24px"><div class="eyebrow">Nomor pesanan</div><div style="font:700 24px var(--f-title);margin-top:4px">{{ $pesanan->kode() }}</div><div style="font-size:12.5px;opacity:.7">{{ $pesanan->layananDetail() }} · {{ $pesanan->pembayaran ? $pesanan->pembayaran->metodeLabel().' ('.$pesanan->bayarLabel().')' : 'Belum bayar' }}</div></div></div>
+          <span class="pill m" style="font-size:13px;padding:8px 16px">@if ($pesanan->status === Pesanan::STATUS_DIANTAR)<svg class="ic" style="width:15px;height:15px"><use href="#i-truck"/></svg>@endif{{ $statusTeks($pesanan) }}</span></div>
+
+        @if ($pesanan->status === Pesanan::STATUS_DIBATALKAN)
+          <div class="batal-note" style="margin-top:20px">Pesanan ini dibatalkan oleh kasir. Jika sudah membayar, hubungi restoran di {{ config('resto.telepon') }}.</div>
+        @elseif (! $pesanan->isLunas())
+          <div style="margin:20px 24px 0;display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:12px 16px;border-radius:16px;background:var(--pp)">
+            <svg class="ic"><use href="#i-card"/></svg>
+            <span style="flex:1;min-width:200px;font-size:13.5px">
+              @if (! $pesanan->pembayaran) Pesanan belum dibayar. Pilih metode pembayaran agar kasir bisa mengonfirmasi.
+              @elseif ($pesanan->pembayaran->status_bayar === Pembayaran::STATUS_DITOLAK) <b>Bukti pembayaran ditolak.</b> Unggah ulang bukti yang benar.
+              @elseif ($pesanan->pembayaran->metode === Pembayaran::METODE_TUNAI) Pembayaran tunai {{ $pesanan->isDelivery() ? 'ke kurir saat pesanan tiba' : 'di kasir' }}.
+              @else Bukti pembayaran menunggu verifikasi kasir. @endif
+            </span>
+            @if (! $pesanan->pembayaran || $pesanan->pembayaran->status_bayar !== Pembayaran::STATUS_LUNAS)
+              <a class="btn sm" href="{{ route('pelanggan.pembayaran', $pesanan) }}">{{ $pesanan->pembayaran ? 'Ubah Pembayaran' : 'Bayar Sekarang' }}</a>
+            @endif
+          </div>
+        @endif
+
         <div class="split2" style="padding:24px">
-          <div><div class="eyebrow" style="margin-bottom:10px">Timeline status · Delivery</div><div class="tl"><div class="st done"><span class="dot"><svg class="ic" style="width:15px;height:15px;stroke-width:2.6"><use href="#i-check"/></svg></span><div class=""><b>Dikonfirmasi</b><small>10:47 · Pembayaran terverifikasi, tiket dikirim ke dapur</small></div></div><div class="st done"><span class="dot"><svg class="ic" style="width:15px;height:15px;stroke-width:2.6"><use href="#i-check"/></svg></span><div class=""><b>Dimasak</b><small>10:52 · Pesanan diolah sesuai antrean dapur (FIFO)</small></div></div><div class="st done"><span class="dot"><svg class="ic" style="width:15px;height:15px;stroke-width:2.6"><use href="#i-check"/></svg></span><div class=""><b>Siap Diantar</b><small>11:08 · Pesanan masuk antrean tugas kurir (FIFO)</small></div></div><div class="st now"><span class="dot"><svg class=ic style=width:16px;height:16px><use href=#i-truck /></svg></span><div class=""><b>Dalam Perjalanan</b><small>11:14 · Kurir Andi Pratama menuju alamatmu</small></div></div><div class="st todo"><span class="dot"></span><div class="todo"><b>Diterima</b><small>Kurir mengunggah bukti pengiriman</small></div></div></div></div>
+          <div><div class="eyebrow" style="margin-bottom:10px">Timeline status · {{ $pesanan->layananLabel() }}</div>
+            <div class="tl">
+              @foreach ($timeline as $l)
+                <div class="st {{ $l['state'] }}"><span class="dot">@if ($l['state'] === 'done')<svg class="ic" style="width:15px;height:15px;stroke-width:2.6"><use href="#i-check"/></svg>@elseif ($l['state'] === 'now' && $l['ikon'])<svg class="ic" style="width:16px;height:16px"><use href="#{{ $l['ikon'] }}"/></svg>@endif</span>
+                  <div @class(['todo' => $l['state'] === 'todo'])><b>{{ $l['label'] }}</b><small>@if ($l['waktu']){{ $l['waktu'] }} · @endif{{ $l['ket'] }}</small></div></div>
+              @endforeach
+            </div></div>
           <div style="display:grid;gap:14px;align-content:start">
-            <div class="card soft" style="padding:16px"><div class="eyebrow" style="font-size:10px;margin-bottom:10px">Kurir</div>
-              <div style="display:flex;gap:12px;align-items:center"><span style="width:44px;height:44px;border-radius:50%;background:var(--m);color:var(--cr);display:grid;place-items:center;font:700 14px var(--f-title)">AP</span>
-              <div style="flex:1"><b style="font:600 15px var(--f-title)">Andi Pratama</b><div style="font-size:12.5px;opacity:.7">BK 4821 AB</div></div><a class="btn o sm" href="#"><svg class="ic"><use href="#i-phone"/></svg>Hubungi</a></div>
-              <div style="display:flex;gap:8px;font-size:13px;margin-top:12px;padding-top:12px;border-top:1.5px dashed var(--m60)"><svg class="ic"><use href="#i-pin"/></svg>Jl. Sei Batang Hari No. 27, Medan Sunggal</div>
-              <div style="display:flex;gap:10px;align-items:center;margin-top:12px;padding:10px;border-radius:14px;background:var(--pp);font-size:12.5px"><span class="stripes" style="width:40px;height:40px;border-radius:10px;flex:none"></span>Bukti pengiriman tampil setelah pesanan diterima</div></div>
-            <div class="card soft" style="padding:16px"><div class="eyebrow" style="font-size:10px;margin-bottom:8px">Rincian</div><div style="display:flex;justify-content:space-between;font-size:14px;padding:4px 0"><span><b style="font-family:var(--f-title)">1×</b> Pizza Beef Pepperoni</span><span>Rp 109.000</span></div><div style="display:flex;justify-content:space-between;font-size:14px;padding:4px 0"><span><b style="font-family:var(--f-title)">1×</b> Penne Bolognese</span><span>Rp 59.000</span></div><div style="display:flex;justify-content:space-between;font-size:14px;padding:4px 0"><span><b style="font-family:var(--f-title)">2×</b> Lemon Iced Tea</span><span>Rp 36.000</span></div><div style="display:flex;justify-content:space-between;font-size:14px;padding:4px 0"><span><b style="font-family:var(--f-title)">1×</b> Choco Brownie Ice Cream</span><span>Rp 32.000</span></div>
-              <div style="display:flex;justify-content:space-between;font-size:14px;padding:4px 0"><span>Pajak + biaya layanan</span><span>Rp 35.400</span></div>
-              <div style="display:flex;justify-content:space-between;font-size:14px;padding:4px 0"><span>Ongkos kirim (Zona B)</span><span>Rp 15.000</span></div>
-              <div style="display:flex;justify-content:space-between;font:700 18px var(--f-title);border-top:1.5px dashed var(--m60);padding-top:8px;margin-top:6px"><span>Total</span><span>Rp 286.400</span></div></div>
+            @if ($pesanan->isDelivery())
+              @php $kirim = $pesanan->pengiriman; @endphp
+              <div class="card soft" style="padding:16px"><div class="eyebrow" style="font-size:10px;margin-bottom:10px">Kurir</div>
+                @if ($kirim?->kurir)
+                  <div style="display:flex;gap:12px;align-items:center"><span style="width:44px;height:44px;border-radius:50%;background:var(--m);color:var(--cr);display:grid;place-items:center;font:700 14px var(--f-title)">{{ $kirim->kurir->inisial() }}</span>
+                    <div style="flex:1"><b style="font:600 15px var(--f-title)">{{ $kirim->kurir->nama }}</b><div style="font-size:12.5px;opacity:.7">{{ $kirim->kurir->no_hp }}</div></div><a class="btn o sm" href="tel:{{ preg_replace('/\D/', '', $kirim->kurir->no_hp) }}"><svg class="ic"><use href="#i-phone"/></svg>Hubungi</a></div>
+                @else
+                  <div style="font-size:13.5px;opacity:.75">Kurir ditugaskan setelah pesanan siap diantar.</div>
+                @endif
+                <div style="display:flex;gap:8px;font-size:13px;margin-top:12px;padding-top:12px;border-top:1.5px dashed var(--m60)"><svg class="ic"><use href="#i-pin"/></svg>{{ $kirim?->alamat }}</div>
+                <div style="display:flex;gap:10px;align-items:center;margin-top:12px;padding:10px;border-radius:14px;background:var(--pp);font-size:12.5px"><span class="stripes" style="width:40px;height:40px;border-radius:10px;flex:none"></span>{{ $kirim?->bukti_kirim ? 'Pesanan sudah diterima · bukti pengiriman tersimpan' : 'Bukti pengiriman tampil setelah pesanan diterima' }}</div></div>
+            @elseif ($pesanan->jenis_layanan === Pesanan::LAYANAN_DINE_IN && $pesanan->nomor_meja)
+              <div class="card soft" style="padding:16px"><div class="eyebrow" style="font-size:10px;margin-bottom:6px">Nomor meja</div><b style="font:700 28px var(--f-title)">{{ $pesanan->nomor_meja }}</b></div>
+            @endif
+            <div class="card soft" style="padding:16px"><div class="eyebrow" style="font-size:10px;margin-bottom:8px">Rincian</div>
+              @foreach ($pesanan->detail as $d)
+                <div style="display:flex;justify-content:space-between;gap:10px;font-size:14px;padding:4px 0"><span><b style="font-family:var(--f-title)">{{ $d->jumlah }}×</b> {{ $d->menu->nama_menu }}@if ($d->catatan)<small style="display:block;opacity:.65">{{ $d->catatan }}</small>@endif</span><span>{{ $rp($d->subtotal) }}</span></div>
+              @endforeach
+              <div style="display:flex;justify-content:space-between;font-size:14px;padding:4px 0"><span>Pajak + biaya layanan</span><span>{{ $rp($pesanan->pajakDanLayanan()) }}</span></div>
+              @if ($pesanan->isDelivery())<div style="display:flex;justify-content:space-between;font-size:14px;padding:4px 0"><span>Ongkos kirim ({{ $pesanan->pengiriman?->zona?->nama_zona }})</span><span>{{ $rp($pesanan->ongkir) }}</span></div>@endif
+              <div style="display:flex;justify-content:space-between;font:700 18px var(--f-title);border-top:1.5px dashed var(--m60);padding-top:8px;margin-top:6px"><span>Total</span><span>{{ $rp($pesanan->total) }}</span></div></div>
           </div>
         </div>
       </section>
-      <section class="card"><div class="card-head" style="margin-bottom:12px"><div><h2>Alur status per jenis layanan</h2><p style="font-size:13px;opacity:.7;margin-top:2px">Timeline mengikuti layanan yang dipilih saat memesan</p></div></div><div class="flows"><div class="flow"><b><svg class="ic" style="width:16px;height:16px"><use href="#i-dine"/></svg>Dine In</b>Dikonfirmasi → Dimasak → Siap Disajikan → Selesai · menampilkan nomor meja</div><div class="flow"><b><svg class="ic" style="width:16px;height:16px"><use href="#i-bag"/></svg>Take Away</b>Dikonfirmasi → Dimasak → Siap Diambil → Selesai</div><div class="flow on"><b><svg class="ic" style="width:16px;height:16px"><use href="#i-truck"/></svg>Delivery</b>Dikonfirmasi → Dimasak → Siap Diantar → Dalam Perjalanan → Diterima · nama kurir & bukti pengiriman</div></div></section>
+      <section class="card"><div class="card-head" style="margin-bottom:12px"><div><h2>Alur status per jenis layanan</h2><p style="font-size:13px;opacity:.7;margin-top:2px">Timeline mengikuti layanan yang dipilih saat memesan</p></div></div>
+        <div class="flows">
+          <div @class(['flow', 'on' => $pesanan->jenis_layanan === Pesanan::LAYANAN_DINE_IN])><b><svg class="ic" style="width:16px;height:16px"><use href="#i-dine"/></svg>Dine In</b>Dikonfirmasi → Dimasak → Siap Disajikan → Selesai · menampilkan nomor meja</div>
+          <div @class(['flow', 'on' => $pesanan->jenis_layanan === Pesanan::LAYANAN_TAKE_AWAY])><b><svg class="ic" style="width:16px;height:16px"><use href="#i-bag"/></svg>Take Away</b>Dikonfirmasi → Dimasak → Siap Diambil → Selesai</div>
+          <div @class(['flow', 'on' => $pesanan->isDelivery()])><b><svg class="ic" style="width:16px;height:16px"><use href="#i-truck"/></svg>Delivery</b>Dikonfirmasi → Dimasak → Siap Diantar → Dalam Perjalanan → Diterima · nama kurir &amp; bukti pengiriman</div>
+        </div></section>
     </div>
   </div>
+  @endif
 </main>
-<footer>
-  <svg class="torn" viewBox="0 0 1000 24" preserveAspectRatio="none" aria-hidden="true"><rect width="1000" height="12" fill="#F8F5E6"/><rect y="12" width="1000" height="12" fill="#97173A"/>
-    <path d="M0,7 L24,9 L49,5 L76,8 L101,6 L128,10 L155,6 L183,8 L209,5 L238,9 L265,6 L292,8 L318,5 L347,9 L373,7 L400,10 L427,6 L455,8 L482,5 L510,9 L537,6 L563,8 L591,5 L618,9 L644,7 L671,10 L697,6 L725,8 L752,5 L779,9 L806,6 L833,8 L859,5 L887,9 L914,7 L941,10 L967,6 L1000,8 L1000,18 L972,16 L944,20 L917,17 L889,19 L861,15 L834,18 L806,16 L779,20 L751,17 L723,19 L696,15 L668,18 L641,16 L613,20 L585,17 L558,19 L530,15 L503,18 L476,16 L448,20 L421,17 L393,19 L366,15 L338,18 L311,16 L283,20 L256,17 L228,19 L200,15 L173,18 L146,16 L118,20 L91,17 L63,19 L36,15 L0,18 Z" fill="#E7E0D6"/></svg>
-  <div class="wrap copy"><b>SIM RESTO</b><span>© 2026 SIM Resto · Jl. Gatot Subroto No. 100, Medan · 0811 6000 1234</span></div>
-</footer>
-@include('partials.logout')
-</body>
-</html>
+@endsection
+
+@if ($aktif)
+@push('scripts')
+<script>
+  // status diperbarui otomatis tiap 30 detik selama pesanan masih berjalan
+  setTimeout(function () { if (!document.hidden) location.reload(); else document.addEventListener('visibilitychange', function () { location.reload(); }, { once: true }); }, 30000);
+</script>
+@endpush
+@endif
