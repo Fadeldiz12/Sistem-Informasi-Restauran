@@ -1,4 +1,4 @@
-/* SIM Resto — skrip bersama halaman pelanggan */
+/* Resto Flow — skrip bersama halaman pelanggan */
 (function () {
   var csrf = document.querySelector('meta[name="csrf-token"]').content;
   var t = document.getElementById('pToast');

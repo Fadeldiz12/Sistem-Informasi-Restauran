@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="csrf-token" content="{{ csrf_token() }}">
-<title>@yield('title') · SIM Resto</title>
+<title>@yield('title') · Resto Flow</title>
 @include('partials.favicon')
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -33,7 +33,7 @@
 @include('partials.pelanggan.icons')
 @include('partials.pelanggan.topbar')
 <header><div class="wrap">
-  <a class="logo" href="{{ route('pelanggan.beranda') }}"><img class="logo-mk" src="{{ asset('images/logo-192.png') }}" alt=""><span class="logo-tx"><b>SIM RESTO</b><small>PIZZA &amp; PASTA HOUSE</small></span></a>
+  <a class="logo" href="{{ route('pelanggan.beranda') }}"><img class="logo-mk" src="{{ asset('images/logo-192.png') }}" alt=""><span class="logo-tx"><b>RESTO FLOW</b><small>PIZZA &amp; PASTA HOUSE</small></span></a>
   @include('partials.pelanggan.nav')
   <div class="hd-right">
     <a class="icon-btn" href="{{ route('pelanggan.beranda') }}#menu" aria-label="Lihat menu"><svg class="ic"><use href="#i-search"/></svg></a>

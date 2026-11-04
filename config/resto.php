@@ -6,7 +6,7 @@
 */
 
 return [
-    'nama' => env('RESTO_NAMA', 'SIM Resto'),
+    'nama' => env('RESTO_NAMA', 'Resto Flow'),
     'alamat' => env('RESTO_ALAMAT', 'Jl. Gatot Subroto No. 100, Medan'),
     'telepon' => env('RESTO_TELEPON', '0811 6000 1234'),
 
@@ -19,6 +19,6 @@ return [
     'rekening' => [
         'bank' => env('RESTO_BANK', 'Bank Transfer'),
         'nomor' => env('RESTO_NO_REKENING', '1234 5678 9012'),
-        'atas_nama' => env('RESTO_ATAS_NAMA', 'SIM Resto'),
+        'atas_nama' => env('RESTO_ATAS_NAMA', 'Resto Flow'),
     ],
 ];

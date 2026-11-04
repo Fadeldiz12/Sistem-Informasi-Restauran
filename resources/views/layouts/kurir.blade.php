@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>@yield('title', 'Tugas Pengiriman') · Kurir · SIM Resto</title>
+<title>@yield('title', 'Tugas Pengiriman') · Kurir · Resto Flow</title>
 @include('partials.favicon')
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,14 +16,14 @@
 @include('partials.panel.icons')
 <header class="hdr">
   <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
-    <div style="display:flex;gap:12px;align-items:center;min-width:0"><img src="{{ asset('images/logo-192.png') }}" alt="Logo SIM Resto" class="hdr-logo">
-      <div style="min-width:0"><div class="eyebrow" style="opacity:.75">Kurir · SIM Resto</div><div class="hdr-nama">{{ auth()->user()->nama }}</div></div></div>
+    <div style="display:flex;gap:12px;align-items:center;min-width:0"><img src="{{ asset('images/logo-192.png') }}" alt="Logo Resto Flow" class="hdr-logo">
+      <div style="min-width:0"><div class="eyebrow" style="opacity:.75">Kurir · Resto Flow</div><div class="hdr-nama">{{ auth()->user()->nama }}</div></div></div>
     <div style="display:flex;gap:8px;flex:none"><a class="icon-btn" href="{{ route('kurir.tugas') }}" style="box-shadow:inset 0 0 0 1.5px var(--cr)" aria-label="Tugas menunggu" title="Tugas menunggu"><svg class="ic"><use href="#i-bell"/></svg>@if ($jmlAntrean)<span class="dot" style="background:var(--bl);color:var(--m)">{{ $jmlAntrean }}</span>@endif</a><span class="av" style="width:44px;height:44px;background:var(--cr)">{{ auth()->user()->inisial() }}</span></div>
   </div>
   <div class="hdr-stat">
     <a href="{{ route('kurir.tugas') }}"><div class="eyebrow">Antrean</div><b>{{ $jmlAntrean }}</b></a>
     <a href="{{ route('kurir.status') }}"><div class="eyebrow">Diantar</div><b>{{ $jmlDiantar }}</b></a>
-    <a href="{{ route('kurir.riwayat') }}"><div class="eyebrow">Selesai hari ini</div><b>{{ $jmlSelesai }}</b></a>
+    <a href="{{ route('kurir.riwayat') }}" title="Selesai diantar hari ini"><div class="eyebrow">Selesai</div><b>{{ $jmlSelesai }}</b></a>
   </div>
 </header>
 

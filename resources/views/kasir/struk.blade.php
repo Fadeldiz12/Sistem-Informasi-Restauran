@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Struk {{ $pesanan->kode() }} · SIM Resto</title>
+<title>Struk {{ $pesanan->kode() }} · Resto Flow</title>
 @include('partials.favicon')
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=Raleway:wght@700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
 <style>
