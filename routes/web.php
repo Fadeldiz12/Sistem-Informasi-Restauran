@@ -2,8 +2,10 @@
 
 use App\Http\Controllers\Admin;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\BuktiKirimController;
 use App\Http\Controllers\Dapur;
 use App\Http\Controllers\Kasir;
+use App\Http\Controllers\Kurir;
 use App\Http\Controllers\MidtransController;
 use App\Http\Controllers\Pelanggan;
 use App\Models\User;
@@ -123,8 +125,16 @@ Route::middleware(['auth', 'role:'.User::ROLE_DAPUR])->prefix('dapur')->name('da
 
 // Kurir
 Route::middleware(['auth', 'role:'.User::ROLE_KURIR])->prefix('kurir')->name('kurir.')->group(function () {
-    Route::view('/tugas', 'kurir.tugas')->name('tugas');
+    Route::get('/tugas', [Kurir\TugasController::class, 'index'])->name('tugas');
+    Route::get('/tugas/{pengiriman}', [Kurir\TugasController::class, 'show'])->name('tugas.show');
+    Route::post('/tugas/{pengiriman}/terima', [Kurir\TugasController::class, 'terima'])->name('tugas.terima');
+    Route::get('/status', [Kurir\TugasController::class, 'status'])->name('status');
+    Route::post('/tugas/{pengiriman}/diterima', [Kurir\TugasController::class, 'diterima'])->name('tugas.diterima');
+    Route::get('/riwayat', [Kurir\TugasController::class, 'riwayat'])->name('riwayat');
 });
+
+// Foto bukti pengiriman (privat): pelanggan pemilik, kurir pengantar, kasir, admin, owner
+Route::get('/pengiriman/{pengiriman}/bukti', BuktiKirimController::class)->middleware('auth')->name('pengiriman.bukti');
 
 // Owner
 Route::middleware(['auth', 'role:'.User::ROLE_OWNER])->prefix('owner')->name('owner.')->group(function () {

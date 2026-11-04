@@ -43,7 +43,8 @@ class TimelinePesanan
         if ($p->isDelivery()) {
             $langkah[] = ['label' => 'Dalam Perjalanan', 'ket' => $kirim?->kurir ? 'Kurir '.$kirim->kurir->nama.' menuju alamatmu' : 'Menunggu kurir mengambil pesanan',
                 'waktu' => null, 'done' => $sampai(Pesanan::STATUS_DIANTAR), 'ikon' => 'i-truck'];
-            $langkah[] = ['label' => 'Diterima', 'ket' => 'Kurir mengunggah bukti pengiriman', 'waktu' => null,
+            $diterima = $kirim?->status_kirim === Pengiriman::STATUS_DITERIMA;
+            $langkah[] = ['label' => 'Diterima', 'ket' => 'Kurir mengunggah bukti pengiriman', 'waktu' => $diterima ? $jam($kirim->updated_at) : null,
                 'done' => $sampai(Pesanan::STATUS_SELESAI) || $kirim?->status_kirim === Pengiriman::STATUS_DITERIMA, 'ikon' => null];
         } else {
             $langkah[] = ['label' => 'Selesai', 'ket' => 'Pesanan sudah diterima pelanggan', 'waktu' => null, 'done' => $sampai(Pesanan::STATUS_SELESAI), 'ikon' => null];
