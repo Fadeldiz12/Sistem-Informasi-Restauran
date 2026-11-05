@@ -7,200 +7,183 @@
 @include('partials.favicon')
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Raleway:wght@600;700;800&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Raleway:wght@600;700;800&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   /* =========================================================
-     PALET (wajib) & FONT
-     Poppins  : judul + tombol utama
-     Raleway  : logo, tautan, label kecil, tombol sosial
-     Open Sans: teks isi & input
+     Halaman masuk / daftar / OTP. Ukuran mengikuti desain 1600 × 1280:
+     --k = 1 px desain, diskalakan agar seluruh desain muat di layar.
      ========================================================= */
   :root {
-    --m:  #97173A;  /* maroon    */
-    --cr: #F8F5E6;  /* krem      */
-    --bl: #B2C2D2;  /* biru abu  */
-    --pp: #E7E0D6;  /* kertas    */
-    --dk: #282828;  /* abu gelap */
-
-    /* Skala otomatis: mengikuti sisi layar yang paling sempit
-       (desain dasar 1440 × 810), jadi pas di semua ukuran laptop */
-    --k: min(calc(100vw / 1440), calc(100vh / 810));
-    --f-title: 'Poppins', sans-serif;
-    --f-accent: 'Raleway', sans-serif;
-    --f-body: 'Open Sans', sans-serif;
-
-    /* bentuk area maroon (dipakai sebagai background & mask ornamen) */
-    --shape: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 810' preserveAspectRatio='none'%3E%3Cpath d='M0 0H1440V44C1160 58 905 142 765 268C628 392 530 600 478 810H0Z'/%3E%3C/svg%3E");
+    --m: #97173A; --cr: #F8F5E6; --bl: #B2C2D2; --pp: #E7E0D6; --dk: #282828;
+    --f-title: 'Poppins', sans-serif; --f-accent: 'Raleway', sans-serif; --f-body: 'Open Sans', sans-serif;
+    --k: min(calc(100vw / 1600), calc(100vh / 1280));
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { height: 100%; background: var(--cr); }
-  body { font-family: var(--f-body); color: var(--m); -webkit-font-smoothing: antialiased; }
+  html, body { height: 100%; }
+  body { background: var(--m); color: var(--m); font: 400 15px/1.5 var(--f-body); -webkit-font-smoothing: antialiased; overflow: hidden; }
+  button, input, textarea { font: inherit; color: inherit; }
+  a { color: inherit; }
 
-  .stage { position: relative; width: 100%; height: 100vh; min-height: 600px; overflow: hidden; background: var(--cr); }
+  .stage { position: relative; height: 100vh; min-height: 560px; overflow: hidden; }
 
-  /* area maroon: melar mengikuti lebar & tinggi layar */
-  .bg { position: absolute; inset: 0; background: var(--m);
-        -webkit-mask: var(--shape) 0 0 / 100% 100% no-repeat; mask: var(--shape) 0 0 / 100% 100% no-repeat; }
+  /* ---------- sisi kiri: strip foto, merek, piring ---------- */
+  .strip { position: absolute; top: 0; bottom: 0; left: calc(var(--k) * 175); width: calc(var(--k) * 375); z-index: 1;
+           background-color: #8f1437; background-size: cover; background-position: center;
+           background-image: linear-gradient(180deg, rgba(60, 4, 20, .25), rgba(0, 0, 0, 0) 22%, rgba(0, 0, 0, 0) 60%, rgba(30, 2, 10, .78)),
+                             url("https://images.unsplash.com/photo-1513104890138-7c749659a591?w=900&q=70");
+           background-blend-mode: normal, multiply; }
+  .brand { position: absolute; z-index: 3; top: calc(var(--k) * 48); left: calc(var(--k) * 175); width: calc(var(--k) * 375);
+           text-align: center; color: var(--cr); }
+  .brand b { display: block; font: 800 calc(var(--k) * 40) / 1.1 var(--f-accent); letter-spacing: .2em; padding-left: .2em; white-space: nowrap; }
+  .brand small { display: block; margin-top: calc(var(--k) * 12); font: 600 calc(var(--k) * 15) var(--f-accent); letter-spacing: .3em; padding-left: .3em; }
+  .brand i { display: block; width: calc(var(--k) * 60); height: max(2px, calc(var(--k) * 3)); background: var(--cr); opacity: .85; margin: calc(var(--k) * 18) auto 0; }
+  .tagline { position: absolute; z-index: 3; bottom: calc(var(--k) * 42); left: calc(var(--k) * 175); width: calc(var(--k) * 375); text-align: center;
+             color: var(--cr); font: 600 calc(var(--k) * 14.5) var(--f-accent); letter-spacing: .22em; padding-left: .22em; opacity: .9; white-space: nowrap; }
 
-  /* ornamen line-art: 2 lapis, krem di area maroon & maroon di area krem */
-  .art { position: absolute; inset: 0; pointer-events: none; }
-  .art.on-maroon { color: var(--cr); opacity: .28;
-        -webkit-mask: var(--shape) 0 0 / 100% 100% no-repeat; mask: var(--shape) 0 0 / 100% 100% no-repeat; }
-  .art.on-cream { color: var(--m); opacity: .5;
-        -webkit-mask: var(--shape) 0 0 / 100% 100% no-repeat, linear-gradient(#000 0 0);
-        -webkit-mask-composite: xor; mask: var(--shape) 0 0 / 100% 100% no-repeat exclude, linear-gradient(#000 0 0); }
-  .art svg { position: absolute; fill: none; stroke: currentColor; stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; overflow: visible; }
-  .d-pizza { width: calc(var(--k) * 400); left: calc(41.7vw - var(--k) * 200); bottom: calc(var(--k) * -190); }
-  .d-slice { width: calc(var(--k) * 170); left: 3vw; top: 14vh; }
-  .d-tomato { width: calc(var(--k) * 190); left: 2.5vw; top: 58vh; }
-  .d-leaf { width: calc(var(--k) * 160); right: 6vw; top: 6vh; }
-  .d-slice2 { width: calc(var(--k) * 150); right: 6vw; bottom: -2vh; transform: rotate(28deg); }
+  .plate { position: absolute; z-index: 4; border-radius: 50%; background: #eef0ef; display: grid; place-items: center; overflow: hidden;
+           left: calc(var(--k) * var(--x)); top: calc(50% + var(--k) * (var(--y) - 640)); width: calc(var(--k) * var(--d)); height: calc(var(--k) * var(--d));
+           transform: translate(-50%, -50%); box-shadow: 0 calc(var(--k) * 14) calc(var(--k) * 30) rgba(40, 0, 12, .28); }
+  .plate img { width: var(--isi); height: var(--isi); border-radius: 50%; object-fit: cover; box-shadow: 0 calc(var(--k) * 4) calc(var(--k) * 10) rgba(0, 0, 0, .22); }
+  .p1 { --x: 631; --y: 358; --d: 362; --isi: 64%; border: calc(var(--k) * 16) solid var(--cr); }
+  .p2 { --x: 693; --y: 655; --d: 262; --isi: 88%; overflow: visible;
+        box-shadow: 0 0 0 calc(var(--k) * 12) var(--m), 0 0 0 calc(var(--k) * 15) var(--cr), 0 calc(var(--k) * 18) calc(var(--k) * 30) rgba(40, 0, 12, .3); }
+  .p3 { --x: 538; --y: 931; --d: 226; --isi: 64%; border: calc(var(--k) * 14) solid var(--cr); }
 
-  /* coretan petir */
-  .zap { position: absolute; width: calc(var(--k) * 46); fill: none; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+  /* ---------- sisi kanan: krem dengan tepi diagonal ---------- */
+  .cream { position: absolute; inset: 0; z-index: 2; background: var(--cr);
+           clip-path: polygon(calc(var(--k) * 940) 0, 100% 0, 100% 100%, calc(var(--k) * 730) 100%); }
 
-  /* kolom visual (foto pizza) */
-  .visual { position: absolute; left: 0; top: 0; bottom: 0; width: calc(var(--k) * 520); }
-  .strip { position: absolute; top: 0; bottom: 0; left: calc(var(--k) * 174); width: calc(var(--k) * 300);
-           background: url('https://images.unsplash.com/photo-1590947132387-155cc02f3212?w=900&q=80') center / cover; }
-  .strip::after { content: ''; position: absolute; inset: 0; background: var(--m); mix-blend-mode: multiply; opacity: .86; }
-  .logo { position: absolute; z-index: 5; top: calc(var(--k) * 24); left: calc(var(--k) * 174); width: calc(var(--k) * 300);
-          display: flex; flex-direction: column; align-items: center; color: var(--cr); text-align: center; }
-  .logo b { font: 800 calc(var(--k) * 28) var(--f-accent); letter-spacing: .08em; line-height: 1; }
-  /* logo di samping tulisan agar tinggi header sama seperti desain */
-  .logo { flex-direction: row !important; justify-content: center; gap: calc(var(--k) * 10); }
-  .logo img { width: calc(var(--k) * 42); height: calc(var(--k) * 42); border-radius: 50%; flex: none; box-shadow: 0 0 0 calc(var(--k) * 2) var(--cr); }
-  .logo .lt { display: flex; flex-direction: column; align-items: center; }
-  .logo small { font: 600 calc(var(--k) * 10) var(--f-accent); letter-spacing: .3em; text-transform: uppercase; margin-top: calc(var(--k) * 6); opacity: .85; }
+  .doodle { position: absolute; z-index: 3; fill: none; stroke-linecap: round; stroke-linejoin: round; pointer-events: none;
+            left: calc(var(--k) * var(--x)); top: calc(50% + var(--k) * (var(--y) - 640)); width: calc(var(--k) * var(--w)); }
+  .doodle.pk { stroke: rgba(151, 23, 58, .55); stroke-width: 1.6; }
+  .doodle.bl { stroke: var(--bl); stroke-width: 2.6; }
+  .doodle.lt { stroke: rgba(248, 245, 230, .4); stroke-width: 1.6; }
+  .fwrap { position: relative; display: flex; flex-direction: column; align-items: center; }
+  .dd { position: absolute; fill: none; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+  .dd.pk { stroke: rgba(151, 23, 58, .55); stroke-width: 1.6; }
+  .dd.bl { stroke: var(--bl); stroke-width: 2.6; }
+  .fwrap:has(.form.wide) .dd.side { right: calc(var(--k) * -34) !important; }
 
-  /* kumpulan piring, selalu di tengah vertikal */
-  .plates { position: absolute; left: 0; width: calc(var(--k) * 520); height: calc(var(--k) * 810); top: 50%; transform: translateY(-50%); }
-  .plate { position: absolute; z-index: 4; border-radius: 50%; overflow: hidden; }
-  .plate img { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .p1 { left: calc(var(--k) * 66);  top: calc(var(--k) * 96);  width: calc(var(--k) * 400); height: calc(var(--k) * 400); border: calc(var(--k) * 12) solid var(--cr); }
-  .p1 img { object-position: 46% 52%; transform: scale(1.42); }
-  .p2 { left: calc(var(--k) * 252); top: calc(var(--k) * 414); width: calc(var(--k) * 236); height: calc(var(--k) * 236);
-        border: calc(var(--k) * 9) solid var(--m); box-shadow: 0 0 0 calc(var(--k) * 4) var(--cr); }
-  .p2 img { object-position: 50% 52%; transform: scale(1.18); }
-  .p3 { left: calc(var(--k) * 142); top: calc(var(--k) * 548); width: calc(var(--k) * 190); height: calc(var(--k) * 190);
-        border: calc(var(--k) * 18) solid var(--cr); box-shadow: 0 0 0 calc(var(--k) * 2) var(--bl); }
-  .p3 img { object-position: 48% 50%; transform: scale(1.3); }
+  .right { position: absolute; z-index: 5; top: 0; bottom: 0; right: 0; left: calc(var(--k) * 900);
+           display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4vh 3vw 4vh 2vw; overflow-y: auto; }
+  .right > * { flex: none; }
+  .form { width: clamp(360px, calc(var(--k) * 500), 520px); display: flex; flex-direction: column; }
+  .form.wide { width: clamp(530px, calc(var(--k) * 588), 620px); }
+  .form h1 { font: 800 clamp(26px, calc(var(--k) * 40), 46px) / 1.18 var(--f-title); text-transform: uppercase; text-align: center; letter-spacing: .01em; }
+  .lead { text-align: center; font: 400 clamp(13.5px, calc(var(--k) * 16.5), 17px) / 1.5 var(--f-body); margin-top: clamp(4px, calc(var(--k) * 8), 10px); opacity: .9; }
+  .lead b { font-weight: 600; }
+  .gap { height: clamp(20px, calc(var(--k) * 44), 46px); flex: none; }
+  .gap.s { height: clamp(14px, calc(var(--k) * 22), 26px); }
 
-  /* kolom form: mengisi sisa lebar layar, form di tengah */
-  .right { position: absolute; z-index: 6; top: 0; bottom: 0; right: 0; left: 56vw;
-           display: flex; align-items: center; justify-content: center; padding: 14vh 4vw 6vh; }
-  .form { width: clamp(320px, calc(var(--k) * 400), 480px); display: flex; flex-direction: column; }
-  .form h1 { font: 700 clamp(26px, calc(var(--k) * 36), 46px) / 1.15 var(--f-title); text-transform: uppercase;
-             text-align: center; letter-spacing: .01em; margin-bottom: clamp(24px, calc(var(--k) * 34), 44px); }
-  .field { height: clamp(46px, calc(var(--k) * 52), 60px); border-radius: 999px; background: var(--pp);
-           display: flex; align-items: center; gap: 12px; padding: 0 22px; cursor: text;
-           font: 500 clamp(14px, calc(var(--k) * 14.5), 17px) var(--f-body); border: 1.5px solid transparent; }
-  .field + .field { margin-top: clamp(14px, calc(var(--k) * 18), 22px); }
-  .field:focus-within { border-color: var(--m); background: var(--cr); box-shadow: 0 0 0 4px var(--bl); }
-  .field input { all: unset; flex: 1; min-width: 0; color: var(--m); font: inherit; }
-  .field input::placeholder { color: rgba(151, 23, 58, .55); }
-  .field svg { width: 18px; height: 18px; flex: none; opacity: .75; }
-  .forgot { align-self: flex-end; margin-top: 12px; font: 700 clamp(12.5px, calc(var(--k) * 13), 15px) var(--f-accent); color: var(--m); text-decoration: none; }
+  .field { display: flex; align-items: center; gap: 14px; min-height: clamp(46px, calc(var(--k) * 64), 64px); padding: 0 clamp(18px, calc(var(--k) * 26), 28px);
+           border-radius: 999px; background: var(--pp); border: 1.5px solid transparent; cursor: text; transition: .15s;
+           font: 400 clamp(14px, calc(var(--k) * 17), 17px) var(--f-body); }
+  .field:focus-within { background: var(--cr); border-color: var(--m); box-shadow: 0 0 0 4px rgba(178, 194, 210, .7); }
+  .field input, .field textarea { all: unset; flex: 1; width: 100%; min-width: 0; color: var(--m); font: inherit; }
+  .field input::placeholder, .field textarea::placeholder { color: rgba(151, 23, 58, .62); }
+  .field > svg { width: clamp(18px, calc(var(--k) * 22), 22px); height: clamp(18px, calc(var(--k) * 22), 22px); flex: none; }
+  .field.ta { align-items: flex-start; border-radius: clamp(22px, calc(var(--k) * 32), 32px); padding-top: clamp(12px, calc(var(--k) * 18), 18px); padding-bottom: 12px; min-height: clamp(72px, calc(var(--k) * 92), 92px); }
+  .field.ta textarea { min-height: clamp(40px, calc(var(--k) * 52), 54px); line-height: 1.45; }
+  .field .eye { background: none; border: 0; cursor: pointer; display: grid; place-items: center; opacity: .75; flex: none; padding: 4px; }
+  .field .eye:hover { opacity: 1; }
+  .field .eye svg { width: 20px; height: 20px; }
+  .stack { display: grid; grid-template-columns: minmax(0, 1fr); gap: clamp(12px, calc(var(--k) * 18), 20px); }
+  .row2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(10px, calc(var(--k) * 16), 16px); }
+
+  .forgot { align-self: flex-end; margin-top: clamp(12px, calc(var(--k) * 24), 26px); font: 700 clamp(13px, calc(var(--k) * 15.5), 16px) var(--f-accent); text-decoration: none; }
   .forgot:hover { text-decoration: underline; }
-  .btn { align-self: center; margin-top: clamp(16px, calc(var(--k) * 20), 26px); min-width: 46%;
-         height: clamp(44px, calc(var(--k) * 48), 56px); padding: 0 32px; border: 0; border-radius: 999px;
-         background: var(--m); color: var(--cr); font: 600 clamp(14px, calc(var(--k) * 15), 17px) var(--f-title); cursor: pointer; }
+  .btn { align-self: center; min-width: clamp(200px, calc(var(--k) * 250), 260px); min-height: clamp(48px, calc(var(--k) * 62), 62px); padding: 0 32px;
+         border: 0; border-radius: 999px; background: var(--m); color: var(--cr); cursor: pointer; transition: .15s;
+         font: 700 clamp(15px, calc(var(--k) * 18), 18px) var(--f-title); text-transform: uppercase; letter-spacing: .04em; }
   .btn:hover { background: #7f1331; }
-  .divider { display: flex; align-items: center; gap: 14px; margin: clamp(20px, calc(var(--k) * 26), 32px) 0;
-             font: 700 clamp(12px, calc(var(--k) * 12.5), 14px) var(--f-accent); letter-spacing: .08em; }
-  .divider::before, .divider::after { content: ''; flex: 1; height: 1.5px; background: var(--m); opacity: .35; }
-  .social { display: grid; grid-template-columns: 1fr; gap: 10px; }
-  .social a { height: clamp(44px, calc(var(--k) * 48), 56px); border-radius: 999px; box-shadow: inset 0 0 0 1.5px var(--m);
-              display: flex; align-items: center; justify-content: center; gap: 10px;
-              font: 700 clamp(13.5px, calc(var(--k) * 14), 16px) var(--f-accent); color: var(--m); text-decoration: none; }
-  .social a:hover { background: var(--bl); box-shadow: none; }
-  .social svg { width: 20px; height: 20px; }
-  .signup { text-align: center; margin-top: clamp(22px, calc(var(--k) * 30), 38px); font: 400 clamp(13.5px, calc(var(--k) * 14), 16px) var(--f-body); }
-  .signup a { color: var(--m); font: 800 1em var(--f-accent); }
+  .btn:disabled { opacity: .6; cursor: wait; }
+  .foot { text-align: center; margin-top: clamp(20px, calc(var(--k) * 40), 42px); font: 400 clamp(14px, calc(var(--k) * 17), 17px) var(--f-body); }
+  .foot a, .foot button { font: 800 1em var(--f-accent); text-decoration: underline; text-underline-offset: 3px; background: none; border: 0; cursor: pointer; color: var(--m); }
+  .foot button:disabled { opacity: .5; cursor: default; text-decoration: none; }
+  .agree { display: flex; gap: 10px; align-items: center; font: 400 clamp(13.5px, calc(var(--k) * 16), 16px) var(--f-body); cursor: pointer; margin-top: clamp(12px, calc(var(--k) * 22), 24px); }
+  .agree input { width: 20px; height: 20px; accent-color: var(--m); flex: none; }
 
-  /* tablet & HP: susun ke bawah */
-  @media (max-width: 900px), (max-aspect-ratio: 1/1) {
-    :root { --k: 1px; }
-    .stage { height: auto; min-height: 100vh; }
-    .bg, .art, .zap, .p2, .p3 { display: none; }
-    .visual { position: relative; width: 100%; height: 280px; }
-    .strip { left: 0; width: 100%; }
-    .logo { left: 0; width: 100%; }
-    .logo img { width: 40px; height: 40px; box-shadow: 0 0 0 2px var(--cr); }
-    .plates { width: 100%; height: 280px; top: 0; transform: none; }
-    .p1 { left: 50%; top: 84px; width: 230px; height: 230px; margin-left: -115px; border-width: 8px; }
-    .right { position: relative; left: 0; padding: 90px 24px 40px; }
-    .form { width: 100%; max-width: 420px; }
-  }
-
-  /* pesan error validasi */
-  .alert { margin: 0 0 18px; padding: 12px 18px; border-radius: 16px; background: var(--m); color: var(--cr);
-           font: 600 13.5px/1.45 var(--f-body); }
-  .alert ul { margin: 0; padding-left: 18px; }
+  .alert { margin-bottom: 16px; padding: 12px 18px; border-radius: 16px; background: var(--m); color: var(--cr); font: 600 13.5px/1.45 var(--f-body); }
+  .alert ul { padding-left: 18px; }
   .alert.ok { background: var(--bl); color: var(--m); }
-  .lead { text-align: center; margin: calc(clamp(24px, calc(var(--k) * 34), 44px) * -0.6) 0 clamp(18px, calc(var(--k) * 24), 30px); font: 400 clamp(13.5px, calc(var(--k) * 14), 16px)/1.5 var(--f-body); opacity: .85; }
+  .alert.dev { background: var(--pp); color: var(--m); border: 1.5px dashed var(--m); }
+  .alert.dev b { font: 700 18px var(--f-title); letter-spacing: .2em; }
+
+  /* ---------- kotak kode OTP ---------- */
+  .otp { display: grid; grid-template-columns: repeat(6, 1fr); gap: clamp(8px, calc(var(--k) * 14), 14px); }
+  .otp input { width: 100%; aspect-ratio: 1 / 1.12; max-height: 76px; border: 1.5px solid transparent; border-radius: clamp(14px, calc(var(--k) * 20), 20px); background: var(--pp);
+               text-align: center; font: 700 clamp(22px, calc(var(--k) * 32), 32px) var(--f-title); color: var(--m); outline: none; caret-color: var(--m); transition: .15s; }
+  .otp input:focus { background: var(--cr); border-color: var(--m); box-shadow: 0 0 0 4px rgba(178, 194, 210, .7); }
+  .otp input.isi { background: var(--cr); border-color: rgba(151, 23, 58, .4); }
+  .hint { text-align: center; font-size: 13px; opacity: .75; margin-top: 12px; }
+
+  /* laptop kecil: geser form sedikit menjauhi tepi merah */
+  @media (max-width: 1150px) { .right { padding-left: 6vw; padding-right: 1.5vw; } .form.wide { width: 470px; } .form.wide .field { padding: 0 16px; gap: 10px; } }
+
+  /* ---------- tablet tegak & HP ---------- */
+  @media (max-width: 900px), (max-aspect-ratio: 1/1) {
+    body { overflow: auto; }
+    .stage { height: auto; min-height: 100vh; display: flex; flex-direction: column; overflow: visible; }
+    .strip { position: relative; left: 0; width: 100%; height: 200px; flex: none; }
+    .brand { top: 42px; left: 0; width: 100%; }
+    .brand b { font-size: 30px; } .brand small { font-size: 11.5px; margin-top: 8px; } .brand i { width: 48px; margin-top: 14px; }
+    .tagline, .plate, .doodle, .dd { display: none; }
+    .fwrap { width: 100%; }
+    .cream { display: none; }
+    .right { position: relative; inset: auto; flex: 1; z-index: 5; margin-top: -34px; padding: 62px 22px 44px; overflow: visible;
+             background: var(--cr); clip-path: polygon(0 34px, 100% 0, 100% 100%, 0 100%); justify-content: flex-start; }
+    .form, .form.wide { width: 100%; max-width: 440px; }
+    .row2 { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 380px) { .otp { gap: 6px; } }
 </style>
 @stack('styles')
 </head>
 <body>
 <main class="stage">
-  <div class="bg" aria-hidden="true"></div>
+  <div class="strip" aria-hidden="true"></div>
+  <div class="brand"><b>{{ strtoupper(config('resto.nama')) }}</b><small>PIZZA &amp; PASTA HOUSE</small><i></i></div>
+  <div class="tagline" aria-hidden="true">SISTEM MANAJEMEN RESTORAN</div>
 
-  <!-- simbol ornamen (digambar sekali, dipakai 2 lapis) -->
-  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
-    <symbol id="s-pizza" viewBox="-200 -200 400 400">
-      <circle r="190"/><circle r="160"/><path d="M0-160V160M-160 0H160M-113-113 113 113M113-113-113 113"/>
-      <circle cx="-62" cy="-92" r="20"/><circle cx="70" cy="-60" r="20"/><circle cx="-90" cy="40" r="20"/>
-      <circle cx="40" cy="80" r="20"/><circle cx="108" cy="28" r="16"/><circle cx="-24" cy="-26" r="14"/>
-      <path d="M-30 110c18-22 44-22 56 0-18 18-40 18-56 0zM60-118c18-20 42-18 52 4-20 14-40 12-52-4z"/>
-    </symbol>
-    <symbol id="s-slice" viewBox="-10 -50 175 180">
-      <g transform="rotate(-18 70 40)"><path d="M0 0L150-30Q160 40 120 120Z"/><path d="M6 6L146-22"/>
-      <circle cx="70" cy="20" r="11"/><circle cx="110" cy="50" r="10"/><circle cx="95" cy="-2" r="8"/></g>
-    </symbol>
-    <symbol id="s-tomato" viewBox="0 0 200 150">
-      <circle cx="40" cy="40" r="34"/><path d="M28 10l12 10 12-10M40 20V6"/>
-      <path d="M80 110c30-50 90-50 110 0-40 30-80 30-110 0zM88 110h98"/>
-    </symbol>
-    <symbol id="s-leaf" viewBox="-5 -50 160 90"><path d="M0 0c40-60 120-60 150 0-50 40-110 40-150 0zM8 0h138"/></symbol>
-  </svg>
+  <div class="plate p1" aria-hidden="true"><img src="https://images.unsplash.com/photo-1595854341625-f33ee10dbf94?w=500&q=75" alt=""></div>
+  <div class="plate p2" aria-hidden="true"><img src="https://images.unsplash.com/photo-1593560708920-61dd98c46a4e?w=500&q=75" alt=""></div>
+  <div class="plate p3" aria-hidden="true"><img src="https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=400&q=75" alt=""></div>
 
-  <div class="art on-maroon" aria-hidden="true">
-    <svg class="d-pizza" viewBox="0 0 400 400"><use href="#s-pizza"/></svg>
-    <svg class="d-slice" viewBox="0 0 175 180"><use href="#s-slice"/></svg>
-    <svg class="d-tomato" viewBox="0 0 200 150"><use href="#s-tomato"/></svg>
-    <svg class="d-leaf" viewBox="0 0 160 90"><use href="#s-leaf"/></svg>
-    <svg class="d-slice2" viewBox="0 0 175 180"><use href="#s-slice"/></svg>
-  </div>
-  <div class="art on-cream" aria-hidden="true">
-    <svg class="d-pizza" viewBox="0 0 400 400"><use href="#s-pizza"/></svg>
-    <svg class="d-slice" viewBox="0 0 175 180"><use href="#s-slice"/></svg>
-    <svg class="d-tomato" viewBox="0 0 200 150"><use href="#s-tomato"/></svg>
-    <svg class="d-leaf" viewBox="0 0 160 90"><use href="#s-leaf"/></svg>
-    <svg class="d-slice2" viewBox="0 0 175 180"><use href="#s-slice"/></svg>
-  </div>
+  <div class="cream" aria-hidden="true"></div>
 
-  <!-- coretan petir -->
-  <svg class="zap" style="left:3.6vw;top:4vh" viewBox="0 0 50 30" stroke="#F8F5E6"><path d="M3 5l38 4-26 12 32 4"/></svg>
-  <svg class="zap" style="left:62vw;top:2.5vh" viewBox="0 0 30 70" stroke="#F8F5E6"><path d="M18 3L4 31l22-6-16 36"/></svg>
-  <svg class="zap" style="left:51vw;top:24vh" viewBox="0 0 30 70" stroke="#F8F5E6"><path d="M18 3L6 33l20-8-16 34"/></svg>
-  <svg class="zap" style="right:2.5vw;top:64vh" viewBox="0 0 50 30" stroke="#B2C2D2" stroke-width="5"><path d="M3 15l20-10-10 22 26-14"/></svg>
-  <svg class="zap" style="left:54vw;bottom:5vh" viewBox="0 0 50 30" stroke="#97173A"><path d="M3 5l38 4-26 12 32 4"/></svg>
-  <svg class="zap" style="left:1.6vw;bottom:2vh" viewBox="0 0 50 34" stroke="#B2C2D2" stroke-width="5"><path d="M3 30l18-24 2 18 18-22"/></svg>
-
-  <section class="visual" aria-hidden="true">
-    <div class="strip"></div>
-    <div class="logo"><img src="{{ asset('images/logo-192.png') }}" alt="Logo Resto Flow"><span class="lt"><b>RESTO FLOW</b><small>Pizza &amp; Pasta House</small></span></div>
-    <div class="plates">
-      <div class="plate p1"><img src="https://images.unsplash.com/photo-1595854341625-f33ee10dbf94?w=900&q=80" alt=""></div>
-      <div class="plate p2"><img src="https://images.unsplash.com/photo-1593560708920-61dd98c46a4e?w=600&q=80" alt=""></div>
-      <div class="plate p3"><img src="https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=600&q=80" alt=""></div>
-    </div>
-  </section>
+  {{-- coretan dekorasi (posisi dalam px desain 1600 × 1280) --}}
+  <svg class="doodle lt" style="--x:70;--y:252;--w:120" viewBox="0 0 120 60"><path d="M2 4H118L66 56Z"/><circle cx="34" cy="16" r="5"/><circle cx="80" cy="26" r="5"/></svg>
+  <svg class="doodle lt" style="--x:76;--y:318;--w:22" viewBox="0 0 22 30"><path d="M14 2L4 13l12 4L6 28"/></svg>
+  <svg class="doodle lt" style="--x:108;--y:312;--w:20" viewBox="0 0 20 14"><path d="M2 2l8 9 8-4"/></svg>
+  <svg class="doodle lt" style="--x:52;--y:636;--w:38" viewBox="0 0 38 64"><path d="M22 2C6 14 0 36 10 60 30 50 38 26 22 2Z"/><path d="M10 60C14 40 18 22 22 2"/></svg>
+  <svg class="doodle lt" style="--x:84;--y:932;--w:66" viewBox="0 0 66 66"><circle cx="33" cy="37" r="27"/><path d="M33 10c-3-4-9-6-14-4M33 10c4-4 10-5 14-2M33 10V3"/></svg>
+  <svg class="doodle pk" style="--x:618;--y:990;--w:66" viewBox="0 0 66 76"><path d="M4 4L62 70H8Z"/><circle cx="18" cy="38" r="5"/><circle cx="26" cy="58" r="4"/></svg>
 
   <section class="right">
-    @yield('form')
+    <div class="fwrap">
+      {{-- hiasan di sekitar form: diposisikan dari tepi kotak form agar tidak pernah menimpa isi --}}
+      <svg class="dd pk" style="right:calc(var(--k) * -44);top:calc(var(--k) * -122);width:calc(var(--k) * 56)" viewBox="0 0 56 58"><circle cx="28" cy="32" r="23"/><path d="M28 9c-3-5-8-6-13-4M28 9c4-4 9-5 13-2M28 9V2"/></svg>
+      <svg class="dd bl" style="left:calc(var(--k) * 28);top:calc(var(--k) * -84);width:calc(var(--k) * 18)" viewBox="0 0 18 30"><path d="M4 3l10 12L4 27"/></svg>
+      <svg class="dd pk side" style="right:calc(var(--k) * -74);top:48%;width:calc(var(--k) * 30)" viewBox="0 0 30 46"><path d="M8 2C-2 18 2 34 22 44 30 28 26 12 8 2Z"/><path d="M8 2c6 14 10 28 14 42"/></svg>
+      <svg class="dd bl side" style="right:calc(var(--k) * -66);top:76%;width:calc(var(--k) * 18)" viewBox="0 0 18 30"><path d="M4 3l10 12L4 27"/></svg>
+      <svg class="dd pk" style="right:calc(var(--k) * -30);bottom:calc(var(--k) * -118);width:calc(var(--k) * 92)" viewBox="0 0 92 76"><path d="M4 4L88 34 30 72Z"/><circle cx="36" cy="38" r="5"/><circle cx="54" cy="48" r="4"/></svg>
+      <svg class="dd bl" style="left:calc(var(--k) * 88);bottom:calc(var(--k) * -110);width:calc(var(--k) * 18)" viewBox="0 0 18 30"><path d="M4 3l10 12L4 27"/></svg>
+      @yield('form')
+    </div>
   </section>
 </main>
+<script>
+  // tampilkan / sembunyikan password
+  document.querySelectorAll('.field .eye').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var i = b.parentNode.querySelector('input'); var lihat = i.type === 'password';
+      i.type = lihat ? 'text' : 'password'; b.setAttribute('aria-label', lihat ? 'Sembunyikan password' : 'Tampilkan password');
+      b.querySelector('.o').style.display = lihat ? 'none' : ''; b.querySelector('.c').style.display = lihat ? '' : 'none';
+    });
+  });
+  // cegah kirim ganda
+  document.querySelectorAll('form').forEach(function (f) { f.addEventListener('submit', function () { var b = f.querySelector('.btn'); if (b) setTimeout(function () { b.disabled = true; }, 0); }); });
+</script>
+@stack('scripts')
 </body>
 </html>

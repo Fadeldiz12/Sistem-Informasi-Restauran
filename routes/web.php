@@ -2,9 +2,8 @@
 
 use App\Http\Controllers\Admin;
 use App\Http\Controllers\Auth\AuthController;
-use App\Http\Controllers\Auth\GoogleController;
+use App\Http\Controllers\Auth\OtpController;
 use App\Http\Controllers\Auth\PasswordController;
-use App\Http\Controllers\Auth\ProfilController;
 use App\Http\Controllers\BuktiKirimController;
 use App\Http\Controllers\Dapur;
 use App\Http\Controllers\Kasir;
@@ -31,28 +30,23 @@ Route::get('/', function (Request $request) {
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1')->name('login.submit');
+    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1,login')->name('login.submit');
     Route::get('/registrasi', [AuthController::class, 'showRegister'])->name('registrasi');
-    Route::post('/registrasi', [AuthController::class, 'register'])->middleware('throttle:5,1')->name('registrasi.submit');
+    Route::post('/registrasi', [AuthController::class, 'register'])->middleware('throttle:5,1,registrasi')->name('registrasi.submit');
 
-    // Masuk / daftar dengan Google
-    Route::get('/auth/google', [GoogleController::class, 'redirect'])->name('auth.google');
-    Route::get('/auth/google/callback', [GoogleController::class, 'callback'])->name('auth.google.callback');
+    // Kode OTP (verifikasi akun baru & lupa password)
+    Route::get('/verifikasi-otp', [OtpController::class, 'show'])->name('otp.form');
+    Route::post('/verifikasi-otp', [OtpController::class, 'verify'])->middleware('throttle:10,1,otp')->name('otp.verifikasi');
+    Route::post('/verifikasi-otp/kirim-ulang', [OtpController::class, 'resend'])->middleware('throttle:3,1,otp-ulang')->name('otp.ulang');
 
-    // Lupa password
+    // Lupa password: email → OTP → password baru
     Route::get('/lupa-password', [PasswordController::class, 'showRequest'])->name('password.request');
-    Route::post('/lupa-password', [PasswordController::class, 'sendLink'])->middleware('throttle:5,1')->name('password.email');
-    Route::get('/reset-password/{token}', [PasswordController::class, 'showReset'])->name('password.reset');
-    Route::post('/reset-password', [PasswordController::class, 'reset'])->middleware('throttle:5,1')->name('password.update');
+    Route::post('/lupa-password', [PasswordController::class, 'sendCode'])->middleware('throttle:5,1,lupa-password')->name('password.email');
+    Route::get('/reset-password', [PasswordController::class, 'showReset'])->name('password.reset');
+    Route::post('/reset-password', [PasswordController::class, 'reset'])->middleware('throttle:5,1,reset-password')->name('password.update');
 });
 
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
-
-// Akun dari Google: lengkapi nomor HP
-Route::middleware('auth')->group(function () {
-    Route::get('/lengkapi-profil', [ProfilController::class, 'edit'])->name('profil.lengkapi');
-    Route::post('/lengkapi-profil', [ProfilController::class, 'update'])->name('profil.lengkapi.simpan');
-});
 
 /*
 |--------------------------------------------------------------------------
@@ -62,7 +56,7 @@ Route::middleware('auth')->group(function () {
 */
 
 // Pelanggan
-Route::middleware(['auth', 'role:'.User::ROLE_PELANGGAN, 'profil'])->name('pelanggan.')->group(function () {
+Route::middleware(['auth', 'role:'.User::ROLE_PELANGGAN])->name('pelanggan.')->group(function () {
     Route::get('/beranda', Pelanggan\BerandaController::class)->name('beranda');
 
     Route::get('/keranjang', [Pelanggan\KeranjangController::class, 'index'])->name('keranjang');
@@ -72,11 +66,11 @@ Route::middleware(['auth', 'role:'.User::ROLE_PELANGGAN, 'profil'])->name('pelan
     Route::delete('/keranjang/{menu}', [Pelanggan\KeranjangController::class, 'destroy'])->whereNumber('menu')->name('keranjang.destroy');
 
     Route::get('/checkout', [Pelanggan\CheckoutController::class, 'create'])->name('checkout');
-    Route::post('/checkout', [Pelanggan\CheckoutController::class, 'store'])->middleware('throttle:10,1')->name('checkout.store');
+    Route::post('/checkout', [Pelanggan\CheckoutController::class, 'store'])->middleware('throttle:10,1,checkout')->name('checkout.store');
 
     Route::get('/pembayaran', [Pelanggan\PembayaranController::class, 'terakhir'])->name('pembayaran.terakhir');
     Route::get('/pesanan/{pesanan}/pembayaran', [Pelanggan\PembayaranController::class, 'show'])->name('pembayaran');
-    Route::post('/pesanan/{pesanan}/pembayaran', [Pelanggan\PembayaranController::class, 'store'])->middleware('throttle:10,1')->name('pembayaran.store');
+    Route::post('/pesanan/{pesanan}/pembayaran', [Pelanggan\PembayaranController::class, 'store'])->middleware('throttle:10,1,bayar')->name('pembayaran.store');
     Route::get('/pesanan/{pesanan}/pembayaran/status', [Pelanggan\PembayaranController::class, 'status'])->name('pembayaran.status');
 
     Route::get('/tracking', Pelanggan\TrackingController::class)->name('tracking');
