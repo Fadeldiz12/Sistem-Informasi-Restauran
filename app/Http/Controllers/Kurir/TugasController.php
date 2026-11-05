@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Kurir;
 
 use App\Http\Controllers\Controller;
+use App\Models\Pembayaran;
 use App\Models\Pengiriman;
 use App\Services\KurirService;
 use Illuminate\Http\RedirectResponse;
@@ -103,6 +104,7 @@ class TugasController extends Controller
             'jmlAntrean' => KurirService::antrean()->count(),
             'jmlDiantar' => (clone $saya)->where('status_kirim', Pengiriman::STATUS_DALAM_PERJALANAN)->count(),
             'jmlSelesai' => (clone $saya)->where('status_kirim', Pengiriman::STATUS_DITERIMA)->whereDate('updated_at', today())->count(),
+            'tunaiDibawa' => (float) Pembayaran::belumDisetor()->where('id_kurir', $request->user()->id)->sum('jumlah'),
         ];
     }
 }

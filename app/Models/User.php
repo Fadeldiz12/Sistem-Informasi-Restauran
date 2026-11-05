@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Notifications\ResetPasswordNotification;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -11,8 +12,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['nama', 'email', 'password', 'role', 'no_hp', 'alamat'])]
-#[Hidden(['password', 'remember_token'])]
+#[Fillable(['nama', 'email', 'google_id', 'password', 'role', 'no_hp', 'alamat'])]
+#[Hidden(['password', 'remember_token', 'google_id'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
@@ -49,6 +50,71 @@ class User extends Authenticatable
         return [
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Akun dari Google belum punya nomor HP: wajib dilengkapi sebelum memakai aplikasi.
+     */
+    public function perluLengkapiProfil(): bool
+    {
+        return blank($this->no_hp);
+    }
+
+    /**
+     * Email reset password berbahasa Indonesia.
+     */
+    public function sendPasswordResetNotification(#[\SensitiveParameter] $token): void
+    {
+        $this->notify(new ResetPasswordNotification($token));
+    }
+
+    public const LABEL_ROLE = [
+        self::ROLE_OWNER => 'Owner',
+        self::ROLE_ADMIN => 'Admin',
+        self::ROLE_KASIR => 'Kasir',
+        self::ROLE_DAPUR => 'Dapur',
+        self::ROLE_KURIR => 'Kurir',
+        self::ROLE_PELANGGAN => 'Pelanggan',
+    ];
+
+    /**
+     * Akses tiap role, ditampilkan saat memilih role di form pengguna.
+     */
+    public const AKSES_ROLE = [
+        self::ROLE_OWNER => 'Dashboard penjualan, laporan keuangan, pengeluaran, dan semua pengguna termasuk owner.',
+        self::ROLE_ADMIN => 'Data pengguna (kecuali owner), kategori & menu, zona, dan pengaturan sistem.',
+        self::ROLE_KASIR => 'Input pesanan, konfirmasi pesanan online, pembayaran, dan setoran kurir.',
+        self::ROLE_DAPUR => 'Antrean tiket masak dan stok bahan baku.',
+        self::ROLE_KURIR => 'Tugas pengiriman, status antar, dan foto bukti.',
+        self::ROLE_PELANGGAN => 'Memesan menu, membayar, dan melacak pesanan.',
+    ];
+
+    public function roleLabel(): string
+    {
+        return self::LABEL_ROLE[$this->role] ?? ucfirst((string) $this->role);
+    }
+
+    /**
+     * Role yang boleh diberikan oleh pengguna ini. Owner mengatur semua role;
+     * admin mengatur semua kecuali owner.
+     *
+     * @return array<int, string>
+     */
+    public function roleYangBolehDiatur(): array
+    {
+        return match ($this->role) {
+            self::ROLE_OWNER => array_keys(self::LABEL_ROLE),
+            self::ROLE_ADMIN => array_values(array_diff(array_keys(self::LABEL_ROLE), [self::ROLE_OWNER])),
+            default => [],
+        };
+    }
+
+    /**
+     * Boleh mengubah / menghapus akun $target? Akun owner hanya bisa diatur oleh owner.
+     */
+    public function bolehKelola(self $target): bool
+    {
+        return in_array($target->role, $this->roleYangBolehDiatur(), true);
     }
 
     public function hasRole(string ...$roles): bool

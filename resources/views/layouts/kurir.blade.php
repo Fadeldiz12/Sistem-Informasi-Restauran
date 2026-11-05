@@ -30,6 +30,9 @@
 <main class="wrapm">
   @if (session('error'))<div class="alert" role="alert"><svg class="ic"><use href="#i-alert"/></svg><span>{{ session('error') }}</span></div>@endif
   @if ($errors->any())<div class="alert" role="alert"><svg class="ic"><use href="#i-alert"/></svg><span>{{ $errors->first() }}</span></div>@endif
+  @if (($tunaiDibawa ?? 0) > 0)
+    <div class="note" style="margin-bottom:14px"><svg class="ic"><use href="#i-cash"/></svg><span>Uang tunai yang kamu bawa: <b>Rp {{ number_format($tunaiDibawa, 0, ',', '.') }}</b>. Setorkan ke kasir setelah kembali ke restoran.</span></div>
+  @endif
   @yield('content')
 </main>
 

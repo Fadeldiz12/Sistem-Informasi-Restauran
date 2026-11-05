@@ -4,6 +4,7 @@
     ['kasir.input', 'i-plus', 'Input Pesanan', null, 'Input'],
     ['kasir.online', 'i-bell', 'Pesanan Online', $sidebarCount['online'] ?: null, 'Online'],
     ['kasir.pembayaran', 'i-wallet', 'Pembayaran', $sidebarCount['pembayaran'] ?: null, 'Bayar'],
+    ['kasir.setoran', 'i-cash', 'Setoran Kurir', $sidebarCount['setoran'] ?: null, 'Setoran'],
   ];
 @endphp
 <aside class="side"><div class="side-in">

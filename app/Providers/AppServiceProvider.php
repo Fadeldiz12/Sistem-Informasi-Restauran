@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Models\BahanBaku;
 use App\Models\Kategori;
 use App\Models\Menu;
+use App\Models\Pembayaran;
 use App\Models\PengaturanSistem;
 use App\Models\Pesanan;
 use App\Models\TiketDapur;
@@ -63,6 +64,7 @@ class AppServiceProvider extends ServiceProvider
             $view->with('sidebarCount', [
                 'online' => Pesanan::menungguKonfirmasi()->count(),
                 'pembayaran' => Pesanan::belumLunas()->count(),
+                'setoran' => Pembayaran::belumDisetor()->distinct()->count('id_kurir'),
             ]);
         });
 
