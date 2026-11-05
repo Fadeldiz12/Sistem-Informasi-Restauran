@@ -104,7 +104,8 @@ class AdminTest extends TestCase
         $owner = User::factory()->create(['role' => User::ROLE_OWNER]);
         Pengeluaran::create(['id_owner' => $owner->id, 'kategori' => 'Listrik', 'nominal' => 100000, 'tanggal' => today()]);
 
-        $this->actingAs($this->admin)->delete("/admin/pengguna/{$owner->id}")->assertSessionHas('error');
+        $ownerLain = User::factory()->create(['role' => User::ROLE_OWNER]);
+        $this->actingAs($ownerLain)->delete("/owner/pengguna/{$owner->id}")->assertSessionHas('error');
         $this->assertModelExists($owner);
     }
 

@@ -72,12 +72,14 @@ class KurirService
         $path = $foto->store('bukti-kirim', self::DISK);
 
         try {
-            DB::transaction(function () use ($kirim, $pesanan, $path, $tagihTunai) {
+            DB::transaction(function () use ($kirim, $kurir, $pesanan, $path, $tagihTunai) {
                 $kirim->update(['status_kirim' => Pengiriman::STATUS_DITERIMA, 'bukti_kirim' => $path]);
                 $pesanan->update(['status' => Pesanan::STATUS_SELESAI]);
 
                 if ($tagihTunai) {
+                    // uang dibawa kurir sampai disetor ke kasir (menu Setoran Kurir)
                     $pesanan->pembayaran()->updateOrCreate([], [
+                        'id_kurir' => $kurir->id,
                         'metode' => Pembayaran::METODE_TUNAI,
                         'jumlah' => $pesanan->total,
                         'status_bayar' => Pembayaran::STATUS_LUNAS,

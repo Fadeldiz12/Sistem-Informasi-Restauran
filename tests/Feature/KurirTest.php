@@ -194,4 +194,45 @@ class KurirTest extends TestCase
         auth()->logout();
         $this->get($url)->assertRedirect('/login');
     }
+
+    // ---------- setoran tunai kurir
+
+    public function test_setoran_tunai_kurir_diterima_kasir(): void
+    {
+        $a = $this->siapDiantar('Jl. A');
+        $this->actingAs($this->kurir)->post("/kurir/tugas/{$a->pengiriman->id}/terima");
+        $this->actingAs($this->kurir)->post("/kurir/tugas/{$a->pengiriman->id}/diterima", ['bukti' => UploadedFile::fake()->image('b.jpg'), 'uang_diterima' => 1]);
+        $bayar = $a->fresh()->pembayaran;
+        $this->assertSame($this->kurir->id, $bayar->id_kurir);
+        $this->assertNull($bayar->disetor_pada);
+        $rp = 'Rp '.number_format((float) $a->total, 0, ',', '.');
+
+        // kurir melihat uang yang dibawa
+        $this->actingAs($this->kurir)->get('/kurir/riwayat')->assertSee('Uang tunai yang kamu bawa')->assertSee($rp);
+
+        // kasir melihat setoran per kurir
+        $this->actingAs($this->kasir)->get('/kasir/setoran')->assertOk()->assertSee('Bayu Saputra')->assertSee($a->kode())->assertSee('Terima Setoran');
+        $this->actingAs($this->kurir)->get('/kasir/setoran')->assertForbidden();
+
+        $this->actingAs($this->kasir)->post("/kasir/setoran/{$this->kurir->id}", ['ids' => [$bayar->id]])->assertSessionHas('status');
+        $bayar->refresh();
+        $this->assertNotNull($bayar->disetor_pada);
+        $this->assertSame($this->kasir->id, $bayar->id_kasir);
+
+        $this->actingAs($this->kasir)->get('/kasir/setoran')->assertSee('Tidak ada uang tunai yang belum disetor')->assertSee('Setoran Hari Ini');
+        $this->actingAs($this->kurir)->get('/kurir/riwayat')->assertDontSee('Uang tunai yang kamu bawa');
+
+        // dikirim ulang: tidak tercatat dua kali
+        $this->actingAs($this->kasir)->post("/kasir/setoran/{$this->kurir->id}", ['ids' => [$bayar->id]])->assertSessionHas('error');
+    }
+
+    public function test_pembayaran_online_tidak_masuk_setoran(): void
+    {
+        $p = $this->siapDiantar(metode: 'transfer');
+        $this->actingAs($this->kurir)->post("/kurir/tugas/{$p->pengiriman->id}/terima");
+        $this->actingAs($this->kurir)->post("/kurir/tugas/{$p->pengiriman->id}/diterima", ['bukti' => UploadedFile::fake()->image('b.jpg')]);
+
+        $this->assertNull($p->fresh()->pembayaran->id_kurir);
+        $this->actingAs($this->kasir)->get('/kasir/setoran')->assertSee('Tidak ada uang tunai yang belum disetor');
+    }
 }

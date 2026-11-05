@@ -4,12 +4,14 @@ namespace App\Models;
 
 use App\Services\MidtransService;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Attributes\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Table('pembayaran')]
-#[Fillable(['id_pesanan', 'id_kasir', 'metode', 'jumlah', 'bukti_bayar', 'status_bayar', 'waktu_bayar', 'kode_transaksi', 'bank', 'nomor_va', 'qris_url', 'kedaluwarsa_pada'])]
+#[Fillable(['id_pesanan', 'id_kasir', 'metode', 'jumlah', 'bukti_bayar', 'status_bayar', 'waktu_bayar', 'kode_transaksi', 'bank', 'nomor_va', 'qris_url', 'kedaluwarsa_pada', 'id_kurir', 'disetor_pada'])]
 class Pembayaran extends Model
 {
     public const METODE_TUNAI = 'tunai';
@@ -30,6 +32,7 @@ class Pembayaran extends Model
             'jumlah' => 'decimal:2',
             'waktu_bayar' => 'datetime',
             'kedaluwarsa_pada' => 'datetime',
+            'disetor_pada' => 'datetime',
         ];
     }
 
@@ -72,5 +75,22 @@ class Pembayaran extends Model
     public function kasir(): BelongsTo
     {
         return $this->belongsTo(User::class, 'id_kasir');
+    }
+
+    /**
+     * Kurir yang menerima uang tunai dari pelanggan (bayar di tempat).
+     */
+    public function kurir(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'id_kurir');
+    }
+
+    /**
+     * Uang tunai COD yang masih dibawa kurir (belum disetor ke kasir).
+     */
+    #[Scope]
+    protected function belumDisetor(Builder $query): void
+    {
+        $query->whereNotNull('id_kurir')->whereNull('disetor_pada')->where('status_bayar', self::STATUS_LUNAS);
     }
 }

@@ -228,7 +228,7 @@
       </div>
       <label class="agree"><input type="checkbox" checked> Saya menyetujui syarat &amp; ketentuan</label>
       <button class="btn" type="submit">Daftar</button>
-      <p class="signup">Sudah punya akun? <a href="{{ route('login') }}">Masuk</a></p>
+      <p class="signup">Sudah punya akun? <a href="{{ route('login') }}">Masuk</a> · <a href="{{ route('auth.google') }}">Daftar dengan Google</a></p>
     </form>
   </section>
 </main>

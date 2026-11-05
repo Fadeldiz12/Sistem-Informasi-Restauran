@@ -1,7 +1,7 @@
 @php
   $nav = [
     ['admin.dashboard', 'i-grid', 'Dashboard', null, 'Beranda'],
-    ['admin.pengguna', 'i-users', 'Data Pengguna', $sidebarCount['pengguna'] ?? null, 'Pengguna'],
+    ['admin.pengguna', 'i-users', 'Pengguna & Role', $sidebarCount['pengguna'] ?? null, 'Pengguna'],
     ['admin.menu', 'i-tag', 'Kategori & Menu', $sidebarCount['menu'] ?? null, 'Menu'],
     ['admin.zona', 'i-map', 'Zona & Tarif', $sidebarCount['zona'] ?? null, 'Zona'],
     ['admin.pengaturan', 'i-settings', 'Pengaturan Sistem', null, 'Atur'],

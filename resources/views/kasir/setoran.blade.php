@@ -1,0 +1,54 @@
+@extends('layouts.panel')
+
+@section('title', 'Setoran Kurir')
+@section('crumb', 'Kasir / Setoran Kurir')
+@section('heading', 'Setoran Tunai Kurir')
+@section('sub', 'Terima uang pesanan bayar di tempat (COD) yang dibawa kurir')
+
+@php $rp = fn ($n) => 'Rp '.number_format((float) $n, 0, ',', '.'); @endphp
+
+@push('styles')
+<style>
+  .setor-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr)); gap: 18px; align-items: start; }
+  .setor-row { display: flex; gap: 10px; align-items: baseline; padding: 9px 0; border-bottom: 1px solid var(--m15); font-size: 13.5px; }
+  .setor-row:last-child { border-bottom: 0; }
+  .setor-row b { font: 600 13.5px var(--f-title); }
+  .setor-row .r { margin-left: auto; font: 600 13.5px var(--f-title); white-space: nowrap; }
+  .setor-total { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 12px; padding-top: 12px; border-top: 1.5px dashed var(--m60); }
+</style>
+@endpush
+
+@section('content')
+  <div class="grid g3">
+    <div class="card stat f"><div class="top"><span class="eyebrow">Belum disetor</span><span class="ico"><svg class="ic"><use href="#i-cash"/></svg></span></div><div class="v">{{ $rp($totalBelum) }}</div><div class="t">{{ $perKurir->count() }} kurir · {{ $perKurir->flatten()->count() }} pesanan COD</div></div>
+    <div class="card stat b"><div class="top"><span class="eyebrow">Disetor hari ini</span><span class="ico"><svg class="ic"><use href="#i-check"/></svg></span></div><div class="v">{{ $rp($riwayat->sum('jumlah')) }}</div><div class="t">{{ $riwayat->count() }} pesanan</div></div>
+    <div class="card stat p"><div class="top"><span class="eyebrow">Cara kerja</span><span class="ico"><svg class="ic"><use href="#i-info"/></svg></span></div><div class="t" style="margin-top:12px;font-size:13px;line-height:1.5">Kurir menagih tunai saat mengantar. Saat kembali, hitung uangnya lalu tekan <b>Terima Setoran</b>.</div></div>
+  </div>
+
+  <div class="setor-grid" style="margin-top:18px">
+    @forelse ($perKurir as $idKurir => $daftar)
+      @php $kurir = $daftar->first()->kurir; @endphp
+      <div class="card"><div class="card-head" style="margin-bottom:6px"><div class="who"><span class="av m">{{ $kurir?->inisial() }}</span><div><h2 style="font-size:16px">{{ $kurir?->nama ?? 'Kurir dihapus' }}</h2><p>{{ $kurir?->no_hp }}</p></div></div><span class="pill b">{{ $daftar->count() }} pesanan</span></div>
+        @foreach ($daftar as $b)
+          <div class="setor-row"><b>{{ $b->pesanan->kode() }}</b><span style="opacity:.75;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ $b->pesanan->namaPemesan() }} · {{ $b->waktu_bayar->translatedFormat('d M, H:i') }}</span><span class="r">{{ $rp($b->jumlah) }}</span></div>
+        @endforeach
+        <form method="post" action="{{ route('kasir.setoran.terima', $idKurir) }}" class="setor-total">@csrf
+          @foreach ($daftar as $b)<input type="hidden" name="ids[]" value="{{ $b->id }}">@endforeach
+          <div><div class="eyebrow">Total diterima</div><b style="font:700 22px var(--f-title)">{{ $rp($daftar->sum('jumlah')) }}</b></div>
+          <button class="btn" type="submit"><svg class="ic"><use href="#i-check"/></svg>Terima Setoran</button>
+        </form>
+      </div>
+    @empty
+      <div class="card" style="grid-column:1/-1"><div class="empty"><svg class="ic" style="width:30px;height:30px;margin-bottom:8px"><use href="#i-check"/></svg><br>Tidak ada uang tunai yang belum disetor kurir.</div></div>
+    @endforelse
+  </div>
+
+  <div class="card" style="margin-top:18px"><div class="card-head"><div><h2>Setoran Hari Ini</h2><p>{{ now()->translatedFormat('l, j F Y') }}</p></div></div>
+    <div class="tbl-wrap"><table class="tbl-stack"><thead><tr><th>Pesanan</th><th>Kurir</th><th>Jumlah</th><th>Disetor</th><th>Diterima oleh</th></tr></thead><tbody>
+      @forelse ($riwayat as $b)
+        <tr><td><b>{{ $b->pesanan->kode() }}</b></td><td>{{ $b->kurir?->nama }}</td><td>{{ $rp($b->jumlah) }}</td><td>{{ $b->disetor_pada->format('H:i') }}</td><td>{{ $b->kasir?->nama }}</td></tr>
+      @empty
+        <tr><td colspan="5"><div class="empty">Belum ada setoran hari ini.</div></td></tr>
+      @endforelse
+    </tbody></table></div></div>
+@endsection

@@ -1,9 +1,9 @@
 @extends('layouts.panel')
 
-@section('title', 'Data Pengguna')
-@section('crumb', 'Admin / Data Pengguna')
-@section('heading', 'Data Pengguna')
-@section('sub', 'Kelola akun pengguna beserta perannya')
+@section('title', 'Pengguna & Role')
+@section('crumb', (auth()->user()->role === 'owner' ? 'Owner' : 'Admin').' / Pengguna & Role')
+@section('heading', 'Pengguna & Role')
+@section('sub', auth()->user()->role === 'owner' ? 'Kelola semua akun dan perannya, termasuk owner' : 'Kelola akun dan peran staf. Akun owner hanya bisa diatur oleh owner')
 @section('delete-title', 'Hapus pengguna ini?')
 
 @use('App\Models\User')
@@ -23,13 +23,13 @@
   <div class="card">
     <div class="card-head">
       <div class="chips">
-        <a @class(['on' => ! $role]) href="{{ route('admin.pengguna', array_filter(['q' => $q])) }}">Semua<span>{{ $total }}</span></a>
-        @foreach (User::ROLES as $r)
-          <a @class(['on' => $role === $r]) href="{{ route('admin.pengguna', array_filter(['role' => $r, 'q' => $q])) }}">{{ ucfirst($r) }}<span>{{ $perRole[$r] ?? 0 }}</span></a>
+        <a @class(['on' => ! $role]) href="{{ route($rute, array_filter(['q' => $q])) }}">Semua<span>{{ $total }}</span></a>
+        @foreach (User::LABEL_ROLE as $r => $lbl)
+          <a @class(['on' => $role === $r]) href="{{ route($rute, array_filter(['role' => $r, 'q' => $q])) }}">{{ $lbl }}<span>{{ $perRole[$r] ?? 0 }}</span></a>
         @endforeach
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap">
-        <form method="get" action="{{ route('admin.pengguna') }}" class="search keep" style="background:var(--pp)">
+        <form method="get" action="{{ route($rute) }}" class="search keep" style="background:var(--pp)">
           @if ($role)<input type="hidden" name="role" value="{{ $role }}">@endif
           <svg class="ic"><use href="#i-search"/></svg><input name="q" value="{{ $q }}" placeholder="Cari nama, email, atau HP…">
         </form>
@@ -40,17 +40,21 @@
     <div class="tbl-wrap"><table class="tbl-stack"><thead><tr><th>Nama</th><th>Email</th><th>Nomor HP</th><th>Peran</th><th class="hide-md">Terdaftar</th><th>Aksi</th></tr></thead>
       <tbody id="tbUser">
         @forelse ($users as $u)
-          <tr data-id="{{ $u->id }}" data-url="{{ route('admin.pengguna.update', $u) }}" data-nama="{{ $u->nama }}" data-email="{{ $u->email }}" data-hp="{{ $u->no_hp }}" data-role="{{ $u->role }}">
+          <tr data-id="{{ $u->id }}" data-url="{{ route($rute.'.update', $u) }}" data-nama="{{ $u->nama }}" data-email="{{ $u->email }}" data-hp="{{ $u->no_hp }}" data-role="{{ $u->role }}">
             <td><div class="who"><span @class(['av', 'm' => $u->hasRole(User::ROLE_ADMIN, User::ROLE_OWNER)])>{{ $u->inisial() }}</span><b>{{ $u->nama }}</b>@if ($u->is(auth()->user()))<span class="pill c">Anda</span>@endif</div></td>
             <td>{{ $u->email }}</td>
             <td>{{ $u->no_hp }}</td>
-            <td><span class="pill b">{{ ucfirst($u->role) }}</span></td>
+            <td><span @class(['pill', 'm' => $u->role === User::ROLE_OWNER, 'b' => $u->role !== User::ROLE_OWNER])>{{ $u->roleLabel() }}</span></td>
             <td class="hide-md">{{ $u->created_at?->translatedFormat('d M Y') }}</td>
             <td><div class="acts">
-              <button class="ab js-edit" title="Ubah"><svg class="ic"><use href="#i-edit"/></svg></button>
-              @unless ($u->is(auth()->user()))
-                <button class="ab f js-del" data-url="{{ route('admin.pengguna.destroy', $u) }}" data-name="{{ $u->nama }}" title="Hapus"><svg class="ic"><use href="#i-trash"/></svg></button>
-              @endunless
+              @if (auth()->user()->bolehKelola($u))
+                <button class="ab js-edit" title="Ubah"><svg class="ic"><use href="#i-edit"/></svg></button>
+                @unless ($u->is(auth()->user()))
+                  <button class="ab f js-del" data-url="{{ route($rute.'.destroy', $u) }}" data-name="{{ $u->nama }}" title="Hapus"><svg class="ic"><use href="#i-trash"/></svg></button>
+                @endunless
+              @else
+                <span class="ab" style="opacity:.55;cursor:help" title="Akun owner hanya bisa diubah oleh owner"><svg class="ic"><use href="#i-lock"/></svg></span>
+              @endif
             </div></td>
           </tr>
         @empty
@@ -64,7 +68,7 @@
 
 @push('modals')
 <div class="ovl" id="mUser"><form class="modal" method="post" id="fUser"
-    action="{{ $editId ? route('admin.pengguna.update', $editId) : route('admin.pengguna.store') }}">
+    action="{{ $editId ? route($rute.'.update', $editId) : route($rute.'.store') }}">
   @csrf
   <input type="hidden" name="_method" value="PUT" @disabled(! $editId)>
   <input type="hidden" name="_modal" value="mUser">
@@ -75,14 +79,17 @@
     <div class="fgrid">
       <div class="field"><label>Nama lengkap</label><div class="in"><svg class="ic"><use href="#i-user"/></svg><input name="nama" id="uName" value="{{ old('nama') }}" maxlength="100" placeholder="Nama sesuai identitas" required></div></div>
       <div class="field"><label>Nomor HP</label><div class="in"><svg class="ic"><use href="#i-phone"/></svg><input name="no_hp" id="uHp" value="{{ old('no_hp') }}" maxlength="20" inputmode="tel" placeholder="08xx xxxx xxxx" required></div></div>
-      <div class="field full"><label>Email</label><div class="in"><svg class="ic"><use href="#i-mail"/></svg><input name="email" id="uEmail" type="email" value="{{ old('email') }}" maxlength="100" placeholder="nama@simresto.test" required></div></div>
+      <div class="field full"><label>Email</label><div class="in"><svg class="ic"><use href="#i-mail"/></svg><input name="email" id="uEmail" type="email" value="{{ old('email') }}" maxlength="100" placeholder="nama@email.com" required></div></div>
       <div class="field full"><label>Peran (role)</label>
         <input type="hidden" name="role" id="uRoleInput" value="{{ old('role', User::ROLE_KASIR) }}">
         <div class="seg" id="uRole" data-input="uRoleInput">
-          @foreach (User::ROLES as $r)
-            <button type="button" data-value="{{ $r }}" @class(['on' => old('role', User::ROLE_KASIR) === $r])>{{ ucfirst($r) }}</button>
+          @foreach ($roleBoleh as $r)
+            <button type="button" data-value="{{ $r }}" data-akses="{{ User::AKSES_ROLE[$r] }}" @class(['on' => old('role', User::ROLE_KASIR) === $r])>{{ User::LABEL_ROLE[$r] }}</button>
           @endforeach
-        </div></div>
+        </div>
+        <p class="note" id="uAkses" style="margin-top:10px"><svg class="ic"><use href="#i-info"/></svg><span>{{ User::AKSES_ROLE[old('role', User::ROLE_KASIR)] ?? '' }}</span></p>
+        @unless (in_array(User::ROLE_OWNER, $roleBoleh, true))<p style="font-size:12px;opacity:.7;margin-top:6px">Role owner hanya bisa diberikan oleh owner.</p>@endunless
+        </div>
       <div class="field"><label>Password</label><div class="in"><svg class="ic"><use href="#i-lock"/></svg><input type="password" name="password" id="uPass" minlength="8" placeholder="Minimal 8 karakter" @required(! $editId)></div></div>
       <div class="field"><label>Konfirmasi password</label><div class="in"><svg class="ic"><use href="#i-lock"/></svg><input type="password" name="password_confirmation" placeholder="Ulangi password"></div></div>
     </div>
@@ -99,10 +106,12 @@
     function setRole(role) {
       document.getElementById('uRoleInput').value = role;
       document.querySelectorAll('#uRole button').forEach(function (x) { x.classList.toggle('on', x.dataset.value === role); });
+      var b = document.querySelector('#uRole button[data-value="' + role + '"]');
+      document.querySelector('#uAkses span').textContent = b ? b.dataset.akses : '';
     }
     function mode(edit, tr) {
       form.querySelector('.ferr') && form.querySelector('.ferr').remove();
-      form.action = edit ? tr.dataset.url : @json(route('admin.pengguna.store'));
+      form.action = edit ? tr.dataset.url : @json(route($rute.'.store'));
       form.querySelector('[name=_method]').disabled = !edit;
       form.querySelector('[name=_id]').value = edit ? tr.dataset.id : '';
       uTitle.textContent = edit ? 'Ubah Pengguna' : 'Tambah Pengguna';

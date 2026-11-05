@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Pengiriman;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -30,6 +31,8 @@ class PenggunaController extends Controller
         $perRole = User::query()->selectRaw('role, count(*) as total')->groupBy('role')->pluck('total', 'role');
 
         return view('admin.pengguna', [
+            'rute' => $this->rute($request),
+            'roleBoleh' => $request->user()->roleYangBolehDiatur(),
             'users' => $users,
             'role' => $role,
             'q' => $q,
@@ -45,15 +48,19 @@ class PenggunaController extends Controller
 
         User::create($data);
 
-        return to_route('admin.pengguna')->with('status', 'Pengguna berhasil ditambahkan.');
+        return to_route($this->rute($request))->with('status', 'Pengguna berhasil ditambahkan.');
     }
 
     public function update(Request $request, User $user): RedirectResponse
     {
+        $this->pastikanBolehKelola($request, $user);
         $data = $this->validated($request, $user);
 
         if ($user->is($request->user()) && $data['role'] !== $user->role) {
             return back()->withInput()->withErrors(['role' => 'Anda tidak bisa mengubah peran akun sendiri.']);
+        }
+        if ($data['role'] !== $user->role && $this->masihMengantar($user)) {
+            return back()->withInput()->withErrors(['role' => "{$user->nama} masih mengantar pesanan. Ubah role setelah pengiriman selesai."]);
         }
 
         if (blank($data['password'] ?? null)) {
@@ -62,13 +69,19 @@ class PenggunaController extends Controller
 
         $user->update($data);
 
-        return to_route('admin.pengguna', $request->only('role', 'q', 'page'))->with('status', 'Data pengguna berhasil diperbarui.');
+        return back()->with('status', 'Data pengguna berhasil diperbarui.');
     }
 
     public function destroy(Request $request, User $user): RedirectResponse
     {
+        $this->pastikanBolehKelola($request, $user);
+
         if ($user->is($request->user())) {
             return back()->with('error', 'Anda tidak bisa menghapus akun yang sedang dipakai login.');
+        }
+
+        if ($this->masihMengantar($user)) {
+            return back()->with('error', "{$user->nama} masih mengantar pesanan. Hapus akun setelah pengiriman selesai.");
         }
 
         if ($user->pengeluaran()->exists()) {
@@ -86,10 +99,30 @@ class PenggunaController extends Controller
             'nama' => ['required', 'string', 'max:100'],
             'email' => ['required', 'email', 'max:100', Rule::unique('users', 'email')->ignore($user)],
             'no_hp' => ['required', 'string', 'max:20', 'regex:/^[0-9+\-\s]+$/'],
-            'role' => ['required', Rule::in(User::ROLES)],
+            'role' => ['required', Rule::in($request->user()->roleYangBolehDiatur())],
             'password' => [$user ? 'nullable' : 'required', 'confirmed', Password::min(8)],
         ], [
             'no_hp.regex' => 'Nomor HP hanya boleh berisi angka.',
+            'role.in' => 'Anda tidak berhak memberikan role tersebut. Role owner hanya bisa diberikan oleh owner.',
         ]);
+    }
+
+    /**
+     * Route halaman ini: admin.pengguna atau owner.pengguna.
+     */
+    private function rute(Request $request): string
+    {
+        return $request->user()->role.'.pengguna';
+    }
+
+    private function pastikanBolehKelola(Request $request, User $user): void
+    {
+        abort_unless($request->user()->bolehKelola($user), 403, 'Akun owner hanya bisa diubah oleh owner.');
+    }
+
+    private function masihMengantar(User $user): bool
+    {
+        return $user->role === User::ROLE_KURIR
+            && $user->tugasPengiriman()->where('status_kirim', Pengiriman::STATUS_DALAM_PERJALANAN)->exists();
     }
 }

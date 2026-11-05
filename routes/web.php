@@ -2,6 +2,9 @@
 
 use App\Http\Controllers\Admin;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Auth\GoogleController;
+use App\Http\Controllers\Auth\PasswordController;
+use App\Http\Controllers\Auth\ProfilController;
 use App\Http\Controllers\BuktiKirimController;
 use App\Http\Controllers\Dapur;
 use App\Http\Controllers\Kasir;
@@ -31,9 +34,25 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1')->name('login.submit');
     Route::get('/registrasi', [AuthController::class, 'showRegister'])->name('registrasi');
     Route::post('/registrasi', [AuthController::class, 'register'])->middleware('throttle:5,1')->name('registrasi.submit');
+
+    // Masuk / daftar dengan Google
+    Route::get('/auth/google', [GoogleController::class, 'redirect'])->name('auth.google');
+    Route::get('/auth/google/callback', [GoogleController::class, 'callback'])->name('auth.google.callback');
+
+    // Lupa password
+    Route::get('/lupa-password', [PasswordController::class, 'showRequest'])->name('password.request');
+    Route::post('/lupa-password', [PasswordController::class, 'sendLink'])->middleware('throttle:5,1')->name('password.email');
+    Route::get('/reset-password/{token}', [PasswordController::class, 'showReset'])->name('password.reset');
+    Route::post('/reset-password', [PasswordController::class, 'reset'])->middleware('throttle:5,1')->name('password.update');
 });
 
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
+
+// Akun dari Google: lengkapi nomor HP
+Route::middleware('auth')->group(function () {
+    Route::get('/lengkapi-profil', [ProfilController::class, 'edit'])->name('profil.lengkapi');
+    Route::post('/lengkapi-profil', [ProfilController::class, 'update'])->name('profil.lengkapi.simpan');
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -43,7 +62,7 @@ Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->n
 */
 
 // Pelanggan
-Route::middleware(['auth', 'role:'.User::ROLE_PELANGGAN])->name('pelanggan.')->group(function () {
+Route::middleware(['auth', 'role:'.User::ROLE_PELANGGAN, 'profil'])->name('pelanggan.')->group(function () {
     Route::get('/beranda', Pelanggan\BerandaController::class)->name('beranda');
 
     Route::get('/keranjang', [Pelanggan\KeranjangController::class, 'index'])->name('keranjang');
@@ -109,6 +128,9 @@ Route::middleware(['auth', 'role:'.User::ROLE_KASIR])->prefix('kasir')->name('ka
     Route::post('/pembayaran/{pesanan}/lunas', [Kasir\PembayaranController::class, 'lunas'])->name('pembayaran.lunas');
     Route::get('/pesanan/{pesanan}/struk', [Kasir\PembayaranController::class, 'struk'])->name('struk');
     Route::post('/pesanan/{pesanan}/selesai', [Kasir\PembayaranController::class, 'selesai'])->name('selesai');
+
+    Route::get('/setoran', [Kasir\SetoranController::class, 'index'])->name('setoran');
+    Route::post('/setoran/{kurir}', [Kasir\SetoranController::class, 'terima'])->name('setoran.terima');
 });
 
 // Dapur
@@ -144,6 +166,12 @@ Route::middleware(['auth', 'role:'.User::ROLE_OWNER])->prefix('owner')->name('ow
     Route::get('/laporan', [Owner\LaporanController::class, 'index'])->name('laporan');
     Route::get('/laporan/pdf', [Owner\LaporanController::class, 'pdf'])->name('laporan.pdf');
     Route::get('/laporan/excel', [Owner\LaporanController::class, 'excel'])->name('laporan.excel');
+
+    // Owner mengatur semua pengguna & role, termasuk owner lain
+    Route::get('/pengguna', [Admin\PenggunaController::class, 'index'])->name('pengguna');
+    Route::post('/pengguna', [Admin\PenggunaController::class, 'store'])->name('pengguna.store');
+    Route::put('/pengguna/{user}', [Admin\PenggunaController::class, 'update'])->name('pengguna.update');
+    Route::delete('/pengguna/{user}', [Admin\PenggunaController::class, 'destroy'])->name('pengguna.destroy');
 
     Route::get('/pengeluaran', [Owner\PengeluaranController::class, 'index'])->name('pengeluaran');
     Route::post('/pengeluaran', [Owner\PengeluaranController::class, 'store'])->name('pengeluaran.store');
