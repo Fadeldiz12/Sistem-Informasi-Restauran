@@ -32,6 +32,15 @@ class UserFactory extends Factory
             'no_hp' => fake()->numerify('08##########'),
             'alamat' => fake()->address(),
             'remember_token' => Str::random(10),
+            'email_verified_at' => now(),
         ];
+    }
+
+    /**
+     * Pelanggan baru yang belum memasukkan kode OTP.
+     */
+    public function belumVerifikasi(): static
+    {
+        return $this->state(fn () => ['email_verified_at' => null]);
     }
 }

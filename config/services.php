@@ -39,13 +39,6 @@ return [
     | Payment gateway Midtrans (Virtual Account & QRIS).
     | Ambil key di https://dashboard.sandbox.midtrans.com (Settings > Access Keys).
     */
-    // Login dengan Google (Laravel Socialite). Buat OAuth Client ID di Google Cloud Console.
-    'google' => [
-        'client_id' => env('GOOGLE_CLIENT_ID'),
-        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
-        'redirect' => env('GOOGLE_REDIRECT_URI', '/auth/google/callback'),
-    ],
-
     'midtrans' => [
         'server_key' => env('MIDTRANS_SERVER_KEY'),
         'client_key' => env('MIDTRANS_CLIENT_KEY'),

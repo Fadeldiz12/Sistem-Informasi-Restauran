@@ -3,7 +3,6 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
-use App\Notifications\ResetPasswordNotification;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -12,8 +11,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['nama', 'email', 'google_id', 'password', 'role', 'no_hp', 'alamat'])]
-#[Hidden(['password', 'remember_token', 'google_id'])]
+#[Fillable(['nama', 'email', 'password', 'role', 'no_hp', 'alamat'])]
+#[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
@@ -49,23 +48,8 @@ class User extends Authenticatable
     {
         return [
             'password' => 'hashed',
+            'email_verified_at' => 'datetime',
         ];
-    }
-
-    /**
-     * Akun dari Google belum punya nomor HP: wajib dilengkapi sebelum memakai aplikasi.
-     */
-    public function perluLengkapiProfil(): bool
-    {
-        return blank($this->no_hp);
-    }
-
-    /**
-     * Email reset password berbahasa Indonesia.
-     */
-    public function sendPasswordResetNotification(#[\SensitiveParameter] $token): void
-    {
-        $this->notify(new ResetPasswordNotification($token));
     }
 
     public const LABEL_ROLE = [

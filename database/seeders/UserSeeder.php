@@ -26,7 +26,7 @@ class UserSeeder extends Seeder
             User::updateOrCreate(
                 ['email' => $data['email']],
                 $data + ['password' => 'password', 'alamat' => null],
-            );
+            )->forceFill(['email_verified_at' => now()])->save();
         }
     }
 }

@@ -116,13 +116,15 @@ class AuthTest extends TestCase
             'alamat' => 'Jl. Merdeka 1',
             'password' => 'rahasia123',
             'password_confirmation' => 'rahasia123',
+            'setuju' => 1,
             'role' => 'admin', // harus diabaikan
-        ])->assertRedirect('/beranda');
+        ])->assertRedirect('/verifikasi-otp');
 
         $user = User::where('email', 'sari@example.com')->firstOrFail();
         $this->assertSame(User::ROLE_PELANGGAN, $user->role);
         $this->assertSame('0812 3456 7890', $user->no_hp);
-        $this->assertAuthenticatedAs($user);
+        $this->assertNull($user->email_verified_at);
+        $this->assertGuest(); // aktif setelah kode OTP dimasukkan
     }
 
     public function test_registrasi_validasi(): void
@@ -141,7 +143,7 @@ class AuthTest extends TestCase
         $this->assertGuest();
 
         $this->followingRedirects()->from('/registrasi')
-            ->post('/registrasi', ['nama' => 'Sari', 'hp' => '0812', 'email' => 'ada@example.com', 'password' => 'rahasia123', 'password_confirmation' => 'rahasia123'])
+            ->post('/registrasi', ['nama' => 'Sari', 'hp' => '0812', 'email' => 'ada@example.com', 'password' => 'rahasia123', 'password_confirmation' => 'rahasia123', 'setuju' => 1])
             ->assertSee('Email sudah terdaftar.')
             ->assertSee('value="Sari"', false);
     }

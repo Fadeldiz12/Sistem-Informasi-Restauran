@@ -46,7 +46,7 @@ class PenggunaController extends Controller
     {
         $data = $this->validated($request);
 
-        User::create($data);
+        User::create($data)->forceFill(['email_verified_at' => now()])->save(); // dibuat admin/owner: langsung aktif
 
         return to_route($this->rute($request))->with('status', 'Pengguna berhasil ditambahkan.');
     }

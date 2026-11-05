@@ -2,131 +2,185 @@
 
 namespace Tests\Feature;
 
+use App\Models\KodeOtp;
 use App\Models\User;
-use App\Notifications\ResetPasswordNotification;
+use App\Notifications\KodeOtpNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Notifications\AnonymousNotifiable;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
-use Laravel\Socialite\Facades\Socialite;
-use Laravel\Socialite\Two\User as GoogleUser;
 use Tests\TestCase;
 
 class AkunTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function googleAktif(): void
+    protected function setUp(): void
     {
-        config(['services.google.client_id' => 'id-uji', 'services.google.client_secret' => 'rahasia-uji']);
-    }
-
-    private function akunGoogle(string $email, bool $verified = true, string $id = 'g-123'): void
-    {
-        $g = (new GoogleUser)->setRaw(['email_verified' => $verified])
-            ->map(['id' => $id, 'name' => 'Sinta Maharani', 'email' => $email]);
-        Socialite::shouldReceive('driver->user')->andReturn($g);
-    }
-
-    // ---------- login Google
-
-    public function test_halaman_login_hanya_ada_google(): void
-    {
-        $this->get('/login')->assertOk()->assertSee('Masuk dengan Google')->assertDontSee('Facebook')
-            ->assertSee(route('password.request'), false);
-        $this->get('/registrasi')->assertOk()->assertSee('Daftar dengan Google')->assertDontSee('Facebook');
-    }
-
-    public function test_google_belum_dikonfigurasi(): void
-    {
-        config(['services.google.client_id' => null]);
-        $this->followingRedirects()->get('/auth/google')->assertSee('Login dengan Google belum diaktifkan');
-    }
-
-    public function test_google_akun_baru_jadi_pelanggan_lalu_lengkapi_hp(): void
-    {
-        $this->googleAktif();
-        $this->akunGoogle('sinta@gmail.com');
-
-        $this->get('/auth/google/callback')->assertRedirect(route('profil.lengkapi'));
-        $user = User::firstWhere('email', 'sinta@gmail.com');
-        $this->assertAuthenticatedAs($user);
-        $this->assertSame(User::ROLE_PELANGGAN, $user->role);
-        $this->assertSame('g-123', $user->google_id);
-        $this->assertNull($user->no_hp);
-
-        // belum isi HP: halaman pelanggan dialihkan
-        $this->get('/beranda')->assertRedirect(route('profil.lengkapi'));
-        $this->get('/lengkapi-profil')->assertOk()->assertSee('Satu Langkah Lagi')->assertSee('Sinta');
-        $this->post('/lengkapi-profil', ['hp' => 'abc'])->assertSessionHasErrors('hp');
-        $this->post('/lengkapi-profil', ['hp' => '0812 3456 7890', 'alamat' => 'Jl. Melati 3'])->assertRedirect(route('pelanggan.beranda'));
-        $this->assertSame('0812 3456 7890', $user->fresh()->no_hp);
-        $this->get('/beranda')->assertOk();
-    }
-
-    public function test_google_menghubungkan_akun_lama_dengan_email_sama(): void
-    {
-        $this->googleAktif();
-        $kasir = User::factory()->create(['role' => User::ROLE_KASIR, 'email' => 'bima@gmail.com']);
-        $this->akunGoogle('Bima@gmail.com', id: 'g-999');
-
-        $this->get('/auth/google/callback')->assertRedirect(route('kasir.dashboard'));
-        $this->assertAuthenticatedAs($kasir);
-        $this->assertSame('g-999', $kasir->fresh()->google_id);
-        $this->assertSame(1, User::count());
-    }
-
-    public function test_google_email_belum_terverifikasi_ditolak(): void
-    {
-        $this->googleAktif();
-        $this->akunGoogle('palsu@gmail.com', verified: false);
-
-        $this->get('/auth/google/callback')->assertRedirect(route('login'));
-        $this->assertGuest();
-        $this->assertDatabaseMissing('users', ['email' => 'palsu@gmail.com']);
-    }
-
-    // ---------- lupa password
-
-    public function test_lupa_password_kirim_email_dan_reset(): void
-    {
+        parent::setUp();
         Notification::fake();
+    }
+
+    /**
+     * Kode OTP terakhir yang dikirim ke email.
+     */
+    private function kodeTerkirim(string $email): string
+    {
+        $kode = null;
+        Notification::assertSentTo(new AnonymousNotifiable, KodeOtpNotification::class, function ($n, $ch, $notifiable) use ($email, &$kode) {
+            if (($notifiable->routes['mail'] ?? null) === $email) {
+                $kode = $n->kode;
+            }
+
+            return true;
+        });
+
+        return $kode;
+    }
+
+    private function daftar(string $email = 'sari@gmail.com'): void
+    {
+        $this->post('/registrasi', ['nama' => 'Sari Wulandari', 'hp' => '0812', 'email' => $email, 'password' => 'rahasia123',
+            'password_confirmation' => 'rahasia123', 'setuju' => 1])->assertRedirect('/verifikasi-otp');
+    }
+
+    public function test_halaman_login_tanpa_google_dan_facebook(): void
+    {
+        $this->get('/login')->assertOk()->assertSee('Selamat Datang')->assertDontSee('Google')->assertDontSee('Facebook')
+            ->assertSee(route('password.request'), false)->assertSee('SISTEM MANAJEMEN RESTORAN');
+        $this->get('/registrasi')->assertOk()->assertSee('Buat Akun Baru')->assertDontSee('Google');
+        $this->get('/auth/google')->assertNotFound();
+    }
+
+    // ---------- OTP registrasi
+
+    public function test_registrasi_lalu_otp_mengaktifkan_akun(): void
+    {
+        $this->daftar();
+        $kode = $this->kodeTerkirim('sari@gmail.com');
+        $this->assertMatchesRegularExpression('/^\d{6}$/', $kode);
+
+        $this->get('/verifikasi-otp')->assertOk()->assertSee('Verifikasi Email')->assertSee('sa');
+        $this->post('/verifikasi-otp', ['kode' => $kode])->assertRedirect(route('pelanggan.beranda'));
+
+        $user = User::firstWhere('email', 'sari@gmail.com');
+        $this->assertNotNull($user->email_verified_at);
+        $this->assertAuthenticatedAs($user);
+        $this->assertSame(0, KodeOtp::count()); // sekali pakai
+    }
+
+    public function test_registrasi_wajib_setuju_syarat(): void
+    {
+        $this->post('/registrasi', ['nama' => 'Sari', 'hp' => '0812', 'email' => 'a@gmail.com', 'password' => 'rahasia123', 'password_confirmation' => 'rahasia123'])
+            ->assertSessionHasErrors('setuju');
+    }
+
+    public function test_otp_salah_dibatasi_dan_kedaluwarsa(): void
+    {
+        $this->daftar();
+        $kode = $this->kodeTerkirim('sari@gmail.com');
+        $salah = $kode === '000000' ? '111111' : '000000';
+
+        $this->post('/verifikasi-otp', ['kode' => '12'])->assertSessionHasErrors('kode');
+        $this->post('/verifikasi-otp', ['kode' => $salah])->assertSessionHasErrors(['kode' => 'Kode salah. Sisa 4 kali percobaan.']);
+        $this->assertGuest();
+
+        foreach (range(1, 4) as $_) {
+            $this->post('/verifikasi-otp', ['kode' => $salah]);
+        }
+        // percobaan habis: kode benar pun ditolak
+        $this->post('/verifikasi-otp', ['kode' => $kode])->assertSessionHasErrors('kode');
+        $this->assertGuest();
+
+        // kode baru setelah jeda 60 detik; kode lama tidak berlaku
+        $this->post('/verifikasi-otp/kirim-ulang')->assertSessionHasErrors('kode'); // masih jeda
+        $this->travel(61)->seconds();
+        $this->post('/verifikasi-otp/kirim-ulang')->assertSessionHas('status');
+        $baru = $this->kodeTerkirim('sari@gmail.com');
+
+        $this->travel(11)->minutes();
+        $this->post('/verifikasi-otp', ['kode' => $baru])->assertSessionHasErrors('kode'); // kedaluwarsa
+        $this->assertGuest();
+    }
+
+    public function test_login_akun_belum_verifikasi_diarahkan_ke_otp(): void
+    {
+        $user = User::factory()->belumVerifikasi()->create(['email' => 'baru@gmail.com']);
+
+        $this->post('/login', ['email' => 'baru@gmail.com', 'password' => 'password'])->assertRedirect('/verifikasi-otp');
+        $this->assertGuest();
+        $kode = $this->kodeTerkirim('baru@gmail.com');
+
+        $this->post('/verifikasi-otp', ['kode' => $kode])->assertRedirect();
+        $this->assertAuthenticatedAs($user);
+    }
+
+    public function test_halaman_otp_tanpa_sesi_kembali_ke_login(): void
+    {
+        $this->get('/verifikasi-otp')->assertRedirect('/login');
+        $this->post('/verifikasi-otp', ['kode' => '123456'])->assertRedirect('/login');
+    }
+
+    public function test_akun_buatan_admin_langsung_aktif(): void
+    {
+        $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+        $this->actingAs($admin)->post('/admin/pengguna', ['nama' => 'Kasir Baru', 'email' => 'kasirbaru@resto.test', 'no_hp' => '0812',
+            'role' => 'kasir', 'password' => 'rahasia123', 'password_confirmation' => 'rahasia123'])->assertSessionHasNoErrors();
+        $this->assertNotNull(User::firstWhere('email', 'kasirbaru@resto.test')->email_verified_at);
+    }
+
+    // ---------- lupa password dengan OTP
+
+    public function test_lupa_password_otp_lalu_password_baru(): void
+    {
         $user = User::factory()->create(['email' => 'rina@gmail.com', 'nama' => 'Rina Amalia']);
 
         $this->get('/lupa-password')->assertOk()->assertSee('Lupa Password?');
-        $this->post('/lupa-password', ['email' => 'rina@gmail.com'])->assertSessionHas('status');
+        $this->post('/lupa-password', ['email' => 'Rina@gmail.com'])->assertRedirect('/verifikasi-otp');
+        $kode = $this->kodeTerkirim('rina@gmail.com');
 
-        $token = null;
-        Notification::assertSentTo($user, ResetPasswordNotification::class, function ($n) use (&$token, $user) {
-            $token = $n->token;
-            $mail = $n->toMail($user);
+        // belum memasukkan OTP: halaman password baru tertutup
+        $this->get('/reset-password')->assertRedirect('/lupa-password');
 
-            return str_contains($mail->subject, 'Atur Ulang Password') && str_contains($mail->actionUrl, '/reset-password/');
-        });
+        $this->get('/verifikasi-otp')->assertOk()->assertSee('Masukkan Kode OTP');
+        $this->post('/verifikasi-otp', ['kode' => $kode])->assertRedirect('/reset-password');
+        $this->assertGuest();
 
-        $this->get("/reset-password/{$token}?email=rina@gmail.com")->assertOk()->assertSee('rina@gmail.com');
-        $this->post('/reset-password', ['token' => $token, 'email' => 'rina@gmail.com', 'password' => 'passwordBaru1', 'password_confirmation' => 'beda'])
-            ->assertSessionHasErrors('password');
-        $this->post('/reset-password', ['token' => $token, 'email' => 'rina@gmail.com', 'password' => 'passwordBaru1', 'password_confirmation' => 'passwordBaru1'])
-            ->assertRedirect(route('login'))->assertSessionHas('status');
+        $this->get('/reset-password')->assertOk()->assertSee('Buat Password Baru')->assertSee('ri');
+        $this->post('/reset-password', ['password' => 'passwordBaru1', 'password_confirmation' => 'beda'])->assertSessionHasErrors('password');
+        $this->post('/reset-password', ['password' => 'passwordBaru1', 'password_confirmation' => 'passwordBaru1'])
+            ->assertRedirect('/login')->assertSessionHas('status');
         $this->assertTrue(Hash::check('passwordBaru1', $user->fresh()->password));
 
-        // token sekali pakai
-        $this->post('/reset-password', ['token' => $token, 'email' => 'rina@gmail.com', 'password' => 'lainLagi12', 'password_confirmation' => 'lainLagi12'])
-            ->assertSessionHasErrors('email');
+        // izin reset sekali pakai
+        $this->get('/reset-password')->assertRedirect('/lupa-password');
+        $this->post('/login', ['email' => 'rina@gmail.com', 'password' => 'passwordBaru1'])->assertRedirect();
+        $this->assertAuthenticatedAs($user);
     }
 
-    public function test_lupa_password_email_tidak_terdaftar_pesan_sama(): void
+    public function test_lupa_password_email_tidak_terdaftar_tidak_bocor(): void
     {
-        Notification::fake();
-        $this->post('/lupa-password', ['email' => 'tidakada@gmail.com'])->assertSessionHas('status')->assertSessionHasNoErrors();
+        $this->post('/lupa-password', ['email' => 'tidakada@gmail.com'])->assertRedirect('/verifikasi-otp')->assertSessionHas('status');
         Notification::assertNothingSent();
+        $this->post('/verifikasi-otp', ['kode' => '123456'])->assertSessionHasErrors('kode');
+        $this->get('/reset-password')->assertRedirect('/lupa-password');
     }
 
-    public function test_token_salah_ditolak(): void
+    public function test_izin_reset_kedaluwarsa_15_menit(): void
     {
-        $user = User::factory()->create(['email' => 'a@b.test']);
-        $this->post('/reset-password', ['token' => 'salah', 'email' => 'a@b.test', 'password' => 'passwordBaru1', 'password_confirmation' => 'passwordBaru1'])
-            ->assertSessionHasErrors('email');
-        $this->assertFalse(Hash::check('passwordBaru1', $user->fresh()->password));
+        User::factory()->create(['email' => 'a@gmail.com']);
+        $this->post('/lupa-password', ['email' => 'a@gmail.com']);
+        $this->post('/verifikasi-otp', ['kode' => $this->kodeTerkirim('a@gmail.com')])->assertRedirect('/reset-password');
+
+        $this->travel(16)->minutes();
+        $this->post('/reset-password', ['password' => 'passwordBaru1', 'password_confirmation' => 'passwordBaru1'])->assertRedirect('/lupa-password');
+    }
+
+    public function test_isi_email_otp(): void
+    {
+        $user = User::factory()->belumVerifikasi()->create(['nama' => 'Sari Wulandari']);
+        $mail = (new KodeOtpNotification('482913', KodeOtp::TUJUAN_REGISTRASI, 'Sari'))->toMail($user);
+        $this->assertStringContainsString('Kode Verifikasi Akun', $mail->subject);
+        $this->assertStringContainsString('4 8 2 9 1 3', implode(' ', $mail->introLines));
     }
 }
