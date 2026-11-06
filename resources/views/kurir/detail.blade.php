@@ -12,7 +12,7 @@
 
 @section('content')
   <a class="back" href="{{ route('kurir.tugas') }}"><svg class="ic"><use href="#i-arr"/></svg>Kembali</a>
-  <div class="stamp-out"><div class="stamp" style="padding:20px 22px"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><span class="eyebrow">{{ $siap ? 'Tugas FIFO #'.($urutan + 1) : 'Tugas pengiriman' }}</span><span class="pill b">{{ $kirim->status_kirim === \App\Models\Pengiriman::STATUS_DITERIMA ? 'Diterima' : ($siap ? 'Siap Diantar' : $p->statusLabel()) }}</span></div>
+  <div class="stamp-out"><div class="stamp" style="padding:20px 22px"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><span class="eyebrow">{{ $siap ? 'Antrean ke-'.($urutan + 1) : 'Tugas pengiriman' }}</span><span class="pill b">{{ $kirim->status_kirim === \App\Models\Pengiriman::STATUS_DITERIMA ? 'Diterima' : ($siap ? 'Siap Diantar' : $p->statusLabel()) }}</span></div>
     <div style="font:700 24px var(--f-title);margin-top:6px">{{ $p->kode() }}</div>
     <div style="font-size:12.5px;opacity:.7">Dipesan {{ $p->waktu_pesan->translatedFormat('d M Y, H:i') }}@if ($kirim->waktu_siap) · siap {{ $kirim->waktu_siap->format('H:i') }}@endif</div></div></div>
 
@@ -41,6 +41,6 @@
       <button class="btn lg" type="submit" style="width:100%;margin-top:16px"><svg class="ic"><use href="#i-check"/></svg>Terima Tugas</button></form>
     <p style="font-size:12px;opacity:.6;text-align:center;margin-top:10px">Setelah diterima, status pesanan menjadi Dalam Perjalanan dan pelanggan dapat melacaknya.</p>
   @elseif ($siap)
-    <div class="note" style="margin-top:16px"><svg class="ic"><use href="#i-lock"/></svg><span>Tugas ini terkunci. Ambil tugas sesuai urutan FIFO: tugas #{{ $urutan }} harus diterima lebih dulu.</span></div>
+    <div class="note" style="margin-top:16px"><svg class="ic"><use href="#i-lock"/></svg><span>Tugas ini terkunci. Ambil dulu tugas urutan pertama (antrean ke-{{ $urutan }}).</span></div>
   @endif
 @endsection

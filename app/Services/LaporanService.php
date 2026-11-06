@@ -19,7 +19,7 @@ use Illuminate\Support\Collection;
  */
 class LaporanService
 {
-    public const PERIODE = ['harian' => 'Harian', 'mingguan' => 'Mingguan', 'bulanan' => 'Bulanan'];
+    public const PERIODE = ['harian' => 'Hari ini', 'mingguan' => 'Minggu ini (Sen–Min)', 'bulanan' => '6 bulan terakhir'];
 
     /**
      * Pembayaran lunas dalam rentang waktu.

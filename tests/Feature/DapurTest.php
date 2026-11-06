@@ -52,7 +52,7 @@ class DapurTest extends TestCase
 
         $this->actingAs($this->dapur)->get('/dapur/antrean')->assertOk()
             ->assertSee('Hendra Wijaya')
-            ->assertSeeInOrder([$a->tiketDapur->kode(), $b->tiketDapur->kode()])
+            ->assertSeeInOrder([$a->kode(), $b->kode()])->assertSee($a->tiketDapur->kode())
             ->assertSee('potong 12')->assertSee('Meja 07');
 
         $this->actingAs($this->kasir)->get('/dapur/antrean')->assertForbidden();

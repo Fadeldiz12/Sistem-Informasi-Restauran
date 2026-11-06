@@ -44,7 +44,7 @@ class BahanBakuController extends Controller
         $data = $this->validated($request, baru: true);
         $b = $this->bahan->tambah($data);
 
-        return back()->with('status', "{$b->nama_bahan} ditambahkan · ROP ".BahanBakuService::angka($b->rop).' '.$b->satuan);
+        return back()->with('status', "{$b->nama_bahan} ditambahkan · batas pesan ulang ".BahanBakuService::angka($b->rop).' '.$b->satuan);
     }
 
     public function update(Request $request, BahanBaku $bahan): RedirectResponse
@@ -52,7 +52,7 @@ class BahanBakuController extends Controller
         $satuanLama = $bahan->satuan;
         $b = $this->bahan->ubah($bahan, $this->validated($request, $bahan));
 
-        $pesan = "{$b->nama_bahan} diperbarui · ROP ".BahanBakuService::angka($b->rop).' '.$b->satuan;
+        $pesan = "{$b->nama_bahan} diperbarui · batas pesan ulang ".BahanBakuService::angka($b->rop).' '.$b->satuan;
         if ($b->satuan !== $satuanLama) {
             $pesan .= " · satuan diubah dari {$satuanLama} ke {$b->satuan}, stok & resep dikonversi otomatis (stok ".BahanBakuService::angka($b->stok)." {$b->satuan})";
         }

@@ -107,7 +107,7 @@
   <div style="font:700 20px var(--f-title);margin:12px 0 6px">{{ $baru->kode() }} · {{ $baru->nomor_meja ? 'Meja '.$baru->nomor_meja : ($baru->nama_pemesan ?: $baru->layananLabel()) }}</div>
   <div style="font-size:14px;opacity:.75">Total tagihan Rp {{ number_format($baru->total, 0, ',', '.') }}</div>
   @if ($baru->tiketDapur)
-    <div class="note" style="margin:16px 28px 0;text-align:left"><svg class="ic"><use href="#i-receipt"/></svg><span>Tiket masuk antrean dapur pukul {{ $baru->tiketDapur->waktu_masuk->format('H:i') }} (urutan ke-{{ $urutanAntrean }} sesuai FIFO).</span></div>
+    <div class="note" style="margin:16px 28px 0;text-align:left"><svg class="ic"><use href="#i-receipt"/></svg><span>Tiket masuk antrean dapur pukul {{ $baru->tiketDapur->waktu_masuk->format('H:i') }} (urutan ke-{{ $urutanAntrean }} di antrean dapur).</span></div>
   @endif
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:22px 28px 28px"><button class="btn o lg" data-close>Pesanan baru</button><a class="btn lg" href="{{ route('kasir.pembayaran', ['pesanan' => $baru->id]) }}">Ke Pembayaran</a></div></div></div>
 @endif

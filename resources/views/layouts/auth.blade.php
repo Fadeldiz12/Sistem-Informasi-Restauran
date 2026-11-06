@@ -100,6 +100,12 @@
   .foot { text-align: center; margin-top: clamp(20px, calc(var(--k) * 40), 42px); font: 400 clamp(14px, calc(var(--k) * 17), 17px) var(--f-body); }
   .foot a, .foot button { font: 800 1em var(--f-accent); text-decoration: underline; text-underline-offset: 3px; background: none; border: 0; cursor: pointer; color: var(--m); }
   .foot button:disabled { opacity: .5; cursor: default; text-decoration: none; }
+  /* target sentuh minimal ±44px di HP (QA A1-#17) */
+  .foot a, .foot button, .forgot { display: inline-flex; align-items: center; min-height: 44px; padding: 0 8px; }
+  .field .eye { min-width: 44px; min-height: 44px; }
+  .agree { min-height: 44px; }
+  .agree input { width: 22px; height: 22px; }
+  .btn.sekunder { background: transparent; color: var(--m); box-shadow: inset 0 0 0 1.8px var(--m); margin-top: 10px; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
   .agree { display: flex; gap: 10px; align-items: center; font: 400 clamp(13.5px, calc(var(--k) * 16), 16px) var(--f-body); cursor: pointer; margin-top: clamp(12px, calc(var(--k) * 22), 24px); }
   .agree input { width: 20px; height: 20px; accent-color: var(--m); flex: none; }
   .login-opsi { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: clamp(12px, calc(var(--k) * 24), 26px); }

@@ -40,7 +40,7 @@ class KurirService
 
             if (! $teratas || $teratas->id !== $kirim->id) {
                 throw ValidationException::withMessages(['tugas' => self::antrean()->whereKey($kirim->id)->exists()
-                    ? 'Ambil tugas sesuai urutan FIFO. Tugas #1 harus diterima lebih dulu.'
+                    ? 'Ambil dulu tugas urutan pertama di daftar.'
                     : 'Tugas ini sudah diambil kurir lain atau belum siap diantar.']);
             }
 

@@ -87,7 +87,7 @@
                  data-navbar="{{ $k->tampil_navbar ? 1 : 0 }}" data-urutan="{{ $k->urutan_navbar }}">
               <a @class(['cat', 'on' => $kategoriId === $k->id]) href="{{ $filter(['kategori' => $k->id]) }}" title="{{ $k->nama_kategori }}">
                 <span class="nm">{{ $k->nama_kategori }}</span>
-                <span class="meta">@if ($k->tampil_navbar)<i class="navno" title="Tampil di navbar, urutan {{ $k->urutan_navbar }}">NAV {{ $k->urutan_navbar }}</i>@endif<b>{{ $k->menu_count }}</b></span>
+                <span class="meta">@if ($k->tampil_navbar)<i class="navno" title="Tampil di menu kategori pelanggan, urutan {{ $k->urutan_navbar }}">Urutan {{ $k->urutan_navbar }}</i>@endif<b>{{ $k->menu_count }}</b></span>
               </a>
               <span class="kact">
                 <button class="ab js-edit-kat" title="Ubah kategori"><svg class="ic"><use href="#i-edit"/></svg></button>
@@ -102,7 +102,7 @@
       </div>
 
       <div class="card soft">
-        <div class="card-head" style="margin-bottom:8px"><div><h2>Navbar Beranda</h2><p>Urutan menu di navbar pelanggan</p></div><span class="pill b">{{ $navbar->count() }} / {{ Kategori::MAKS_NAVBAR }}</span></div>
+        <div class="card-head" style="margin-bottom:8px"><div><h2>Menu Kategori Pelanggan</h2><p>Kategori yang tampil di atas halaman pelanggan, sesuai urutan</p></div><span class="pill b">{{ $navbar->count() }} / {{ Kategori::MAKS_NAVBAR }}</span></div>
         <div class="navlist">
           <div class="promo"><span>★</span>Promo</div>
           @forelse ($navbar as $n)
@@ -197,7 +197,7 @@
   <div class="mb" style="display:grid;gap:16px">
     @include('partials.panel.form-errors', ['modal' => 'mKat'])
     <div class="field"><label for="ktNama">Nama kategori</label><div class="in"><svg class="ic"><use href="#i-grid"/></svg><input type="text" name="nama_kategori" id="ktNama" value="{{ old('nama_kategori') }}" maxlength="100" placeholder="Contoh: Paket Hemat" required></div></div>
-    <label class="switch-row" for="ktNav"><span>Tampilkan di navbar beranda<small id="ktNavInfo">{{ $navbar->count() }} dari {{ Kategori::MAKS_NAVBAR }} tempat terpakai</small></span><span class="toggle" style="flex:none"><input type="checkbox" name="tampil_navbar" value="1" id="ktNav" @checked(old('_modal') === 'mKat' && old('tampil_navbar'))><i></i></span></label>
+    <label class="switch-row" for="ktNav"><span>Tampilkan di menu kategori pelanggan<small id="ktNavInfo">{{ $navbar->count() }} dari {{ Kategori::MAKS_NAVBAR }} tempat terpakai</small></span><span class="toggle" style="flex:none"><input type="checkbox" name="tampil_navbar" value="1" id="ktNav" @checked(old('_modal') === 'mKat' && old('tampil_navbar'))><i></i></span></label>
     <div class="field" id="ktUrutWrap"><label for="ktUrut">Urutan di navbar</label><div class="in"><svg class="ic"><use href="#i-filter"/></svg><select name="urutan_navbar" id="ktUrut">
       @for ($i = 1; $i <= Kategori::MAKS_NAVBAR; $i++)
         @php $pemilik = $navbar->firstWhere('urutan_navbar', $i); @endphp
@@ -311,7 +311,7 @@
       // navbar penuh: kategori baru / yang belum tampil tidak bisa diaktifkan
       var kunci = navPenuh && !sudahDiNavbar;
       ktNav.disabled = kunci; if (kunci) ktNav.checked = false;
-      ktNavInfo.textContent = kunci ? 'Navbar sudah penuh (' + maks + ' kategori). Sembunyikan salah satu dulu.' : ktNavInfo.dataset.base;
+      ktNavInfo.textContent = kunci ? 'Menu kategori sudah penuh (' + maks + ' kategori). Sembunyikan salah satu dulu.' : ktNavInfo.dataset.base;
       ktUrutWrap.hidden = !ktNav.checked; ktUrut.required = ktNav.checked;
     }
     function firstEmpty() {

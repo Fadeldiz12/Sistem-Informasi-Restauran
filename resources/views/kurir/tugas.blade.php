@@ -5,7 +5,7 @@
 @php $rp = fn ($n) => 'Rp '.number_format((float) $n, 0, ',', '.'); @endphp
 
 @section('content')
-  <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:6px;gap:10px"><h1 style="font:700 24px var(--f-title)">Tugas Pengiriman</h1><span class="pill b">FIFO</span></div>
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:6px;gap:10px"><h1 style="font:700 24px var(--f-title)">Tugas Pengiriman</h1><span class="pill b">Sesuai urutan</span></div>
   <p style="font-size:13px;opacity:.7">Pesanan Delivery berstatus Siap Diantar, diurutkan dari waktu siap paling awal.</p>
 
   @if ($jmlDiantar)
@@ -15,7 +15,7 @@
   <div style="margin-top:8px">
     @forelse ($antrean as $i => $k)
       @php $p = $k->pesanan; @endphp
-      <div @class(['tc', 'new' => $i === 0])><span class="fifo">FIFO #{{ $i + 1 }}</span>
+      <div @class(['tc', 'new' => $i === 0])><span class="fifo">Antrean ke-{{ $i + 1 }}</span>
         <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b style="font:700 17px var(--f-title)">{{ $p->kode() }}</b><span @class(['pill', 'c' => $i === 0, 'b' => $i > 0])>{{ $k->zona?->nama_zona }} · {{ $rp($p->ongkir) }}</span></div>
         <div style="font-size:12px;opacity:.8;margin-top:4px;display:flex;gap:5px;align-items:center"><svg class="ic" style="width:13px;height:13px"><use href="#i-clock"/></svg>Siap diantar {{ $k->waktu_siap->format('H:i') }} · {{ $k->waktu_siap->diffForHumans() }}</div>
         <div style="font:700 14px var(--f-accent);margin-top:8px">{{ $p->namaPemesan() }}</div>

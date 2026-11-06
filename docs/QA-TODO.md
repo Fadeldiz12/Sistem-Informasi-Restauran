@@ -100,9 +100,10 @@ Satu fase = satu (atau beberapa) commit. Setiap fase selesai → saya lapor & ta
 - [x] A4-#24 Status kurir "Diterima" sudah terpilih otomatis
 
 ## Fase 6 — Bahasa, istilah & kesan pertama (9 temuan)
-- [ ] A1-#18 `=` A2-#18 `=` A3-#10 `=` A3-#22 `=` A4-#7 `=` A4-#14 `=` A4-#23 Glosarium & sapu istilah: FIFO, ROP, Navbar, Logout/Keluar, OTP, Dine In/Take Away, "Selesai" makna ganda, ORD vs T-xxxx
-- [ ] A1-#7 Halaman pertama "Selamat Datang Kembali!" tanpa penjelasan aplikasi
-- [ ] A1-#17 Target sentuh kecil di login/registrasi
+- [x] A1-#18 `=` A2-#18 `=` A3-#10 `=` A3-#22 `=` A4-#7 `=` A4-#14 `=` A4-#23 Glosarium & sapu istilah: FIFO, ROP, Navbar, Logout/Keluar, OTP, Dine In/Take Away, "Selesai" makna ganda, ORD vs T-xxxx
+  - Keputusan pemilik: istilah *Password*, *OTP*, dan *Logout* tetap dipakai; Dine In / Take Away / Delivery tetap dengan keterangan Indonesia.
+- [x] A1-#7 Halaman pertama "Selamat Datang Kembali!" tanpa penjelasan aplikasi
+- [x] A1-#17 Target sentuh kecil di login/registrasi
 
 ---
 Rekap: F1 13 · F2 9 · F3 21 · F4 20 · F5 19 · F6 9 = **91**

@@ -72,7 +72,7 @@ class KurirTest extends TestCase
 
         $this->actingAs($this->kurir)->get('/kurir/tugas')->assertOk()
             ->assertSee('Bayu Saputra')
-            ->assertSeeInOrder(['FIFO #1', $a->kode(), 'Jl. Pertama', 'FIFO #2', $b->kode(), 'Jl. Kedua'])
+            ->assertSeeInOrder(['Antrean ke-1', $a->kode(), 'Jl. Pertama', 'Antrean ke-2', $b->kode(), 'Jl. Kedua'])
             ->assertSee('Menunggu tugas #1 diterima');
 
         $this->actingAs($this->kasir)->get('/kurir/tugas')->assertForbidden();
@@ -114,7 +114,7 @@ class KurirTest extends TestCase
         $this->actingAs($lain)->get("/kurir/tugas/{$a->pengiriman->id}")->assertRedirect(route('kurir.tugas'));
 
         // tugas berikutnya sekarang menjadi FIFO #1
-        $this->actingAs($lain)->get('/kurir/tugas')->assertSeeInOrder(['FIFO #1', $b->kode()]);
+        $this->actingAs($lain)->get('/kurir/tugas')->assertSeeInOrder(['Antrean ke-1', $b->kode()]);
 
         // pelanggan melihat nama kurir di halaman lacak
         $this->actingAs($this->pelanggan)->get("/tracking?pesanan={$a->id}")->assertSee('Bayu Saputra')->assertSee('Dalam Perjalanan');
