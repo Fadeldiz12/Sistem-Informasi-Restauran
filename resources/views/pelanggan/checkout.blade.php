@@ -235,8 +235,14 @@
           </div>
 
           <div @class(['svc-panel', 'on' => $layanan === Pesanan::LAYANAN_DINE_IN]) data-panel="{{ Pesanan::LAYANAN_DINE_IN }}">
-            <div class="field"><label for="meja">Nomor meja</label><div class="in"><svg class="ic"><use href="#i-dine"/></svg><input id="meja" name="nomor_meja" value="{{ old('nomor_meja') }}" maxlength="10" placeholder="Contoh: 07"></div></div>
-            <div class="note" style="margin-top:14px"><svg class="ic"><use href="#i-info"/></svg>Nomor meja tertera di sudut meja. Pesanan masuk antrean dapur setelah dikonfirmasi kasir.</div>
+            <div class="field"><label for="meja">Nomor meja</label><div class="in"><svg class="ic"><use href="#i-dine"/></svg><select id="meja" name="nomor_meja">
+              <option value="">Pilih nomor meja</option>
+              @for ($i = 1; $i <= config('resto.jumlah_meja'); $i++)
+                @php $no = str_pad($i, 2, '0', STR_PAD_LEFT); @endphp
+                <option value="{{ $no }}" @selected(old('nomor_meja') === $no)>Meja {{ $no }}</option>
+              @endfor
+            </select></div></div>
+            <div class="note" style="margin-top:14px"><svg class="ic"><use href="#i-info"/></svg>Pilih Dine In hanya bila kamu sudah duduk di restoran. Nomor meja tertera di sudut meja. Pesanan masuk antrean dapur setelah dikonfirmasi kasir.</div>
           </div>
 
           <div @class(['svc-panel', 'on' => $layanan === Pesanan::LAYANAN_TAKE_AWAY]) data-panel="{{ Pesanan::LAYANAN_TAKE_AWAY }}">

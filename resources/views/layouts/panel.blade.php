@@ -29,6 +29,10 @@
     @if (session('error'))
       <div class="alert" role="alert">{{ session('error') }}</div>
     @endif
+    {{-- error validasi dari aksi di halaman ini (mis. tombol Selesai dari tab lama); halaman dengan tampilan error sendiri memakai section error-sendiri --}}
+    @if ($errors->any() && ! old('_modal') && ! View::hasSection('error-sendiri'))
+      <div class="alert" role="alert">{{ $errors->first() }}</div>
+    @endif
 
     @yield('content')
   </main>

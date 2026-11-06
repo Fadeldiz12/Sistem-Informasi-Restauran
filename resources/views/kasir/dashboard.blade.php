@@ -70,6 +70,12 @@
               @if ($p->isLunas())
                 <a class="btn o sm" style="margin-top:6px" href="{{ route('kasir.struk', $p) }}" target="_blank" rel="noopener" title="Cetak ulang struk"><svg class="ic" style="width:15px;height:15px"><use href="#i-printer"/></svg>Struk</a>
               @endif
+              @if (in_array($p->id, $bisaDiubah, true))
+                <a class="btn o sm" style="margin-top:6px" href="{{ route('kasir.pesanan.ubah', $p) }}" title="Ubah menu, jumlah, atau meja"><svg class="ic" style="width:15px;height:15px"><use href="#i-edit"/></svg>Ubah</a>
+              @endif
+              @if (in_array($p->status, [Pesanan::STATUS_DIPROSES, Pesanan::STATUS_SIAP], true) && ! $p->isLunas())
+                <button type="button" class="btn o sm js-batal" style="margin-top:6px" data-url="{{ route('kasir.pesanan.batal', $p) }}" data-kode="{{ $p->kode() }}" data-dimasak="{{ $p->tiketDapur && $p->tiketDapur->status_masak !== \App\Models\TiketDapur::STATUS_ANTRE ? 1 : 0 }}" title="Batalkan pesanan"><svg class="ic" style="width:15px;height:15px"><use href="#i-x"/></svg>Batal</button>
+              @endif
             </td></tr>
         @empty
           <tr><td colspan="6"><div class="empty">Tidak ada pesanan yang sedang berjalan.</div></td></tr>
@@ -81,3 +87,5 @@
 @push('scripts')
 <script>setTimeout(function () { if (!document.querySelector('.ovl.on')) location.reload(); }, 60000);</script>
 @endpush
+
+@include('kasir.partials.modal-batal')

@@ -4,14 +4,17 @@
 @use('App\Models\PengaturanSistem')
 
 @section('title', 'Input Pesanan')
+@section('error-sendiri', '1')
 @section('crumb', 'Kasir / Input Pesanan')
-@section('heading', 'Input Pesanan di Tempat')
+@section('heading', $edit ? 'Ubah Pesanan '.$edit->kode() : 'Input Pesanan di Tempat')
 @section('sub', 'Pesanan pembeli langsung, tiket otomatis masuk antrean dapur')
 
 @php
-  $layanan = old('jenis_layanan', Pesanan::LAYANAN_DINE_IN);
-  $mejaLama = old('nomor_meja');
-  $oldItems = collect(old('items', []))->values();
+  $layanan = old('jenis_layanan', $edit?->jenis_layanan ?? Pesanan::LAYANAN_DINE_IN);
+  $mejaLama = old('nomor_meja', $edit?->nomor_meja);
+  $oldItems = collect(old('items', $edit
+      ? $edit->detail->map(fn ($d) => ['id_menu' => $d->id_menu, 'jumlah' => $d->jumlah, 'catatan' => $d->catatan])->all()
+      : []))->values();
 @endphp
 
 @push('styles')
@@ -62,12 +65,13 @@
       <div class="empty" id="mgEmpty" hidden>Menu tidak ditemukan.</div>
     </div>
 
-    <form class="card" method="post" action="{{ route('kasir.input.store') }}" id="fOrder" style="padding:0;overflow:hidden;position:sticky;top:16px">
+    <form class="card" method="post" action="{{ $edit ? route('kasir.pesanan.update', $edit) : route('kasir.input.store') }}" id="fOrder" style="padding:0;overflow:hidden;position:sticky;top:16px">
       @csrf
+      @if ($edit) @method('PUT') @endif
       <input type="hidden" name="jenis_layanan" id="jenis" value="{{ $layanan }}">
       <input type="hidden" name="nomor_meja" id="meja" value="{{ $mejaLama }}">
       <div id="itemInputs"></div>
-      <div style="background:var(--m);color:var(--cr);padding:18px 20px"><div style="display:flex;justify-content:space-between;align-items:center"><h2 style="font:600 19px var(--f-title)">Pesanan Baru</h2><span class="pill b">di tempat</span></div>
+      <div style="background:var(--m);color:var(--cr);padding:18px 20px"><div style="display:flex;justify-content:space-between;align-items:center"><h2 style="font:600 19px var(--f-title)">{{ $edit ? 'Ubah '.$edit->kode() : 'Pesanan Baru' }}</h2><span class="pill b">di tempat</span></div>
         <div class="seg" id="svc" style="margin-top:12px">
           <button type="button" data-s="{{ Pesanan::LAYANAN_DINE_IN }}" style="flex:1;box-shadow:inset 0 0 0 1.4px var(--cr)"><svg class="ic" style="width:15px;height:15px"><use href="#i-dine"/></svg> Dine In</button>
           <button type="button" data-s="{{ Pesanan::LAYANAN_TAKE_AWAY }}" style="flex:1;box-shadow:inset 0 0 0 1.4px var(--cr)"><svg class="ic" style="width:15px;height:15px"><use href="#i-bag"/></svg> Take Away</button></div></div>
@@ -78,12 +82,13 @@
             <button type="button" data-meja="{{ $no }}" @class(['busy' => in_array($no, $mejaTerpakai, true), 'on' => $mejaLama === $no]) @if (in_array($no, $mejaTerpakai, true)) title="Meja sedang dipakai" @endif>{{ $no }}</button>
           @endfor
         </div></div></div>
-        <div class="svc-p" data-p="{{ Pesanan::LAYANAN_TAKE_AWAY }}"><div class="field"><label for="nama">Nama pelanggan (opsional)</label><div class="in"><svg class="ic"><use href="#i-user"/></svg><input type="text" id="nama" name="nama_pemesan" value="{{ old('nama_pemesan') }}" maxlength="100" placeholder="Untuk dipanggil saat pesanan siap"></div></div></div>
+        <div class="svc-p" data-p="{{ Pesanan::LAYANAN_TAKE_AWAY }}"><div class="field"><label for="nama">Nama pelanggan (opsional)</label><div class="in"><svg class="ic"><use href="#i-user"/></svg><input type="text" id="nama" name="nama_pemesan" value="{{ old('nama_pemesan', $edit?->nama_pemesan) }}" maxlength="100" placeholder="Untuk dipanggil saat pesanan siap"></div></div></div>
         <div class="eyebrow" style="margin-top:16px">Menu, jumlah &amp; catatan</div><div id="ol"></div>
         <div style="display:grid;gap:4px;margin-top:14px;font-size:13.5px"><div style="display:flex;justify-content:space-between"><span>Subtotal</span><span id="sub">Rp 0</span></div>
           <div style="display:flex;justify-content:space-between"><span>Pajak {{ PengaturanSistem::persen($pengaturan->pajak) }}% + layanan {{ PengaturanSistem::persen($pengaturan->biaya_layanan) }}%</span><span id="tx">Rp 0</span></div></div>
         <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:10px;padding-top:10px;border-top:1.5px dashed var(--m60)"><span class="eyebrow">Total tagihan</span><b id="tot" style="font:700 26px var(--f-title)">Rp 0</b></div>
-        <button class="btn lg" type="submit" id="btnSave" style="width:100%;margin-top:14px" disabled><svg class="ic"><use href="#i-receipt"/></svg>Simpan Pesanan</button>
+        <button class="btn lg" type="submit" id="btnSave" style="width:100%;margin-top:14px" disabled><svg class="ic"><use href="#i-receipt"/></svg>{{ $edit ? 'Simpan Perubahan' : 'Simpan Pesanan' }}</button>
+        @if ($edit)<a class="btn o lg" href="{{ route('kasir.dashboard') }}" style="width:100%;margin-top:8px">Batal ubah</a>@endif
         <p style="font-size:12px;opacity:.6;text-align:center;margin-top:10px">Waktu masuk dicatat, tiket otomatis masuk antrean dapur</p></div>
     </form>
   </div>

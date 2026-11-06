@@ -61,20 +61,11 @@ class PesananService
         }
 
         return DB::transaction(function () use ($items, $jenisLayanan, $pelanggan, $kasir, $data) {
-            $menu = Menu::whereIn('id', array_column($items, 'id_menu'))->lockForUpdate()->get()->keyBy('id');
+            [$baris, $subtotal] = $this->barisPesanan($items);
 
-            $baris = [];
-            $subtotal = 0;
-            foreach ($items as $it) {
-                $m = $menu->get($it['id_menu']);
-                if (! $m || ! $m->tersedia) {
-                    throw ValidationException::withMessages(['items' => ($m?->nama_menu ?? 'Salah satu menu').' sedang tidak tersedia.']);
-                }
-                $jumlah = max(1, (int) $it['jumlah']);
-                $sub = (float) $m->harga * $jumlah;
-                $subtotal += $sub;
-                $baris[] = ['id_menu' => $m->id, 'jumlah' => $jumlah, 'catatan' => $it['catatan'] ?? null, 'subtotal' => $sub];
-            }
+            $nomorMeja = $jenisLayanan === Pesanan::LAYANAN_DINE_IN
+                ? $this->nomorMeja($data['nomor_meja'] ?? null, cekTerpakai: $kasir !== null)
+                : null;
 
             $zona = null;
             if ($jenisLayanan === Pesanan::LAYANAN_DELIVERY) {
@@ -93,7 +84,7 @@ class PesananService
                 'id_pelanggan' => $pelanggan?->id,
                 'id_kasir' => $kasir?->id,
                 'jenis_layanan' => $jenisLayanan,
-                'nomor_meja' => $jenisLayanan === Pesanan::LAYANAN_DINE_IN ? ($data['nomor_meja'] ?? null) : null,
+                'nomor_meja' => $nomorMeja,
                 'nama_pemesan' => $data['nama_pemesan'] ?? null,
                 'waktu_pesan' => now(),
                 'subtotal' => $hasil['subtotal'],
@@ -118,6 +109,161 @@ class PesananService
             }
 
             return $pesanan;
+        });
+    }
+
+    /**
+     * Baris detail pesanan dari daftar item; menu yang habis/tidak ada ditolak.
+     *
+     * @param  array<int, array{id_menu:int, jumlah:int, catatan?:?string}>  $items
+     * @return array{0: array<int, array{id_menu:int, jumlah:int, catatan:?string, subtotal:float}>, 1: float}
+     */
+    private function barisPesanan(array $items): array
+    {
+        $menu = Menu::whereIn('id', array_column($items, 'id_menu'))->lockForUpdate()->get()->keyBy('id');
+
+        $baris = [];
+        $subtotal = 0;
+        foreach ($items as $it) {
+            $m = $menu->get($it['id_menu']);
+            if (! $m || ! $m->tersedia) {
+                throw ValidationException::withMessages(['items' => ($m?->nama_menu ?? 'Salah satu menu').' sedang tidak tersedia. Hapus dari pesanan atau pilih menu lain.']);
+            }
+            $jumlah = max(1, (int) $it['jumlah']);
+            $sub = (float) $m->harga * $jumlah;
+            $subtotal += $sub;
+            $baris[] = ['id_menu' => $m->id, 'jumlah' => $jumlah, 'catatan' => $it['catatan'] ?? null, 'subtotal' => $sub];
+        }
+
+        return [$baris, $subtotal];
+    }
+
+    /**
+     * Nomor meja Dine In harus ada di restoran (01 s.d. jumlah meja). Untuk pesanan kasir,
+     * meja yang masih dipakai pesanan Dine In lain yang belum selesai juga ditolak.
+     */
+    public function nomorMeja(?string $nomor, bool $cekTerpakai = true, ?Pesanan $kecuali = null): string
+    {
+        $jumlahMeja = (int) config('resto.jumlah_meja');
+        $angka = trim((string) $nomor);
+        if (! ctype_digit($angka) || (int) $angka < 1 || (int) $angka > $jumlahMeja) {
+            throw ValidationException::withMessages([
+                'nomor_meja' => 'Nomor meja tidak dikenal. Pilih meja 01 – '.str_pad((string) $jumlahMeja, 2, '0', STR_PAD_LEFT).'.',
+            ]);
+        }
+        $no = str_pad((string) (int) $angka, 2, '0', STR_PAD_LEFT);
+
+        if ($cekTerpakai) {
+            $lain = Pesanan::where('jenis_layanan', Pesanan::LAYANAN_DINE_IN)->where('nomor_meja', $no)
+                ->whereNotIn('status', [Pesanan::STATUS_SELESAI, Pesanan::STATUS_DIBATALKAN])
+                ->when($kecuali, fn ($q) => $q->whereKeyNot($kecuali->getKey()))
+                ->lockForUpdate()->first();
+            if ($lain) {
+                throw ValidationException::withMessages([
+                    'nomor_meja' => "Meja {$no} sedang dipakai pesanan {$lain->kode()}. Pilih meja lain, atau ubah pesanan {$lain->kode()} untuk menambah menu.",
+                ]);
+            }
+        }
+
+        return $no;
+    }
+
+    /**
+     * Kasir mengubah pesanan di tempat (menu, jumlah, layanan, meja, nama) selama dapur belum mulai memasak
+     * dan pesanan belum lunas. Total dihitung ulang.
+     *
+     * @param  array<int, array{id_menu:int, jumlah:int, catatan?:?string}>  $items
+     * @param  array{nomor_meja?:?string, nama_pemesan?:?string}  $data
+     */
+    public function ubah(Pesanan $pesanan, array $items, string $jenisLayanan, array $data = []): Pesanan
+    {
+        if (! $items) {
+            throw ValidationException::withMessages(['items' => 'Pesanan belum berisi menu.']);
+        }
+
+        return DB::transaction(function () use ($pesanan, $items, $jenisLayanan, $data) {
+            $pesanan = Pesanan::whereKey($pesanan->getKey())->lockForUpdate()->firstOrFail();
+            $tiket = TiketDapur::where('id_pesanan', $pesanan->id)->lockForUpdate()->first();
+            $this->pastikanBisaDiubah($pesanan, $tiket);
+
+            [$baris, $subtotal] = $this->barisPesanan($items);
+            $hasil = $this->hitung($subtotal);
+            if ($hasil['total'] > self::TOTAL_MAKS) {
+                throw ValidationException::withMessages(['items' => 'Total pesanan terlalu besar. Kurangi jumlah porsi atau periksa harga menu.']);
+            }
+
+            $pesanan->update([
+                'jenis_layanan' => $jenisLayanan,
+                'nomor_meja' => $jenisLayanan === Pesanan::LAYANAN_DINE_IN ? $this->nomorMeja($data['nomor_meja'] ?? null, kecuali: $pesanan) : null,
+                'nama_pemesan' => $data['nama_pemesan'] ?? null,
+                'subtotal' => $hasil['subtotal'],
+                'total' => $hasil['total'],
+            ]);
+            $pesanan->detail()->delete();
+            $pesanan->detail()->createMany($baris);
+
+            return $pesanan;
+        });
+    }
+
+    /**
+     * Pesanan yang boleh diubah kasir: diinput di kasir, masih diproses, tiket dapur masih antre, belum lunas.
+     */
+    public function bisaDiubah(Pesanan $pesanan): bool
+    {
+        return $this->alasanTidakBisaDiubah($pesanan, $pesanan->tiketDapur) === null;
+    }
+
+    /**
+     * Alasan pesanan tidak bisa diubah kasir, atau null bila boleh diubah.
+     */
+    public function alasanTidakBisaDiubah(Pesanan $pesanan, ?TiketDapur $tiket): ?string
+    {
+        return match (true) {
+            $pesanan->isOnline() => 'Pesanan online tidak bisa diubah kasir. Batalkan bila perlu, lalu minta pelanggan memesan ulang.',
+            $pesanan->status !== Pesanan::STATUS_DIPROSES => 'Pesanan ini sudah '.mb_strtolower($pesanan->statusLabel()).' dan tidak bisa diubah lagi.',
+            $tiket && $tiket->status_masak !== TiketDapur::STATUS_ANTRE => 'Dapur sudah mulai memasak pesanan ini. Pesanan tidak bisa diubah lagi.',
+            $pesanan->isLunas() => 'Pesanan ini sudah lunas dan tidak bisa diubah lagi.',
+            default => null,
+        };
+    }
+
+    private function pastikanBisaDiubah(Pesanan $pesanan, ?TiketDapur $tiket): void
+    {
+        if ($pesan = $this->alasanTidakBisaDiubah($pesanan, $tiket)) {
+            throw ValidationException::withMessages(['pesanan' => $pesan]);
+        }
+    }
+
+    /**
+     * Kasir membatalkan pesanan yang belum lunas (salah input, pelanggan batal, dsb.). Tiket dapur ikut dihapus
+     * dari antrean. Bila dapur sudah mulai memasak, stok bahan hanya dikembalikan bila kasir memilihnya.
+     *
+     * @return array{stok_dikembalikan: int}
+     */
+    public function batalkan(Pesanan $pesanan, User $kasir, string $alasan, bool $kembalikanStok = false): array
+    {
+        return DB::transaction(function () use ($pesanan, $kasir, $alasan, $kembalikanStok) {
+            $pesanan = Pesanan::whereKey($pesanan->getKey())->lockForUpdate()->firstOrFail();
+
+            $pesan = match (true) {
+                $pesanan->status === Pesanan::STATUS_DIBATALKAN => "{$pesanan->kode()} sudah dibatalkan sebelumnya.",
+                $pesanan->status === Pesanan::STATUS_MENUNGGU => "{$pesanan->kode()} belum dikonfirmasi. Gunakan tombol Tolak di menu Pesanan Online.",
+                $pesanan->status === Pesanan::STATUS_DIANTAR => "{$pesanan->kode()} sedang diantar kurir dan tidak bisa dibatalkan.",
+                $pesanan->status === Pesanan::STATUS_SELESAI => "{$pesanan->kode()} sudah selesai dan tidak bisa dibatalkan.",
+                $pesanan->isLunas() => "{$pesanan->kode()} sudah lunas. Pesanan yang sudah dibayar tidak bisa dibatalkan di kasir.",
+                default => null,
+            };
+            if ($pesan) {
+                throw ValidationException::withMessages(['pesanan' => $pesan]);
+            }
+
+            $dikembalikan = $kembalikanStok ? app(BahanBakuService::class)->kembalikanUntukPesanan($pesanan) : 0;
+
+            $pesanan->tiketDapur()->delete();
+            $pesanan->update(['status' => Pesanan::STATUS_DIBATALKAN, 'alasan_batal' => $alasan, 'id_kasir' => $pesanan->id_kasir ?? $kasir->id]);
+
+            return ['stok_dikembalikan' => $dikembalikan];
         });
     }
 

@@ -2,14 +2,18 @@
 
 namespace Tests\Feature;
 
+use App\Models\BahanBaku;
 use App\Models\Menu;
+use App\Models\MutasiBahanBaku;
 use App\Models\Pembayaran;
 use App\Models\Pesanan;
 use App\Models\TiketDapur;
 use App\Models\User;
 use App\Models\ZonaPengiriman;
 use App\Services\PesananService;
+use Database\Seeders\BahanBakuSeeder;
 use Database\Seeders\MasterDataSeeder;
+use Database\Seeders\ResepSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
@@ -244,5 +248,110 @@ class KasirTest extends TestCase
             ->assertSee('1 pembayaran lunas')
             ->assertSee('Rp 125.350')
             ->assertSee('Pesanan online masuk');
+    }
+
+    // ---------- batal & ubah pesanan
+
+    private function inputKasir(string $meja = '05', int $jumlah = 1): Pesanan
+    {
+        $this->actingAs($this->kasir)->post('/kasir/input', ['jenis_layanan' => 'dine_in', 'nomor_meja' => $meja, 'items' => [['id_menu' => $this->pizza->id, 'jumlah' => $jumlah]]])
+            ->assertSessionHasNoErrors();
+
+        return Pesanan::latest('id')->firstOrFail();
+    }
+
+    public function test_kasir_membatalkan_pesanan_dan_tiket_hilang_dari_antrean(): void
+    {
+        $p = $this->inputKasir('05');
+        $this->assertNotNull($p->tiketDapur);
+
+        $this->actingAs($this->kasir)->post("/kasir/pesanan/{$p->id}/batal", ['alasan' => ''])->assertSessionHasErrors('alasan');
+        $this->actingAs($this->kasir)->post("/kasir/pesanan/{$p->id}/batal", ['alasan' => 'Salah input kasir'])->assertSessionHas('status');
+
+        $p->refresh();
+        $this->assertSame([Pesanan::STATUS_DIBATALKAN, 'Salah input kasir'], [$p->status, $p->alasan_batal]);
+        $this->assertNull($p->tiketDapur);
+        $this->inputKasir('05'); // meja kosong lagi
+
+        $this->actingAs($this->kasir)->post("/kasir/pesanan/{$p->id}/batal", ['alasan' => 'lagi'])->assertSessionHasErrors('pesanan');
+    }
+
+    public function test_batal_setelah_mulai_masak_bisa_mengembalikan_stok(): void
+    {
+        $this->seed([BahanBakuSeeder::class, ResepSeeder::class]);
+        $keju = BahanBaku::firstWhere('nama_bahan', 'Keju Mozzarella');
+        $awal = (float) $keju->stok;
+        $p = $this->inputKasir('06', 2);
+        $dapur = User::factory()->create(['role' => User::ROLE_DAPUR]);
+        $this->actingAs($dapur)->post("/dapur/tiket/{$p->tiketDapur->id}/mulai");
+        $this->assertLessThan($awal, (float) $keju->fresh()->stok);
+
+        $this->actingAs($this->kasir)->get('/kasir/dashboard')->assertSee('data-dimasak="1"', false);
+        $this->actingAs($this->kasir)->post("/kasir/pesanan/{$p->id}/batal", ['alasan' => 'Pelanggan batal', 'kembalikan_stok' => 1])
+            ->assertSessionHas('status', fn ($m) => str_contains($m, 'stok'));
+
+        $this->assertEqualsWithDelta($awal, (float) $keju->fresh()->stok, 0.001);
+        $this->assertSame(0, MutasiBahanBaku::where('id_pesanan', $p->id)->count());
+    }
+
+    public function test_pesanan_lunas_atau_online_menunggu_tidak_bisa_dibatalkan_kasir(): void
+    {
+        $p = $this->inputKasir('07');
+        $this->actingAs($this->kasir)->post("/kasir/pembayaran/{$p->id}/lunas", ['metode' => 'qris']);
+        $this->actingAs($this->kasir)->post("/kasir/pesanan/{$p->id}/batal", ['alasan' => 'x'])->assertSessionHasErrors('pesanan');
+
+        $q = $this->pesananOnline();
+        $this->actingAs($this->kasir)->post("/kasir/pesanan/{$q->id}/batal", ['alasan' => 'x'])->assertSessionHasErrors('pesanan');
+        $this->assertSame(Pesanan::STATUS_MENUNGGU, $q->fresh()->status);
+    }
+
+    public function test_kasir_mengubah_pesanan_sebelum_dapur_mulai_memasak(): void
+    {
+        $p = $this->inputKasir('03');
+        $teh = Menu::where('nama_menu', 'Lemon Iced Tea')->firstOrFail();
+
+        $this->actingAs($this->kasir)->get('/kasir/dashboard')->assertSee(route('kasir.pesanan.ubah', $p));
+        $this->actingAs($this->kasir)->get("/kasir/pesanan/{$p->id}/ubah")->assertOk()->assertSee('Ubah Pesanan '.$p->kode())->assertSee('Simpan Perubahan');
+
+        $this->actingAs($this->kasir)->put("/kasir/pesanan/{$p->id}", ['jenis_layanan' => 'dine_in', 'nomor_meja' => '04', 'items' => [
+            ['id_menu' => $this->pizza->id, 'jumlah' => 2], ['id_menu' => $teh->id, 'jumlah' => 1, 'catatan' => 'es sedikit'],
+        ]])->assertSessionHasNoErrors()->assertRedirect('/kasir/dashboard');
+
+        $p->refresh();
+        $subtotal = 2 * (float) $this->pizza->harga + (float) $teh->harga;
+        $this->assertSame('04', $p->nomor_meja);
+        $this->assertEquals($subtotal, (float) $p->subtotal);
+        $this->assertEquals(app(PesananService::class)->hitung($subtotal)['total'], (float) $p->total);
+        $this->assertSame(2, $p->detail()->count());
+        $this->assertSame(1, Pesanan::count());
+
+        // setelah dapur mulai memasak, pesanan tidak bisa diubah lagi
+        $p->tiketDapur->update(['status_masak' => TiketDapur::STATUS_DIMASAK]);
+        $this->actingAs($this->kasir)->get("/kasir/pesanan/{$p->id}/ubah")->assertRedirect('/kasir/dashboard')->assertSessionHas('error');
+        $this->actingAs($this->kasir)->put("/kasir/pesanan/{$p->id}", ['jenis_layanan' => 'take_away', 'items' => [['id_menu' => $teh->id, 'jumlah' => 1]]])
+            ->assertSessionHasErrors('pesanan');
+        $this->assertSame(2, $p->detail()->count());
+
+        // pesanan online tidak bisa diubah kasir
+        $q = $this->pesananOnline();
+        $this->actingAs($this->kasir)->get("/kasir/pesanan/{$q->id}/ubah")->assertRedirect('/kasir/dashboard');
+    }
+
+    public function test_nomor_meja_divalidasi_di_server(): void
+    {
+        $item = ['items' => [['id_menu' => $this->pizza->id, 'jumlah' => 1]]];
+        $this->actingAs($this->kasir)->post('/kasir/input', ['jenis_layanan' => 'dine_in', 'nomor_meja' => '99'] + $item)->assertSessionHasErrors('nomor_meja');
+
+        $p = $this->inputKasir('07');
+        $this->actingAs($this->kasir)->post('/kasir/input', ['jenis_layanan' => 'dine_in', 'nomor_meja' => '07'] + $item)
+            ->assertSessionHasErrors(['nomor_meja' => "Meja 07 sedang dipakai pesanan {$p->kode()}. Pilih meja lain, atau ubah pesanan {$p->kode()} untuk menambah menu."]);
+        $this->assertSame(1, Pesanan::count());
+
+        // pelanggan: nomor meja harus ada di restoran
+        $this->actingAs($this->pelanggan)->postJson('/keranjang', ['id_menu' => $this->pizza->id]);
+        $this->actingAs($this->pelanggan)->post('/checkout', ['jenis_layanan' => 'dine_in', 'nomor_meja' => 'meja mana?', 'metode' => 'tunai'])
+            ->assertSessionHasErrors('nomor_meja');
+        $this->actingAs($this->pelanggan)->post('/checkout', ['jenis_layanan' => 'dine_in', 'nomor_meja' => '3', 'metode' => 'tunai'])->assertSessionHasNoErrors();
+        $this->assertSame('03', Pesanan::latest('id')->first()->nomor_meja);
     }
 }

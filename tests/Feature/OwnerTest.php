@@ -39,6 +39,7 @@ class OwnerTest extends TestCase
         $p = $svc->buat([['id_menu' => Menu::firstWhere('nama_menu', $menu)->id, 'jumlah' => $jumlah]], $layanan, kasir: $this->kasir,
             data: $layanan === 'dine_in' ? ['nomor_meja' => '01'] : ['nama_pemesan' => 'Budi']);
         $svc->lunasi($p, $this->kasir, 'tunai', 10000000);
+        $p->update(['status' => Pesanan::STATUS_SELESAI]); // meja kosong lagi untuk pesanan berikutnya
         Carbon::setTestNow(Carbon::parse('2026-11-04 12:00'));
 
         return $p->fresh();

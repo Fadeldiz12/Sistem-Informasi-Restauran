@@ -3,6 +3,7 @@
 @use('App\Models\Pembayaran')
 
 @section('title', 'Pesanan Online')
+@section('error-sendiri', '1')
 @section('crumb', 'Kasir / Pesanan Online')
 @section('heading', 'Konfirmasi Pesanan Online')
 @section('sub', 'Pesanan online bayar tunai · VA & QRIS otomatis masuk dapur setelah lunas')

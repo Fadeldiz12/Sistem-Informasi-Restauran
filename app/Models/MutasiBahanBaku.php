@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Table('mutasi_bahan_baku')]
-#[Fillable(['id_bahan', 'jenis', 'jumlah', 'tanggal'])]
+#[Fillable(['id_bahan', 'id_pesanan', 'jenis', 'jumlah', 'tanggal'])]
 class MutasiBahanBaku extends Model
 {
     public const JENIS_MASUK = 'masuk';

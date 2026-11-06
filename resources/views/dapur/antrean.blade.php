@@ -3,6 +3,7 @@
 @use('App\Models\TiketDapur')
 
 @section('title', 'Antrean Tiket')
+@section('error-sendiri', '1')
 @section('crumb', 'Dapur / Antrean Tiket')
 @section('heading', 'Antrean Tiket Pesanan')
 @section('sub', 'Siapkan pesanan sesuai urutan antrean (FIFO) dan perbarui status masakan')

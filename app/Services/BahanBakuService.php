@@ -156,7 +156,7 @@ class BahanBakuService
         }
 
         $kurang = [];
-        DB::transaction(function () use ($kebutuhan, &$kurang) {
+        DB::transaction(function () use ($kebutuhan, $pesanan, &$kurang) {
             foreach ($kebutuhan as $idBahan => $butuh) {
                 $bahan = BahanBaku::whereKey($idBahan)->lockForUpdate()->first();
                 if (! $bahan) {
@@ -168,7 +168,7 @@ class BahanBakuService
                     $kurang[] = $bahan->nama_bahan;
                 }
                 if ($pakai > 0) {
-                    $bahan->mutasi()->create(['jenis' => MutasiBahanBaku::JENIS_PEMAKAIAN, 'jumlah' => $pakai, 'tanggal' => today()]);
+                    $bahan->mutasi()->create(['id_pesanan' => $pesanan->id, 'jenis' => MutasiBahanBaku::JENIS_PEMAKAIAN, 'jumlah' => $pakai, 'tanggal' => today()]);
                     $bahan->stok = round((float) $bahan->stok - $pakai, 2);
                     $bahan->save();
                 }
@@ -177,6 +177,31 @@ class BahanBakuService
         });
 
         return $kurang;
+    }
+
+    /**
+     * Batalkan pemakaian otomatis untuk satu pesanan (pesanan dibatalkan sebelum bahannya terpakai):
+     * stok dikembalikan dan catatan pemakaiannya dihapus supaya rata-rata pemakaian & ROP tetap akurat.
+     *
+     * @return int jumlah bahan yang stoknya dikembalikan
+     */
+    public function kembalikanUntukPesanan(Pesanan $pesanan): int
+    {
+        return DB::transaction(function () use ($pesanan) {
+            $mutasi = MutasiBahanBaku::where('id_pesanan', $pesanan->id)->where('jenis', MutasiBahanBaku::JENIS_PEMAKAIAN)->get();
+
+            foreach ($mutasi->groupBy('id_bahan') as $idBahan => $baris) {
+                $bahan = BahanBaku::withTrashed()->whereKey($idBahan)->lockForUpdate()->first();
+                MutasiBahanBaku::whereIn('id', $baris->pluck('id'))->delete();
+                if ($bahan) {
+                    $bahan->stok = round((float) $bahan->stok + (float) $baris->sum('jumlah'), 2);
+                    $bahan->save();
+                    $this->hitungUlang($bahan);
+                }
+            }
+
+            return $mutasi->pluck('id_bahan')->unique()->count();
+        });
     }
 
     public function hitungUlang(BahanBaku $bahan): BahanBaku

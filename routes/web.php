@@ -113,6 +113,9 @@ Route::middleware(['auth', 'role:'.User::ROLE_KASIR])->prefix('kasir')->name('ka
 
     Route::get('/input', [Kasir\InputPesananController::class, 'create'])->name('input');
     Route::post('/input', [Kasir\InputPesananController::class, 'store'])->name('input.store');
+    Route::get('/pesanan/{pesanan}/ubah', [Kasir\InputPesananController::class, 'edit'])->name('pesanan.ubah');
+    Route::put('/pesanan/{pesanan}', [Kasir\InputPesananController::class, 'update'])->name('pesanan.update');
+    Route::post('/pesanan/{pesanan}/batal', [Kasir\InputPesananController::class, 'batal'])->name('pesanan.batal');
 
     Route::get('/online', [Kasir\PesananOnlineController::class, 'index'])->name('online');
     Route::post('/online/{pesanan}/terima', [Kasir\PesananOnlineController::class, 'terima'])->name('online.terima');

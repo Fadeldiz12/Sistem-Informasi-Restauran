@@ -29,11 +29,11 @@ Satu fase = satu (atau beberapa) commit. Setiap fase selesai → saya lapor & ta
 
 ## Fase 2 — Alur pesanan yang macet / salah (9 temuan)
 - [x] **A2-#1 (High)** Pesanan tanpa metode bayar: pelanggan lihat "Menunggu Konfirmasi", kasir tidak melihatnya → menggantung selamanya
-- [ ] **A3-#3 (High)** Kasir tidak bisa membatalkan/mengoreksi pesanan (tiket dapur ikut batal)
-- [ ] A3-#4 `=` A2-#21 Validasi nomor meja di server (rentang 01–16, meja sedang dipakai)
+- [x] **A3-#3 (High)** Kasir tidak bisa membatalkan/mengoreksi pesanan (tiket dapur ikut batal)
+- [x] A3-#4 `=` A2-#21 Validasi nomor meja di server (rentang 01–16, meja sedang dipakai)
 - [ ] A2-#3 Timeline: "Dimasak" sudah dicentang padahal masih dimasak
 - [ ] A3-#6 Tolak pesanan tanpa alasan; pesan "sudah diproses" untuk pesanan yang ditolak
-- [ ] A3-#7 Dashboard kasir tidak menampilkan pesan error
+- [x] A3-#7 Dashboard kasir tidak menampilkan pesan error
 - [ ] A3-#8 Mulai masak saat stok kurang: toast sukses + banner merah bertentangan
 - [ ] A4-#9 Jam operasional lewat tengah malam (16:00–02:00) tidak bisa diatur
 

@@ -4,6 +4,7 @@
 @use('App\Models\Pesanan')
 
 @section('title', 'Pembayaran')
+@section('error-sendiri', '1')
 @section('crumb', 'Kasir / Pembayaran')
 @section('heading', 'Proses Pembayaran')
 @section('sub', 'Pembayaran tunai di kasir dan cetak struk · VA & QRIS online lunas otomatis')
@@ -77,7 +78,9 @@
       </div>
 
       <div class="card">
-        <div class="card-head"><div><h2>{{ $pesanan->kode() }} · {{ $pesanan->namaPemesan() }}</h2><p>{{ $pesanan->layananDetail() }}{{ $pesanan->kasir ? ' · kasir '.$pesanan->kasir->nama : '' }}</p></div><span class="pill {{ $pesanan->statusPill() }}">{{ $pesanan->statusLabel() }}</span></div>
+        <div class="card-head"><div><h2>{{ $pesanan->kode() }} · {{ $pesanan->namaPemesan() }}</h2><p>{{ $pesanan->layananDetail() }}{{ $pesanan->kasir ? ' · kasir '.$pesanan->kasir->nama : '' }}</p></div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="pill {{ $pesanan->statusPill() }}">{{ $pesanan->statusLabel() }}</span>
+            <button type="button" class="btn o sm js-batal" data-url="{{ route('kasir.pesanan.batal', $pesanan) }}" data-kode="{{ $pesanan->kode() }}" data-dimasak="{{ $pesanan->tiketDapur && $pesanan->tiketDapur->status_masak !== \App\Models\TiketDapur::STATUS_ANTRE ? 1 : 0 }}"><svg class="ic" style="width:15px;height:15px"><use href="#i-x"/></svg>Batalkan</button></div></div>
         <div class="seg" id="mtd" style="margin-bottom:16px">
           @foreach (Pembayaran::LABEL_METODE as $k => $l)
             <button type="button" @class(['on' => $metode === $k]) data-m="{{ $k }}"><svg class="ic" style="width:15px;height:15px"><use href="#{{ $ikonMetode[$k] }}"/></svg> {{ $l }}</button>
@@ -170,3 +173,5 @@
 </script>
 @endif
 @endpush
+
+@include('kasir.partials.modal-batal')

@@ -5,10 +5,13 @@ namespace App\Http\Controllers\Kasir;
 use App\Http\Controllers\Controller;
 use App\Models\Pembayaran;
 use App\Models\Pesanan;
+use App\Services\PesananService;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
+    public function __construct(private PesananService $pesanan) {}
+
     public function __invoke(): View
     {
         $hariIni = Pesanan::whereDate('waktu_pesan', today())->where('status', '!=', Pesanan::STATUS_DIBATALKAN);
@@ -26,6 +29,10 @@ class DashboardController extends Controller
                 ->map(fn ($p) => ['ikon' => 'i-check', 'm' => false, 'judul' => 'Pesanan siap · '.$p->kode(), 'ket' => $p->layananDetail().' · dari dapur', 'waktu' => $p->updated_at, 'url' => route('kasir.dashboard').'#berjalan']))
             ->sortByDesc('waktu')->take(6)->values();
 
+        $berjalan = Pesanan::with(['pelanggan', 'pembayaran', 'pengiriman.zona', 'tiketDapur'])
+            ->whereNotIn('status', [Pesanan::STATUS_SELESAI, Pesanan::STATUS_DIBATALKAN])
+            ->orderBy('waktu_pesan')->limit(50)->get();
+
         return view('kasir.dashboard', [
             'perLayanan' => (clone $hariIni)->selectRaw('jenis_layanan, count(*) as jumlah')->groupBy('jenis_layanan')->pluck('jumlah', 'jenis_layanan'),
             'menunggu' => Pesanan::menungguKonfirmasi()->count(),
@@ -33,9 +40,8 @@ class DashboardController extends Controller
             'pemasukan' => (float) (clone $lunasHariIni)->sum('jumlah'),
             'jumlahLunas' => (clone $lunasHariIni)->count(),
             'notif' => $notif,
-            'berjalan' => Pesanan::with(['pelanggan', 'pembayaran', 'pengiriman.zona', 'tiketDapur'])
-                ->whereNotIn('status', [Pesanan::STATUS_SELESAI, Pesanan::STATUS_DIBATALKAN])
-                ->orderBy('waktu_pesan')->limit(50)->get(),
+            'berjalan' => $berjalan,
+            'bisaDiubah' => $berjalan->filter(fn ($p) => $this->pesanan->bisaDiubah($p))->pluck('id')->all(),
         ]);
     }
 }

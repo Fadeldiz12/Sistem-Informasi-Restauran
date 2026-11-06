@@ -1,6 +1,7 @@
 @extends('layouts.panel')
 
 @section('title', 'Laporan Keuangan')
+@section('error-sendiri', '1')
 @section('crumb', 'Owner / Laporan Keuangan')
 @section('heading', 'Laporan Keuangan')
 @section('sub', 'Pendapatan, pengeluaran, dan laba berdasarkan periode')
