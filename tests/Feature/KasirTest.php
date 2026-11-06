@@ -145,9 +145,20 @@ class KasirTest extends TestCase
             ->assertSessionHasNoErrors()->assertSessionHas('struk', $p->id);
         $this->assertTrue($p->fresh()->isLunas());
 
+        $this->assertEquals(150000, (float) $p->fresh()->pembayaran->uang_diterima);
+
         $this->actingAs($this->kasir)->get('/kasir/pembayaran')->assertSee('Cetak Struk')->assertSee('Kembalian <b>Rp 24.650</b>', false);
-        $this->actingAs($this->kasir)->get("/kasir/pesanan/{$p->id}/struk?tunai=150000")->assertOk()
-            ->assertSee('Meja 12')->assertSee('Rp 125.350')->assertSee('Rp 24.650')->assertSee('LUNAS');
+        $this->actingAs($this->kasir)->get("/kasir/pesanan/{$p->id}/struk")->assertOk()
+            ->assertSee('Meja 12')->assertSee('Rp 125.350')->assertSee('Rp 150.000')->assertSee('Rp 24.650')->assertSee('LUNAS');
+
+        // angka di struk diambil dari database, tidak bisa diubah lewat URL
+        $this->actingAs($this->kasir)->get("/kasir/pesanan/{$p->id}/struk?tunai=5000000")->assertOk()
+            ->assertDontSee('Rp 5.000.000')->assertSee('Rp 24.650');
+
+        // cetak ulang dari tab Sudah Lunas dan dari dashboard
+        $this->actingAs($this->kasir)->get('/kasir/pembayaran?tab=lunas')->assertSee($p->kode())->assertSee('Cetak ulang struk')
+            ->assertSee(route('kasir.struk', $p));
+        $this->actingAs($this->kasir)->get('/kasir/dashboard')->assertSee(route('kasir.struk', $p));
 
         $this->actingAs($this->kasir)->post("/kasir/pembayaran/{$p->id}/lunas", ['metode' => 'tunai', 'uang_diterima' => '200000'])->assertSessionHasErrors('pesanan');
     }

@@ -22,11 +22,16 @@ class PembayaranController extends Controller
 
         $struk = session('struk') ? Pesanan::with(['detail.menu', 'pembayaran.kasir', 'pelanggan', 'pengiriman.zona'])->find(session('struk')) : null;
 
+        $lunasHariIni = Pesanan::with(['pembayaran', 'pelanggan'])
+            ->whereHas('pembayaran', fn ($b) => $b->where('status_bayar', Pembayaran::STATUS_LUNAS)->whereDate('waktu_bayar', today()))
+            ->get()->sortByDesc(fn ($p) => $p->pembayaran->waktu_bayar)->values();
+
         return view('kasir.pembayaran', [
+            'tab' => $request->query('tab') === 'lunas' ? 'lunas' : 'belum',
             'daftar' => $daftar,
+            'lunasHariIni' => $lunasHariIni,
             'pesanan' => $dipilih?->load('detail.menu'),
             'struk' => $struk,
-            'uangDiterima' => session('uang_diterima'),
         ]);
     }
 
@@ -44,21 +49,18 @@ class PembayaranController extends Controller
 
         $redirect = to_route('kasir.pembayaran')->with('status', "{$pesanan->kode()} lunas · pemasukan tercatat");
 
-        return $request->boolean('cetak')
-            ? $redirect->with('struk', $pesanan->id)->with('uang_diterima', $data['metode'] === Pembayaran::METODE_TUNAI ? (float) $data['uang_diterima'] : null)
-            : $redirect;
+        return $request->boolean('cetak') ? $redirect->with('struk', $pesanan->id) : $redirect;
     }
 
     /**
-     * Halaman struk yang bisa dicetak.
+     * Halaman struk yang bisa dicetak (dan dicetak ulang). Uang diterima & kembalian diambil dari database.
      */
-    public function struk(Request $request, Pesanan $pesanan): View
+    public function struk(Pesanan $pesanan): View
     {
         abort_unless($pesanan->isLunas(), 404);
 
         return view('kasir.struk', [
             'pesanan' => $pesanan->load(['detail.menu', 'pembayaran.kasir', 'pelanggan', 'pengiriman.zona']),
-            'uangDiterima' => $request->filled('tunai') ? (float) $request->query('tunai') : null,
         ]);
     }
 

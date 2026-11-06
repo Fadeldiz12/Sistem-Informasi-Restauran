@@ -67,6 +67,9 @@
               @elseif ($p->status === Pesanan::STATUS_MENUNGGU && $p->pembayaran?->metode === Pembayaran::METODE_TUNAI)
                 <a class="btn o sm" href="{{ route('kasir.online', ['pesanan' => $p->id]) }}">Konfirmasi</a>
               @endif
+              @if ($p->isLunas())
+                <a class="btn o sm" style="margin-top:6px" href="{{ route('kasir.struk', $p) }}" target="_blank" rel="noopener" title="Cetak ulang struk"><svg class="ic" style="width:15px;height:15px"><use href="#i-printer"/></svg>Struk</a>
+              @endif
             </td></tr>
         @empty
           <tr><td colspan="6"><div class="empty">Tidak ada pesanan yang sedang berjalan.</div></td></tr>

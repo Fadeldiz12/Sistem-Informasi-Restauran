@@ -22,8 +22,8 @@
   <div class="sr"><span class="mut">Pajak &amp; layanan</span><span>{{ $rp($pesanan->pajakDanLayanan()) }}</span></div>
   @if ($pesanan->isDelivery())<div class="sr"><span class="mut">Ongkir ({{ $pesanan->pengiriman?->zona?->nama_zona }})</span><span>{{ $rp($pesanan->ongkir) }}</span></div>@endif
   <div class="sr" style="font:700 16px var(--f-title);padding:6px 0"><span>TOTAL</span><span>{{ $rp($pesanan->total) }}</span></div>
-  <div class="sr"><span class="mut">{{ $bayar?->metodeLabel() }}</span><span>{{ $rp($uangDiterima ?? $pesanan->total) }}</span></div>
-  @if ($uangDiterima !== null)<div class="sr"><span class="mut">Kembalian</span><span>{{ $rp(max(0, $uangDiterima - (float) $pesanan->total)) }}</span></div>@endif
+  <div class="sr"><span class="mut">{{ $bayar?->metodeLabel() }}</span><span>{{ $rp($bayar?->uang_diterima ?? $pesanan->total) }}</span></div>
+  @if ($bayar?->kembalian() !== null)<div class="sr"><span class="mut">Kembalian</span><span>{{ $rp($bayar->kembalian()) }}</span></div>@endif
   <div style="text-align:center;margin-top:12px"><span class="pill m">LUNAS</span></div>
   <div style="text-align:center;font-size:11.5px;opacity:.65;margin-top:10px">Terima kasih atas kunjungan Anda</div>
 </div>

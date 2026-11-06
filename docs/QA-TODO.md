@@ -19,8 +19,8 @@ Satu fase = satu (atau beberapa) commit. Setiap fase selesai → saya lapor & ta
 - [x] **A4-#1 (High)** Hapus/ubah role kurir yang masih bawa uang COD → setoran hilang
 - [x] **A3-#2 (High)** Hapus bahan baku yang dipakai resep → resep & 31 riwayat mutasi ikut terhapus (cascade)
 - [x] A3-#11 Ubah satuan bahan (kg→gram) tanpa konversi → stok salah 1000×
-- [ ] A3-#5 Struk: uang diterima tidak disimpan, `?tunai=` bisa dimanipulasi, tidak bisa cetak ulang
-- [ ] A3-#19 Kembalian sangat besar (salah ketik nol) tanpa konfirmasi
+- [x] A3-#5 Struk: uang diterima tidak disimpan, `?tunai=` bisa dimanipulasi, tidak bisa cetak ulang
+- [x] A3-#19 Kembalian sangat besar (salah ketik nol) tanpa konfirmasi
 - [ ] A3-#23 `=` A4-#17 Harga besar → error 500 overflow kolom; "12,5" jadi 125; angka maksimal tanpa pemisah ribuan
 - [ ] A4-#3 Harga menu Rp 0 lolos
 - [ ] A4-#4 Zona: radius tumpang tindih & tarif Rp 0 lolos

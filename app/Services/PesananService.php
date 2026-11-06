@@ -274,6 +274,7 @@ class PesananService
             'id_kasir' => $kasir->id,
             'metode' => $metode,
             'jumlah' => $pesanan->total,
+            'uang_diterima' => $metode === Pembayaran::METODE_TUNAI ? $uangDiterima : null,
             'status_bayar' => Pembayaran::STATUS_LUNAS,
             'waktu_bayar' => now(),
         ]);

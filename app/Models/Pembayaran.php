@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Table('pembayaran')]
-#[Fillable(['id_pesanan', 'id_kasir', 'metode', 'jumlah', 'bukti_bayar', 'status_bayar', 'waktu_bayar', 'kode_transaksi', 'bank', 'nomor_va', 'qris_url', 'kedaluwarsa_pada', 'id_kurir', 'disetor_pada'])]
+#[Fillable(['id_pesanan', 'id_kasir', 'metode', 'jumlah', 'uang_diterima', 'bukti_bayar', 'status_bayar', 'waktu_bayar', 'kode_transaksi', 'bank', 'nomor_va', 'qris_url', 'kedaluwarsa_pada', 'id_kurir', 'disetor_pada'])]
 class Pembayaran extends Model
 {
     public const METODE_TUNAI = 'tunai';
@@ -30,6 +30,7 @@ class Pembayaran extends Model
     {
         return [
             'jumlah' => 'decimal:2',
+            'uang_diterima' => 'decimal:2',
             'waktu_bayar' => 'datetime',
             'kedaluwarsa_pada' => 'datetime',
             'disetor_pada' => 'datetime',
@@ -60,6 +61,14 @@ class Pembayaran extends Model
     public function isOtomatis(): bool
     {
         return $this->metode !== self::METODE_TUNAI && $this->kode_transaksi !== null;
+    }
+
+    /**
+     * Kembalian tunai yang diberikan kasir, atau null bila bukan pembayaran tunai di kasir.
+     */
+    public function kembalian(): ?float
+    {
+        return $this->uang_diterima === null ? null : max(0, (float) $this->uang_diterima - (float) $this->jumlah);
     }
 
     public function isKedaluwarsa(): bool
