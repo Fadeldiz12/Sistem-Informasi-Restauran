@@ -176,8 +176,9 @@
   $layanan = old('jenis_layanan', $zona->isEmpty() && $layananPilihan === Pesanan::LAYANAN_DELIVERY ? Pesanan::LAYANAN_TAKE_AWAY : $layananPilihan);
   $metode = old('metode', $midtransAktif ? \App\Models\Pembayaran::METODE_TRANSFER : \App\Models\Pembayaran::METODE_TUNAI);
   $bankPilih = old('bank', array_key_first($bank));
-  $zonaDipilih = (int) old('id_zona', $zona->first()?->id);
+  $zonaDipilih = (int) old('id_zona'); // tidak terpilih otomatis: pelanggan wajib memilih zona (QA A2-#7)
   $u = auth()->user();
+  $alamatLama = old('alamat', $u->alamat);
   $prevRadius = 0;
 @endphp
 
@@ -250,15 +251,17 @@
           </div>
 
           <div @class(['svc-panel', 'on' => $layanan === Pesanan::LAYANAN_DELIVERY]) data-panel="{{ Pesanan::LAYANAN_DELIVERY }}">
-            <div class="field"><label for="alamat">Alamat pengiriman</label><div class="in ta"><svg class="ic" style="margin-top:2px"><use href="#i-pin"/></svg><textarea id="alamat" name="alamat" maxlength="500" placeholder="Nama jalan, nomor rumah, kelurahan, kecamatan">{{ old('alamat', $u->alamat) }}</textarea></div></div>
+            <div class="field"><label for="alamat">Alamat pengiriman</label><div class="in ta"><svg class="ic" style="margin-top:2px"><use href="#i-pin"/></svg><textarea id="alamat" name="alamat" maxlength="500" placeholder="Nama jalan, nomor rumah, kelurahan, kecamatan">{{ $alamatLama }}</textarea></div>@error('alamat')<div style="font:600 12.5px var(--f-body);margin-top:6px">{{ $message }}</div>@enderror</div>
             @if ($u->alamat)
-              <div class="chips" id="addrChips"><button type="button" class="on" data-addr="profil">Pakai alamat profil</button><button type="button" data-addr="lain">Alamat lain</button></div>
+              @php $pakaiProfil = trim((string) $alamatLama) !== '' && trim((string) $alamatLama) === trim($u->alamat); @endphp
+              <div class="chips" id="addrChips"><button type="button" @class(['on' => $pakaiProfil]) data-addr="profil">Pakai alamat profil</button><button type="button" @class(['on' => ! $pakaiProfil]) data-addr="lain">Alamat lain</button></div>
             @endif
             <div class="eyebrow" style="font-size:10.5px;margin-top:16px">Pilih zona sesuai jarak alamat dari restoran</div>
+            <div style="font-size:13px;opacity:.75;margin-top:4px">Restoran: {{ config('resto.alamat') }}</div>
             <div class="zones">
               @foreach ($zona as $z)
                 <label class="zone-opt"><input type="radio" name="id_zona" value="{{ $z->id }}" data-ongkir="{{ $z->ongkir() }}" data-nama="{{ $z->nama_zona }}" @checked($zonaDipilih === $z->id)>
-                  <span class="zn"><b>{{ $z->nama_zona }}</b><small>{{ rtrim(rtrim(number_format($prevRadius, 1, ',', '.'), '0'), ',') }} – {{ rtrim(rtrim(number_format((float) $z->radius_km, 1, ',', '.'), '0'), ',') }} km dari restoran</small></span>
+                  <span class="zn"><b>{{ $z->nama_zona }}</b><small>{{ rtrim(rtrim(number_format($prevRadius, 1, ',', '.'), '0'), ',') }} – {{ rtrim(rtrim(number_format((float) $z->radius_km, 1, ',', '.'), '0'), ',') }} km dari restoran{{ $z->contoh_wilayah ? ' · '.$z->contoh_wilayah : '' }}</small></span>
                   <span class="kt">{{ $rp($z->ongkir()) }}</span></label>
                 @php $prevRadius = (float) $z->radius_km; @endphp
               @endforeach
@@ -321,7 +324,7 @@
     function hitung() {
       var s = jenisLayanan.value, z = zonaDipilih(), ong = s === 'delivery' && z ? +z.dataset.ongkir : 0;
       ongRow.style.display = s === 'delivery' ? '' : 'none';
-      ongZone.textContent = z ? z.dataset.nama : '-'; ongVal.textContent = rp(ong);
+      ongZone.textContent = z ? z.dataset.nama : 'belum dipilih'; ongVal.textContent = z ? rp(ong) : 'pilih zona';
       grand.textContent = rp(dasar + ong); svcBadge.textContent = label[s];
       var t = s === 'delivery' ? 'Bayar tunai ke kurir saat pesanan tiba' : 'Bayar tunai di kasir';
       tunaiSub.textContent = t; tunaiInfo.textContent = t + '.';

@@ -8,6 +8,7 @@ use App\Models\PengaturanSistem;
 use App\Models\Pesanan;
 use App\Models\User;
 use App\Models\ZonaPengiriman;
+use App\Support\Keranjang;
 use Database\Seeders\MasterDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -120,7 +121,10 @@ class PesananPelangganTest extends TestCase
         Carbon::setTestNow(today()->setTime(23, 0));
 
         $this->actingAs($this->pelanggan)->get('/checkout')->assertSee('Restoran sedang tutup');
-        $this->actingAs($this->pelanggan)->post('/checkout', ['metode' => 'tunai', 'jenis_layanan' => 'take_away'])->assertSessionHas('error');
+        // ditolak; banner tutup sudah tampil di halaman, jadi tidak ada pesan error kedua (QA A2-#23)
+        $this->actingAs($this->pelanggan)->from('/checkout')->post('/checkout', ['metode' => 'tunai', 'jenis_layanan' => 'take_away'])
+            ->assertRedirect('/checkout')->assertSessionMissing('error');
+        $this->assertSame(1, substr_count($this->actingAs($this->pelanggan)->get('/checkout')->getContent(), 'role="alert">Restoran sedang tutup'));
         $this->assertSame(0, Pesanan::count());
 
         PengaturanSistem::aktif()->update(['jam_tutup' => '23:30']);
@@ -203,5 +207,41 @@ class PesananPelangganTest extends TestCase
         $this->actingAs($this->pelanggan)->get("/tracking?pesanan={$q->id}")
             ->assertSeeInOrder(['Pesanan Dibuat', 'Dikonfirmasi', 'Dimasak', 'Siap Diambil', 'Selesai'])
             ->assertDontSee('Dalam Perjalanan</b>', false);
+    }
+
+    // ---------- QA fase 4: keranjang & checkout
+
+    public function test_batas_50_porsi_dan_menu_habis_diberi_tahu(): void
+    {
+        $this->actingAs($this->pelanggan)->postJson('/keranjang', ['id_menu' => $this->tea->id, 'jumlah' => 50])->assertOk();
+        $this->actingAs($this->pelanggan)->postJson('/keranjang', ['id_menu' => $this->tea->id])
+            ->assertStatus(422)->assertJson(['message' => $this->tea->nama_menu.' sudah 50 porsi, batas maksimal per menu.']);
+
+        $this->tea->update(['tersedia' => false]);
+        $this->actingAs($this->pelanggan)->get('/keranjang')->assertSee($this->tea->nama_menu.' sedang habis dan sudah dihapus dari keranjang.');
+    }
+
+    public function test_hapus_item_bisa_dibatalkan_dengan_catatan_kembali(): void
+    {
+        $this->actingAs($this->pelanggan)->postJson('/keranjang', ['id_menu' => $this->tea->id, 'jumlah' => 3, 'catatan' => 'es sedikit'])->assertOk();
+        $raw = session(Keranjang::KEY);
+        $this->assertSame(['jumlah' => 3, 'catatan' => 'es sedikit'], $raw[$this->tea->id]);
+    }
+
+    public function test_back_setelah_checkout_ke_pesanan_yang_baru_dibuat(): void
+    {
+        $this->isiKeranjang();
+        $this->actingAs($this->pelanggan)->post('/checkout', ['metode' => 'tunai', 'jenis_layanan' => 'take_away']);
+        $p = Pesanan::firstOrFail();
+
+        $this->actingAs($this->pelanggan)->get('/checkout')->assertRedirect("/pesanan/{$p->id}/pembayaran")->assertSessionHas('status');
+        $this->actingAs($this->pelanggan)->get('/keranjang')->assertSee("Pesanan {$p->kode()} sudah dibuat.");
+    }
+
+    public function test_zona_tidak_terpilih_otomatis(): void
+    {
+        $this->isiKeranjang();
+        $html = $this->actingAs($this->pelanggan)->get('/checkout')->assertSee(config('resto.alamat'))->getContent();
+        $this->assertDoesNotMatchRegularExpression('/name="id_zona"[^>]*checked/', $html);
     }
 }

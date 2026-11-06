@@ -8,6 +8,16 @@
     if (!t) return; t.textContent = msg; t.classList.add('on');
     clearTimeout(window._pt); window._pt = setTimeout(function () { t.classList.remove('on'); }, 2600);
   };
+  /* toast dengan satu tombol aksi (mis. "Batalkan"), tampil lebih lama */
+  window.pToastAksi = function (msg, label, aksi) {
+    if (!t) return;
+    t.textContent = msg + ' ';
+    var b = document.createElement('button'); b.type = 'button'; b.textContent = label;
+    b.style.cssText = 'margin-left:10px;color:inherit;font:inherit;text-decoration:underline;font-weight:800;background:none;border:0;cursor:pointer';
+    b.addEventListener('click', function () { t.classList.remove('on'); aksi(); });
+    t.appendChild(b); t.classList.add('on');
+    clearTimeout(window._pt); window._pt = setTimeout(function () { t.classList.remove('on'); }, 6000);
+  };
   window.sendJson = function (url, method, data) {
     return fetch(url, {
       method: method,

@@ -23,13 +23,28 @@ class CheckoutController extends Controller
      */
     public const COOKIE_LAYANAN = 'layanan_pilihan';
 
+    /**
+     * Session: id pesanan yang terakhir dibuat lewat checkout (untuk tombol Back setelah checkout).
+     */
+    public const SESI_PESANAN_BARU = 'pesanan_baru_id';
+
     public function __construct(private Keranjang $keranjang, private PesananService $pesanan, private MidtransService $midtrans) {}
 
     public function create(Request $request): View|RedirectResponse
     {
         $items = $this->keranjang->items();
+        if ($dibuang = $this->keranjang->dibuang()) {
+            session()->flash('error', $this->pesanDibuang($dibuang));
+        }
         if ($items->isEmpty()) {
-            return to_route('pelanggan.keranjang')->with('error', 'Keranjang masih kosong. Pilih menu dulu.');
+            // tombol Back dari halaman pembayaran: arahkan ke pesanan yang baru dibuat, bukan pesan error
+            $baru = session(self::SESI_PESANAN_BARU) ? $request->user()->pesanan()->whereKey(session(self::SESI_PESANAN_BARU))
+                ->where('waktu_pesan', '>=', now()->subHour())->first() : null;
+            if ($baru) {
+                return to_route('pelanggan.pembayaran', $baru)->with('status', "Pesanan {$baru->kode()} sudah dibuat. Status bisa dipantau di Lacak Pesanan.");
+            }
+
+            return to_route('pelanggan.keranjang')->with('error', $dibuang ? $this->pesanDibuang($dibuang) : 'Keranjang masih kosong. Pilih menu dulu.');
         }
 
         $set = PengaturanSistem::aktif();
@@ -70,10 +85,14 @@ class CheckoutController extends Controller
 
         $set = PengaturanSistem::aktif();
         if (! $set->sedangBuka()) {
-            return back()->withInput()->with('error', 'Restoran sedang tutup. Pesanan bisa dibuat pada jam '.$set->jamLabel().'.');
+            // banner "Restoran sedang tutup" sudah tampil di halaman checkout; tidak perlu pesan kedua
+            return back()->withInput()->with('tutup', true);
         }
 
         $items = $this->keranjang->items();
+        if ($dibuang = $this->keranjang->dibuang()) {
+            return to_route('pelanggan.keranjang')->with('error', $this->pesanDibuang($dibuang));
+        }
         if ($items->isEmpty()) {
             return to_route('pelanggan.keranjang')->with('error', 'Keranjang masih kosong.');
         }
@@ -93,7 +112,16 @@ class CheckoutController extends Controller
         });
 
         $this->keranjang->kosongkan();
+        $request->session()->put(self::SESI_PESANAN_BARU, $pesanan->id);
 
         return to_route('pelanggan.pembayaran', $pesanan)->with('pesanan_baru', true);
+    }
+
+    /**
+     * @param  array<int, string>  $dibuang
+     */
+    private function pesanDibuang(array $dibuang): string
+    {
+        return collect($dibuang)->join(', ', ' dan ').' sedang habis dan sudah dihapus dari keranjang.';
     }
 }

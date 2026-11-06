@@ -63,18 +63,18 @@ Satu fase = satu (atau beberapa) commit. Setiap fase selesai → saya lapor & ta
 - [x] A2-#4 Tombol Cari tidak berfungsi
 - [x] A2-#5 Promo/hero statis tidak bisa dipesan, panah slide mati, "Semua promo" `#`
 - [x] A2-#6 Pilihan layanan di beranda tidak terbawa ke checkout; teks Dine In kontradiktif
-- [ ] A2-#7 Zona A terpilih otomatis, tidak ada panduan jarak
-- [ ] A2-#9 Restoran tutup: tidak ada banner, footer jam hardcode
-- [ ] A2-#10 Menu habis hilang diam-diam dari keranjang / beranda
+- [x] A2-#7 Zona A terpilih otomatis, tidak ada panduan jarak
+- [x] A2-#9 Restoran tutup: tidak ada banner, footer jam hardcode
+- [x] A2-#10 Menu habis hilang diam-diam dari keranjang / beranda
 - [x] A2-#11 Tidak ada halaman profil pelanggan (ubah nama/HP/alamat)
-- [ ] A2-#13 Batas qty 50 tanpa pesan, toast "ditambahkan" palsu, tombol − di qty 1
-- [ ] A2-#14 Hapus item keranjang tanpa "Batalkan"
-- [ ] A2-#15 Back setelah checkout → "Keranjang masih kosong"
+- [x] A2-#13 Batas qty 50 tanpa pesan, toast "ditambahkan" palsu, tombol − di qty 1
+- [x] A2-#14 Hapus item keranjang tanpa "Batalkan"
+- [x] A2-#15 Back setelah checkout → "Keranjang masih kosong"
 - [ ] A2-#16 Teks VA/QRIS padahal nonaktif, label tombol tunai, pesan `MIDTRANS_SERVER_KEY kosong`
 - [ ] A2-#17 Tombol "Ubah Pembayaran" mencolok saat pesanan berjalan
-- [ ] A2-#19 Chip "Pakai alamat profil" aktif padahal kosong
+- [x] A2-#19 Chip "Pakai alamat profil" aktif padahal kosong
 - [ ] A2-#20 Teks status salah setelah selesai ("diteruskan ke dapur", "menuju alamatmu")
-- [ ] A2-#23 Pesan "Restoran tutup" tampil dua kali
+- [x] A2-#23 Pesan "Restoran tutup" tampil dua kali
 - [x] A2-#24 Kategori di strip atas berbeda dengan chip (Salad hilang)
 - [ ] A2-#25 Jam per langkah timeline kosong
 - [x] A2-#26 Link footer `#` mati, nomor telepon bukan `tel:`
