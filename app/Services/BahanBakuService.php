@@ -146,14 +146,7 @@ class BahanBakuService
      */
     public function pakaiUntukPesanan(Pesanan $pesanan): array
     {
-        $pesanan->loadMissing('detail.menu.resep');
-
-        $kebutuhan = [];
-        foreach ($pesanan->detail as $d) {
-            foreach ($d->menu?->resep ?? [] as $r) {
-                $kebutuhan[$r->id_bahan] = ($kebutuhan[$r->id_bahan] ?? 0) + $d->jumlah * (float) $r->jumlah;
-            }
-        }
+        $kebutuhan = $this->hitungKebutuhan($pesanan);
 
         $kurang = [];
         DB::transaction(function () use ($kebutuhan, $pesanan, &$kurang) {
@@ -177,6 +170,44 @@ class BahanBakuService
         });
 
         return $kurang;
+    }
+
+    /**
+     * Total takaran per bahan untuk satu pesanan: jumlah porsi × takaran resep.
+     *
+     * @return array<int, float> id_bahan => kebutuhan
+     */
+    private function hitungKebutuhan(Pesanan $pesanan): array
+    {
+        $pesanan->loadMissing('detail.menu.resep');
+
+        $kebutuhan = [];
+        foreach ($pesanan->detail as $d) {
+            foreach ($d->menu?->resep ?? [] as $r) {
+                $kebutuhan[$r->id_bahan] = ($kebutuhan[$r->id_bahan] ?? 0) + $d->jumlah * (float) $r->jumlah;
+            }
+        }
+
+        return $kebutuhan;
+    }
+
+    /**
+     * Bahan yang dibutuhkan pesanan beserta stok saat ini, untuk ditampilkan ke dapur sebelum mulai memasak.
+     *
+     * @return array<int, array{nama: string, satuan: string, butuh: float, stok: float, kurang: bool}>
+     */
+    public function kebutuhanUntukPesanan(Pesanan $pesanan): array
+    {
+        $kebutuhan = $this->hitungKebutuhan($pesanan);
+        $bahan = BahanBaku::whereIn('id', array_keys($kebutuhan))->orderBy('nama_bahan')->get();
+
+        return $bahan->map(fn ($b) => [
+            'nama' => $b->nama_bahan,
+            'satuan' => $b->satuan,
+            'butuh' => round($kebutuhan[$b->id], 2),
+            'stok' => (float) $b->stok,
+            'kurang' => round($kebutuhan[$b->id], 2) > (float) $b->stok,
+        ])->all();
     }
 
     /**

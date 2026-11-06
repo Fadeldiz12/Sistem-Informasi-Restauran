@@ -49,8 +49,18 @@ class PengaturanSistem extends Model
     public function sedangBuka(?\DateTimeInterface $waktu = null): bool
     {
         $jam = ($waktu ? Carbon::instance($waktu) : now())->format('H:i:s');
+        $buka = $this->normalJam($this->jam_buka);
+        $tutup = $this->normalJam($this->jam_tutup);
 
-        return $jam >= $this->normalJam($this->jam_buka) && $jam < $this->normalJam($this->jam_tutup);
+        // jam tutup lebih awal dari jam buka = tutup keesokan harinya (mis. 16:00 – 02:00)
+        return $tutup > $buka
+            ? $jam >= $buka && $jam < $tutup
+            : $jam >= $buka || $jam < $tutup;
+    }
+
+    public function lewatTengahMalam(): bool
+    {
+        return $this->normalJam($this->jam_tutup) <= $this->normalJam($this->jam_buka);
     }
 
     private function normalJam(string $jam): string

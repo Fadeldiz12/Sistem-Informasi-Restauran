@@ -251,8 +251,13 @@ class DapurTest extends TestCase
 
         $p = app(PesananService::class)->buat([['id_menu' => $menu->id, 'jumlah' => 2]], 'dine_in', kasir: $this->kasir, data: ['nomor_meja' => '01']);
 
+        // sebelum mulai: kebutuhan bahan & peringatan stok kurang terlihat
+        $this->actingAs($this->dapur)->get("/dapur/antrean?tiket={$p->tiketDapur->id}")
+            ->assertSee('Bahan yang akan dipakai')->assertSee('⚠ Keju Mozzarella')->assertSee('butuh 0,3 kg · sisa 0,2');
+
+        // sesudah mulai: hanya satu pesan peringatan, tanpa toast sukses
         $this->actingAs($this->dapur)->post("/dapur/tiket/{$p->tiketDapur->id}/mulai")
-            ->assertSessionHasNoErrors()->assertSessionHas('error', fn ($m) => str_contains($m, 'Keju Mozzarella'));
+            ->assertSessionHasNoErrors()->assertSessionHas('error', fn ($m) => str_contains($m, 'Keju Mozzarella'))->assertSessionMissing('status');
 
         $this->assertSame(TiketDapur::STATUS_DIMASAK, $p->tiketDapur->fresh()->status_masak);
         $this->assertSame(0.0, (float) $keju->fresh()->stok);

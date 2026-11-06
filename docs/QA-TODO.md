@@ -34,8 +34,8 @@ Satu fase = satu (atau beberapa) commit. Setiap fase selesai → saya lapor & ta
 - [x] A2-#3 Timeline: "Dimasak" sudah dicentang padahal masih dimasak
 - [x] A3-#6 Tolak pesanan tanpa alasan; pesan "sudah diproses" untuk pesanan yang ditolak
 - [x] A3-#7 Dashboard kasir tidak menampilkan pesan error
-- [ ] A3-#8 Mulai masak saat stok kurang: toast sukses + banner merah bertentangan
-- [ ] A4-#9 Jam operasional lewat tengah malam (16:00–02:00) tidak bisa diatur
+- [x] A3-#8 Mulai masak saat stok kurang: toast sukses + banner merah bertentangan
+- [x] A4-#9 Jam operasional lewat tengah malam (16:00–02:00) tidak bisa diatur
 
 ## Fase 3 — Akun, login & keamanan (21 temuan)
 - [ ] **A1-#21 (High)** Email OTP gagal terkirim → halaman debug 500, akun "yatim" tak bisa daftar ulang

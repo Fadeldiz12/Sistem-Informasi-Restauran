@@ -67,7 +67,18 @@
             @foreach ($tiket->pesanan->detail as $d)
               <div class="item-row"><b class="q">{{ $d->jumlah }}×</b><div><b class="n">{{ $d->menu->nama_menu }}</b>@if ($d->catatan)<small>Catatan: {{ $d->catatan }}</small>@endif</div></div>
             @endforeach
-          </div></div></div></div>
+          </div>
+          @if ($kebutuhan)
+            @php $adaKurang = collect($kebutuhan)->contains('kurang', true); $a = fn ($n) => \App\Services\BahanBakuService::angka($n); @endphp
+            <div style="border-top:1.5px dashed var(--m60);margin-top:12px;padding-top:10px;font-size:13px">
+              <div class="eyebrow" style="margin-bottom:6px">Bahan yang akan dipakai</div>
+              @foreach ($kebutuhan as $k)
+                <div style="display:flex;justify-content:space-between;gap:10px;padding:2px 0;{{ $k['kurang'] ? 'font-weight:700' : '' }}"><span>{{ $k['kurang'] ? '⚠ ' : '' }}{{ $k['nama'] }}</span><span>butuh {{ $a($k['butuh']) }} {{ $k['satuan'] }} · sisa {{ $a($k['stok']) }}</span></div>
+              @endforeach
+              @if ($adaKurang)<div class="alert" role="alert" style="margin:10px 0 0">Stok bahan bertanda ⚠ tidak cukup. Masakan tetap bisa dimulai, tetapi stoknya akan habis (0).</div>@endif
+            </div>
+          @endif
+          </div></div></div>
 
       <div class="card"><div class="card-head"><h2>Status Masakan</h2><span class="pill">{{ $tiket->statusLabel() }}</span></div>
         <div class="sp">

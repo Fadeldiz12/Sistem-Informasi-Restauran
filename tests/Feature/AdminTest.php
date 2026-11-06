@@ -12,6 +12,7 @@ use App\Models\ZonaPengiriman;
 use Database\Seeders\MasterDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -317,10 +318,24 @@ class AdminTest extends TestCase
         $this->actingAs($this->admin)->get('/admin/dashboard')->assertSee('09:00 – 21:30')->assertSee('11%')->assertSee('2,5%');
     }
 
+    public function test_jam_operasional_lewat_tengah_malam(): void
+    {
+        $this->actingAs($this->admin)->put('/admin/pengaturan', [
+            'pajak' => '10', 'biaya_layanan' => '5', 'jam_buka' => '16:00', 'jam_tutup' => '02:00',
+        ])->assertSessionHasNoErrors();
+
+        $set = PengaturanSistem::aktif();
+        $this->assertTrue($set->sedangBuka(Carbon::parse('2026-11-06 23:30')));
+        $this->assertTrue($set->sedangBuka(Carbon::parse('2026-11-06 01:59')));
+        $this->assertFalse($set->sedangBuka(Carbon::parse('2026-11-06 02:00')));
+        $this->assertFalse($set->sedangBuka(Carbon::parse('2026-11-06 15:59')));
+        $this->assertTrue($set->sedangBuka(Carbon::parse('2026-11-06 16:00')));
+    }
+
     public function test_validasi_pengaturan(): void
     {
         $this->actingAs($this->admin)->put('/admin/pengaturan', [
-            'pajak' => 150, 'biaya_layanan' => 101, 'jam_buka' => '22:00', 'jam_tutup' => '10:00',
+            'pajak' => 150, 'biaya_layanan' => 101, 'jam_buka' => '22:00', 'jam_tutup' => '22:00',
         ])->assertSessionHasErrors(['pajak', 'biaya_layanan', 'jam_tutup']);
     }
 }
