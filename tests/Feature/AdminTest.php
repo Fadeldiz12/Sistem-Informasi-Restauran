@@ -216,6 +216,24 @@ class AdminTest extends TestCase
             'nama_menu' => '', 'id_kategori' => 999, 'harga' => 'abc',
             'foto' => UploadedFile::fake()->create('virus.exe', 10),
         ])->assertSessionHasErrors(['nama_menu', 'id_kategori', 'harga', 'foto']);
+
+        $kategori = Menu::firstWhere('nama_menu', 'Pizza Margherita')->id_kategori;
+        $isi = ['nama_menu' => 'Menu Baru QA', 'id_kategori' => $kategori];
+        // harga 0, desimal, dan terlalu besar ditolak
+        $this->actingAs($this->admin)->post('/admin/menu', $isi + ['harga' => '0'])->assertSessionHasErrors(['harga' => 'Harga harus lebih dari Rp 0.']);
+        $this->actingAs($this->admin)->post('/admin/menu', $isi + ['harga' => '12,5'])->assertSessionHasErrors('harga');
+        $this->actingAs($this->admin)->post('/admin/menu', $isi + ['harga' => '9.999.999.999'])
+            ->assertSessionHasErrors(['harga' => 'Harga maksimal Rp 99.999.999.']);
+        // nama menu yang sudah ada (beda huruf besar/kecil) ditolak
+        $this->actingAs($this->admin)->post('/admin/menu', ['nama_menu' => 'pizza margherita', 'id_kategori' => $kategori, 'harga' => '89.000'])
+            ->assertSessionHasErrors('nama_menu');
+        $this->assertSame(0, Menu::where('nama_menu', 'Menu Baru QA')->count());
+        $this->assertSame(1, Menu::where('nama_menu', 'Pizza Margherita')->count());
+
+        // mengubah menu tanpa mengganti namanya tetap boleh
+        $pizza = Menu::firstWhere('nama_menu', 'Pizza Margherita');
+        $this->actingAs($this->admin)->put("/admin/menu/{$pizza->id}", ['nama_menu' => 'Pizza Margherita', 'id_kategori' => $kategori, 'harga' => '95.000', 'tersedia' => 1])
+            ->assertSessionHasNoErrors();
     }
 
     public function test_toggle_tersedia_dan_filter_menu(): void
@@ -254,6 +272,18 @@ class AdminTest extends TestCase
 
         $this->actingAs($this->admin)->put("/admin/zona/{$zona->id}", ['nama_zona' => 'Zona D', 'radius_km' => 12, 'tarif_per_km' => 2000]);
         $this->assertEquals(24000, $zona->fresh()->ongkir());
+
+        // radius sama dengan zona lain ditolak
+        $lain = ZonaPengiriman::where('id', '!=', $zona->id)->first();
+        $this->actingAs($this->admin)->post('/admin/zona', ['nama_zona' => 'Zona Kembar', 'radius_km' => (float) $lain->radius_km, 'tarif_per_km' => '2.000'])
+            ->assertSessionHasErrors('radius_km');
+
+        // tarif Rp 0 harus dikonfirmasi sebagai ongkir gratis
+        $this->actingAs($this->admin)->post('/admin/zona', ['nama_zona' => 'Zona Gratis', 'radius_km' => 1, 'tarif_per_km' => '0'])
+            ->assertSessionHasErrors('tarif_per_km');
+        $this->actingAs($this->admin)->post('/admin/zona', ['nama_zona' => 'Zona Gratis', 'radius_km' => 1, 'tarif_per_km' => '0', 'konfirmasi_gratis' => 1])
+            ->assertSessionHasNoErrors();
+        $this->assertEquals(0, ZonaPengiriman::firstWhere('nama_zona', 'Zona Gratis')->ongkir());
 
         $this->actingAs($this->admin)->delete("/admin/zona/{$zona->id}")->assertSessionHas('status');
         $this->assertModelMissing($zona);

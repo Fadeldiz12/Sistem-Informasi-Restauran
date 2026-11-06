@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\BahanBaku;
 use App\Models\Kategori;
 use App\Models\Menu;
+use Closure;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -105,12 +106,24 @@ class MenuController extends Controller
     {
         // Harga boleh diketik dengan titik ribuan, contoh 109.000
         $request->merge(['harga' => str_replace(['.', ' '], '', (string) $request->input('harga'))]);
+        $menu = $request->route('menu');
 
         $data = $request->validate([
-            'nama_menu' => ['required', 'string', 'max:100'],
+            'nama_menu' => ['required', 'string', 'max:100', function (string $attribute, mixed $value, Closure $fail) use ($menu) {
+                $sudahAda = Menu::whereRaw('LOWER(nama_menu) = ?', [mb_strtolower((string) $value)])
+                    ->when($menu, fn ($q) => $q->whereKeyNot($menu->getKey()))
+                    ->exists();
+                if ($sudahAda) {
+                    $fail("Menu \"{$value}\" sudah ada. Ubah menu yang sudah ada atau beri nama lain.");
+                }
+            }],
             'id_kategori' => ['required', 'integer', 'exists:kategori,id'],
-            'harga' => ['required', 'numeric', 'min:0', 'max:9999999999'],
+            'harga' => ['required', 'integer', 'gt:0', 'max:'.Menu::HARGA_MAKS],
             'foto' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+        ], [
+            'harga.integer' => 'Harga hanya boleh angka bulat tanpa koma, contoh 12.500.',
+            'harga.gt' => 'Harga harus lebih dari Rp 0.',
+            'harga.max' => 'Harga maksimal Rp '.number_format(Menu::HARGA_MAKS, 0, ',', '.').'.',
         ]);
 
         unset($data['foto']);

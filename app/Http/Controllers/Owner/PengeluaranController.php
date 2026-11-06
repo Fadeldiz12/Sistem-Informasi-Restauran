@@ -68,6 +68,7 @@ class PengeluaranController extends Controller
             'keterangan' => ['nullable', 'string', 'max:500'],
         ], [
             'tanggal.before_or_equal' => 'Tanggal pengeluaran tidak boleh di masa depan.',
+            'nominal.max' => 'Nominal maksimal Rp 9.999.999.999.',
         ]);
     }
 }

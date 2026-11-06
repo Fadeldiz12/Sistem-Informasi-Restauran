@@ -91,6 +91,7 @@
       <div class="field"><label>Radius (jarak maksimum)</label><div class="in"><svg class="ic"><use href="#i-nav"/></svg><input type="number" name="radius_km" id="zRadius" value="{{ old('radius_km') }}" step="0.01" min="0.01" required><span class=suf>km</span></div></div>
       <div class="field"><label>Tarif per km</label><div class="in"><span class="suf" style="opacity:1">Rp</span><input name="tarif_per_km" id="zTarif" value="{{ old('tarif_per_km') }}" inputmode="numeric" placeholder="0" required></div></div>
     </div>
+    <label class="switch-row" for="zGratis" id="zGratisWrap" style="margin-top:14px;display:none"><span>Ongkir gratis untuk zona ini<small>Tarif Rp 0: pelanggan di zona ini tidak membayar ongkir</small></span><span class="toggle" style="flex:none"><input type="checkbox" name="konfirmasi_gratis" value="1" id="zGratis" @checked(old('konfirmasi_gratis'))><i></i></span></label>
     <div class="note" style="margin-top:16px"><svg class="ic"><use href="#i-info"/></svg><span>Ongkir zona ini: <b id="zPrev">Rp 0</b> (radius × tarif per km)</span></div>
   </div>
   <div class="mf"><button type="button" class="btn o" data-close>Batal</button><button class="btn" type="submit"><svg class="ic"><use href="#i-check"/></svg>Simpan</button></div>
@@ -103,14 +104,18 @@
     var form = document.getElementById('fZona');
     var rib = function (n) { return Number(n || 0).toLocaleString('id-ID'); };
     var num = function (s) { return Number(String(s || '').replace(/\./g, '').replace(',', '.')) || 0; };
-    function prev() { zPrev.textContent = rp(num(zRadius.value) * num(zTarif.value)); }
+    function prev() {
+      zPrev.textContent = rp(num(zRadius.value) * num(zTarif.value));
+      zGratisWrap.style.display = zTarif.value !== '' && num(zTarif.value) === 0 ? '' : 'none';
+    }
     function mode(edit, tr) {
       var e = form.querySelector('.ferr'); if (e) e.remove();
       form.action = edit ? tr.dataset.url : @json(route('admin.zona.store'));
       form.querySelector('[name=_method]').disabled = !edit;
       form.querySelector('[name=_id]').value = edit ? tr.dataset.id : '';
       zTitle.textContent = edit ? 'Ubah Zona' : 'Tambah Zona';
-      zNama.value = edit ? tr.dataset.nama : ''; zRadius.value = edit ? tr.dataset.radius : ''; zTarif.value = edit ? rib(tr.dataset.tarif) : '';
+      zNama.value = edit ? tr.dataset.nama : ''; zRadius.value = edit ? tr.dataset.radius : ''; zTarif.value = edit ? (tr.dataset.tarif === '0' ? '0' : rib(tr.dataset.tarif)) : '';
+      zGratis.checked = edit && tr.dataset.tarif === '0';
       prev(); openModal('mZona');
     }
     document.getElementById('btnAdd').addEventListener('click', function () { mode(false); });

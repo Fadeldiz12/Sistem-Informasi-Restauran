@@ -15,6 +15,11 @@ use Illuminate\Support\Str;
 #[Fillable(['id_kategori', 'nama_menu', 'harga', 'foto', 'tersedia'])]
 class Menu extends Model
 {
+    /**
+     * Harga menu tertinggi (Rp 99.999.999) supaya total pesanan tidak melebihi kapasitas kolom decimal(12,2).
+     */
+    public const HARGA_MAKS = 99_999_999;
+
     protected function casts(): array
     {
         return [

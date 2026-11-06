@@ -177,7 +177,7 @@
           <option value="{{ $k->id }}" @selected((string) old('id_kategori', $kategoriId) === (string) $k->id)>{{ $k->nama_kategori }}</option>
         @endforeach
       </select></div></div>
-      <div class="field"><label for="mnHarga">Harga</label><div class="in"><span class="suf" style="opacity:1">Rp</span><input name="harga" id="mnHarga" value="{{ old('harga') }}" inputmode="numeric" placeholder="0" required></div></div>
+      <div class="field"><label for="mnHarga">Harga</label><div class="in"><span class="suf" style="opacity:1">Rp</span><input name="harga" id="mnHarga" value="{{ old('harga') }}" inputmode="numeric" placeholder="0" required></div><small id="mnHargaInfo" style="display:block;margin-top:6px;font-size:12px;opacity:.75">Angka bulat, contoh 12.500</small></div>
       <label class="switch-row full" for="mnTersedia"><span>Tersedia untuk dipesan<small>Jika dimatikan, menu ditandai Habis dan disembunyikan dari pelanggan</small></span><span class="toggle" style="flex:none"><input type="checkbox" name="tersedia" value="1" id="mnTersedia" @checked(old('_modal') === 'mMenu' ? old('tersedia') : true)><i></i></span></label>
       <div class="field full"><label style="display:flex;justify-content:space-between;align-items:center;gap:10px">Resep per porsi<button type="button" class="btn o sm" id="rsAdd" @disabled($bahan->isEmpty())><svg class="ic" style="width:15px;height:15px"><use href="#i-plus"/></svg>Bahan</button></label>
         <div class="rs-list" id="rsList"></div>
@@ -285,7 +285,14 @@
       preview(URL.createObjectURL(f), f.name);
     });
     mnHarga.addEventListener('input', function () {
-      var d = mnHarga.value.replace(/\D/g, ''); mnHarga.value = d ? rib(d) : '';
+      var mentah = mnHarga.value, d = mentah.replace(/\D/g, '');
+      mnHarga.value = d ? rib(d) : '';
+      // koma/huruf dibuang: beri tahu supaya "12,5" tidak diam-diam menjadi Rp 125
+      var dibuang = /[^\d.\s]/.test(mentah);
+      mnHargaInfo.textContent = dibuang ? 'Hanya angka bulat yang dipakai. Tersimpan sebagai Rp ' + (d ? rib(d) : '0') + '. Contoh 12.500.'
+        : (d === '' ? 'Angka bulat, contoh 12.500' : (+d === 0 ? 'Harga harus lebih dari Rp 0.' : 'Tersimpan sebagai Rp ' + rib(d)));
+      mnHargaInfo.style.color = dibuang || (d !== '' && +d === 0) ? 'var(--m)' : '';
+      mnHargaInfo.style.fontWeight = dibuang ? '700' : '';
     });
 
     /* status tersedia langsung dari tabel */

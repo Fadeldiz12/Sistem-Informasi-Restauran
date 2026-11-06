@@ -132,6 +132,15 @@ class KasirTest extends TestCase
         $this->assertFalse($p->fresh()->isLunas());
     }
 
+    public function test_total_pesanan_terlalu_besar_ditolak_dengan_pesan(): void
+    {
+        $this->pizza->update(['harga' => Menu::HARGA_MAKS]);
+
+        $this->actingAs($this->kasir)->post('/kasir/input', ['jenis_layanan' => 'take_away', 'items' => [['id_menu' => $this->pizza->id, 'jumlah' => 99]]])
+            ->assertSessionHasErrors(['items' => 'Total pesanan terlalu besar. Kurangi jumlah porsi atau periksa harga menu.']);
+        $this->assertSame(0, Pesanan::count());
+    }
+
     public function test_pembayaran_tunai_dan_kembalian_di_struk(): void
     {
         $this->actingAs($this->kasir)->post('/kasir/input', ['jenis_layanan' => 'dine_in', 'nomor_meja' => '12', 'items' => [['id_menu' => $this->pizza->id, 'jumlah' => 1]]]);

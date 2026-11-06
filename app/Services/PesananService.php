@@ -18,6 +18,11 @@ use RuntimeException;
  */
 class PesananService
 {
+    /**
+     * Batas kolom decimal(12,2) untuk subtotal/total.
+     */
+    public const TOTAL_MAKS = 9_999_999_999.99;
+
     public function __construct(private MidtransService $midtrans) {}
 
     /**
@@ -80,6 +85,9 @@ class PesananService
             }
 
             $hasil = $this->hitung($subtotal, $zona?->ongkir() ?? 0);
+            if ($hasil['total'] > self::TOTAL_MAKS) {
+                throw ValidationException::withMessages(['items' => 'Total pesanan terlalu besar. Kurangi jumlah porsi atau periksa harga menu.']);
+            }
 
             $pesanan = Pesanan::create([
                 'id_pelanggan' => $pelanggan?->id,

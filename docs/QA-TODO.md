@@ -21,10 +21,10 @@ Satu fase = satu (atau beberapa) commit. Setiap fase selesai → saya lapor & ta
 - [x] A3-#11 Ubah satuan bahan (kg→gram) tanpa konversi → stok salah 1000×
 - [x] A3-#5 Struk: uang diterima tidak disimpan, `?tunai=` bisa dimanipulasi, tidak bisa cetak ulang
 - [x] A3-#19 Kembalian sangat besar (salah ketik nol) tanpa konfirmasi
-- [ ] A3-#23 `=` A4-#17 Harga besar → error 500 overflow kolom; "12,5" jadi 125; angka maksimal tanpa pemisah ribuan
-- [ ] A4-#3 Harga menu Rp 0 lolos
-- [ ] A4-#4 Zona: radius tumpang tindih & tarif Rp 0 lolos
-- [ ] A4-#16 Nama menu duplikat lolos
+- [x] A3-#23 `=` A4-#17 Harga besar → error 500 overflow kolom; "12,5" jadi 125; angka maksimal tanpa pemisah ribuan
+- [x] A4-#3 Harga menu Rp 0 lolos
+- [x] A4-#4 Zona: radius tumpang tindih & tarif Rp 0 lolos
+- [x] A4-#16 Nama menu duplikat lolos
 - [x] A3-#15 Bahan baku duplikat beda huruf, satuan bebas, tanggal mutasi 2001
 
 ## Fase 2 — Alur pesanan yang macet / salah (9 temuan)
