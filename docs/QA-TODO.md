@@ -28,7 +28,7 @@ Satu fase = satu (atau beberapa) commit. Setiap fase selesai → saya lapor & ta
 - [x] A3-#15 Bahan baku duplikat beda huruf, satuan bebas, tanggal mutasi 2001
 
 ## Fase 2 — Alur pesanan yang macet / salah (9 temuan)
-- [ ] **A2-#1 (High)** Pesanan tanpa metode bayar: pelanggan lihat "Menunggu Konfirmasi", kasir tidak melihatnya → menggantung selamanya
+- [x] **A2-#1 (High)** Pesanan tanpa metode bayar: pelanggan lihat "Menunggu Konfirmasi", kasir tidak melihatnya → menggantung selamanya
 - [ ] **A3-#3 (High)** Kasir tidak bisa membatalkan/mengoreksi pesanan (tiket dapur ikut batal)
 - [ ] A3-#4 `=` A2-#21 Validasi nomor meja di server (rentang 01–16, meja sedang dipakai)
 - [ ] A2-#3 Timeline: "Dimasak" sudah dicentang padahal masih dimasak

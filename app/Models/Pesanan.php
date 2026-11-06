@@ -103,6 +103,11 @@ class Pesanan extends Model
 
     public function statusLabel(): string
     {
+        // pesanan online lama yang belum memilih metode bayar tidak terlihat di antrean kasir
+        if ($this->status === self::STATUS_MENUNGGU && $this->isOnline() && ! $this->pembayaran) {
+            return 'Belum Pilih Pembayaran';
+        }
+
         return self::LABEL_STATUS[$this->status] ?? $this->status;
     }
 

@@ -85,7 +85,7 @@ class PesananPelangganTest extends TestCase
 
         $this->actingAs($this->pelanggan)->get('/checkout')->assertOk()->assertSee('Rp 145.000')->assertSee('Rp 14.500')->assertSee('Rp 7.250');
 
-        $res = $this->actingAs($this->pelanggan)->post('/checkout', ['jenis_layanan' => 'delivery', 'alamat' => 'Jl. Sei Batang Hari 27', 'id_zona' => $zonaB->id]);
+        $res = $this->actingAs($this->pelanggan)->post('/checkout', ['metode' => 'tunai', 'jenis_layanan' => 'delivery', 'alamat' => 'Jl. Sei Batang Hari 27', 'id_zona' => $zonaB->id]);
 
         $pesanan = Pesanan::firstOrFail();
         $res->assertRedirect("/pesanan/{$pesanan->id}/pembayaran");
@@ -106,11 +106,11 @@ class PesananPelangganTest extends TestCase
         $this->actingAs($this->pelanggan)->get('/checkout')->assertRedirect('/keranjang');
 
         $this->isiKeranjang();
-        $this->actingAs($this->pelanggan)->post('/checkout', ['jenis_layanan' => 'dine_in'])->assertSessionHasErrors('nomor_meja');
-        $this->actingAs($this->pelanggan)->post('/checkout', ['jenis_layanan' => 'delivery'])->assertSessionHasErrors(['alamat', 'id_zona']);
-        $this->actingAs($this->pelanggan)->post('/checkout', ['jenis_layanan' => 'antar_jemput'])->assertSessionHasErrors('jenis_layanan');
+        $this->actingAs($this->pelanggan)->post('/checkout', ['metode' => 'tunai', 'jenis_layanan' => 'dine_in'])->assertSessionHasErrors('nomor_meja');
+        $this->actingAs($this->pelanggan)->post('/checkout', ['metode' => 'tunai', 'jenis_layanan' => 'delivery'])->assertSessionHasErrors(['alamat', 'id_zona']);
+        $this->actingAs($this->pelanggan)->post('/checkout', ['metode' => 'tunai', 'jenis_layanan' => 'antar_jemput'])->assertSessionHasErrors('jenis_layanan');
 
-        $this->actingAs($this->pelanggan)->post('/checkout', ['jenis_layanan' => 'dine_in', 'nomor_meja' => '07'])->assertSessionHasNoErrors();
+        $this->actingAs($this->pelanggan)->post('/checkout', ['metode' => 'tunai', 'jenis_layanan' => 'dine_in', 'nomor_meja' => '07'])->assertSessionHasNoErrors();
         $this->assertSame(['dine_in', '07', 0.0], [Pesanan::first()->jenis_layanan, Pesanan::first()->nomor_meja, (float) Pesanan::first()->ongkir]);
     }
 
@@ -120,11 +120,11 @@ class PesananPelangganTest extends TestCase
         Carbon::setTestNow(today()->setTime(23, 0));
 
         $this->actingAs($this->pelanggan)->get('/checkout')->assertSee('Restoran sedang tutup');
-        $this->actingAs($this->pelanggan)->post('/checkout', ['jenis_layanan' => 'take_away'])->assertSessionHas('error');
+        $this->actingAs($this->pelanggan)->post('/checkout', ['metode' => 'tunai', 'jenis_layanan' => 'take_away'])->assertSessionHas('error');
         $this->assertSame(0, Pesanan::count());
 
         PengaturanSistem::aktif()->update(['jam_tutup' => '23:30']);
-        $this->actingAs($this->pelanggan)->post('/checkout', ['jenis_layanan' => 'take_away'])->assertSessionHasNoErrors();
+        $this->actingAs($this->pelanggan)->post('/checkout', ['metode' => 'tunai', 'jenis_layanan' => 'take_away'])->assertSessionHasNoErrors();
         $this->assertSame(1, Pesanan::count());
     }
 
@@ -133,7 +133,7 @@ class PesananPelangganTest extends TestCase
     private function buatPesanan(string $layanan = 'take_away'): Pesanan
     {
         $this->isiKeranjang();
-        $this->actingAs($this->pelanggan)->post('/checkout', ['jenis_layanan' => $layanan]);
+        $this->actingAs($this->pelanggan)->post('/checkout', ['metode' => 'tunai', 'jenis_layanan' => $layanan]);
 
         return Pesanan::latest('id')->firstOrFail();
     }
@@ -163,7 +163,25 @@ class PesananPelangganTest extends TestCase
         $this->actingAs($this->pelanggan)->get("/pesanan/{$p->id}/pembayaran")->assertSee('belum diaktifkan');
         $this->actingAs($this->pelanggan)->post("/pesanan/{$p->id}/pembayaran", ['metode' => 'transfer', 'bank' => 'bca'])
             ->assertSessionHasErrors('metode');
-        $this->assertNull($p->fresh()->pembayaran);
+        $this->assertSame('tunai', $p->fresh()->pembayaran->metode);
+    }
+
+    public function test_checkout_wajib_memilih_metode_pembayaran(): void
+    {
+        config(['services.midtrans.server_key' => null]);
+        $this->isiKeranjang();
+
+        $this->actingAs($this->pelanggan)->get('/checkout')->assertSee('Pilih metode pembayaran')->assertSee('belum diaktifkan');
+        $this->actingAs($this->pelanggan)->post('/checkout', ['jenis_layanan' => 'take_away'])->assertSessionHasErrors('metode');
+        // VA gagal dibuat: pesanan tidak ikut tersimpan dan keranjang tetap ada
+        $this->actingAs($this->pelanggan)->post('/checkout', ['jenis_layanan' => 'take_away', 'metode' => 'transfer', 'bank' => 'bca'])->assertSessionHasErrors('metode');
+        $this->assertSame(0, Pesanan::count());
+
+        $this->actingAs($this->pelanggan)->post('/checkout', ['jenis_layanan' => 'take_away', 'metode' => 'tunai'])->assertSessionHasNoErrors();
+        $p = Pesanan::firstOrFail();
+        $this->assertSame([Pembayaran::METODE_TUNAI, Pembayaran::STATUS_MENUNGGU], [$p->pembayaran->metode, $p->pembayaran->status_bayar]);
+        // langsung terlihat kasir untuk dikonfirmasi
+        $this->assertTrue(Pesanan::menungguKonfirmasi()->whereKey($p->id)->exists());
     }
 
     // ---------- lacak pesanan
@@ -171,16 +189,16 @@ class PesananPelangganTest extends TestCase
     public function test_tracking_menampilkan_timeline_sesuai_layanan(): void
     {
         $this->isiKeranjang();
-        $this->actingAs($this->pelanggan)->post('/checkout', ['jenis_layanan' => 'delivery', 'alamat' => 'Jl. A', 'id_zona' => ZonaPengiriman::first()->id]);
+        $this->actingAs($this->pelanggan)->post('/checkout', ['metode' => 'tunai', 'jenis_layanan' => 'delivery', 'alamat' => 'Jl. A', 'id_zona' => ZonaPengiriman::first()->id]);
         $p = Pesanan::firstOrFail();
 
         $html = $this->actingAs($this->pelanggan)->get('/tracking')->assertOk()
             ->assertSeeInOrder(['Pesanan Dibuat', 'Dikonfirmasi', 'Dimasak', 'Siap Diantar', 'Dalam Perjalanan', 'Diterima'])
-            ->assertSee('Bayar Sekarang')->getContent();
+            ->assertSee('Ubah Pembayaran')->getContent();
         $this->assertSame(1, substr_count($html, 'class="st now"'));
 
         $this->isiKeranjang();
-        $this->actingAs($this->pelanggan)->post('/checkout', ['jenis_layanan' => 'take_away']);
+        $this->actingAs($this->pelanggan)->post('/checkout', ['metode' => 'tunai', 'jenis_layanan' => 'take_away']);
         $q = Pesanan::latest('id')->first();
         $this->actingAs($this->pelanggan)->get("/tracking?pesanan={$q->id}")
             ->assertSeeInOrder(['Pesanan Dibuat', 'Dikonfirmasi', 'Dimasak', 'Siap Diambil', 'Selesai'])

@@ -118,16 +118,7 @@
     .user, .cart .txt, .topbar nav, .steps .s span:not(.n) { display: none; }
   }
 
-  .opt { position: relative; text-align: left; padding: 18px; border-radius: 0 20px 20px 20px; background: var(--cr); box-shadow: inset 0 0 0 1.5px var(--m15); margin-top: 12px; width: 100%; }
-  .opt::before { content: ''; position: absolute; left: 0; top: -12px; width: 70px; height: 13px; border-radius: 12px 12px 0 0; background: inherit; box-shadow: inset 1.5px 1.5px 0 var(--m15), inset -1.5px 0 0 var(--m15); }
-  .opt .top { display: flex; justify-content: space-between; align-items: center; }
-  .opt .ico { width: 44px; height: 44px; border-radius: 14px; background: var(--pp); display: grid; place-items: center; }
-  .opt .rad { width: 22px; height: 22px; border-radius: 50%; box-shadow: inset 0 0 0 1.8px currentColor; display: grid; place-items: center; }
-  .opt b { display: block; font: 700 17px var(--f-title); margin-top: 14px; } .opt small { font: 500 13px var(--f-body); opacity: .75; }
-  .opt.on { background: var(--m); color: var(--cr); box-shadow: none; } .opt.on::before { box-shadow: none; }
-  .opt.on .ico { background: var(--cr); color: var(--m); } .opt.on .rad::after { content: ''; width: 10px; height: 10px; border-radius: 50%; background: var(--cr); }
   .g2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
-  .panel { display: none; margin-top: 18px; } .panel.on { display: block; }
   .upl { display: flex; align-items: center; gap: 14px; padding: 16px; border-radius: 18px; border: 1.8px dashed var(--m60); }
   .upl-ic { width: 56px; height: 56px; border-radius: 14px; background: var(--bl); display: grid; place-items: center; flex: none; }
   .ovl { position: fixed; inset: 0; z-index: 100; background: rgba(40, 40, 40, .55); display: none; place-items: center; padding: 20px; }
@@ -163,11 +154,6 @@
   .modal .bot { padding: 0 28px 28px; display: grid; gap: 10px; }
   .modal .btn.blk { width: 100%; }
 
-  #pay.g3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-  .opt[disabled] { opacity: .5; cursor: not-allowed; }
-  .banks { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-  .banks button { height: 42px; min-width: 88px; padding: 0 16px; border-radius: 14px; box-shadow: inset 0 0 0 1.5px var(--m15); font: 700 14px var(--f-title); background: var(--cr); }
-  .banks button.on { box-shadow: inset 0 0 0 2px var(--m); background: var(--pp); }
   .btn[disabled] { opacity: .5; cursor: not-allowed; }
   .state { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: 16px; background: var(--pp); margin-bottom: 18px; font: 500 14px/1.5 var(--f-body); }
   .state.bad { background: var(--m); color: var(--cr); }
@@ -186,7 +172,6 @@
   .ganti summary { cursor: pointer; font: 700 14px var(--f-accent); text-decoration: underline; margin-top: 4px; list-style: none; }
   .ganti summary::-webkit-details-marker { display: none; }
   @media (max-width: 640px) {
-    #pay.g3 { grid-template-columns: 1fr; gap: 4px; }
     .qris-box img { width: 100%; height: auto; max-width: 260px; margin: 0 auto; }
   }
 </style>
@@ -261,28 +246,8 @@
 
           <form method="post" action="{{ route('pelanggan.pembayaran.store', $pesanan) }}" id="fBayar">
             @csrf
-            <input type="hidden" name="metode" id="metode" value="{{ $metode }}">
-            <input type="hidden" name="bank" id="bankIn" value="{{ $bankPilih }}">
             <div class="card-head" style="margin:14px 0 6px"><div><h2>Pilih metode pembayaran</h2><p style="font-size:13.5px;opacity:.7;margin-top:2px">Virtual Account &amp; QRIS terverifikasi otomatis</p></div></div>
-            <div class="g3" id="pay">
-              <button type="button" @class(['opt', 'on' => $metode === Pembayaran::METODE_TRANSFER]) data-p="transfer" @disabled(! $midtransAktif)><div class="top"><span class="ico"><svg class="ic"><use href="#i-card"/></svg></span><span class="rad"></span></div><b>Virtual Account</b><small>BCA, BNI, BRI, Permata</small></button>
-              <button type="button" @class(['opt', 'on' => $metode === Pembayaran::METODE_QRIS]) data-p="qris" @disabled(! $midtransAktif)><div class="top"><span class="ico"><svg class="ic"><use href="#i-qr"/></svg></span><span class="rad"></span></div><b>QRIS</b><small>Semua m-banking &amp; e-wallet</small></button>
-              <button type="button" @class(['opt', 'on' => $metode === Pembayaran::METODE_TUNAI]) data-p="tunai"><div class="top"><span class="ico"><svg class="ic"><use href="#i-cash"/></svg></span><span class="rad"></span></div><b>Tunai</b><small>{{ $pesanan->isDelivery() ? 'Bayar ke kurir / kasir' : 'Bayar di kasir' }}</small></button>
-            </div>
-            @unless ($midtransAktif)
-              <div class="note" style="margin-top:14px"><svg class="ic"><use href="#i-info"/></svg><span>Pembayaran Virtual Account &amp; QRIS belum diaktifkan. Untuk sementara gunakan tunai.</span></div>
-            @endunless
-            <div @class(['panel', 'on' => $metode === Pembayaran::METODE_TRANSFER]) data-panel="transfer">
-              <div class="eyebrow" style="font-size:10.5px">Pilih bank</div>
-              <div class="banks" id="banks">@foreach ($bank as $kode => $nama)<button type="button" data-bank="{{ $kode }}" @class(['on' => $bankPilih === $kode])>{{ $nama }}</button>@endforeach</div>
-              <div class="note" style="margin-top:14px"><svg class="ic"><use href="#i-info"/></svg><span>Nomor Virtual Account dibuat khusus untuk pesanan ini. Tidak perlu unggah bukti, pembayaran dicek otomatis.</span></div>
-            </div>
-            <div @class(['panel', 'on' => $metode === Pembayaran::METODE_QRIS]) data-panel="qris">
-              <div class="note"><svg class="ic"><use href="#i-info"/></svg><span>Kode QRIS dibuat khusus untuk pesanan ini dan bisa dibayar dari aplikasi bank atau e-wallet apa saja. Tidak perlu unggah bukti.</span></div>
-            </div>
-            <div @class(['panel', 'on' => $metode === Pembayaran::METODE_TUNAI]) data-panel="tunai">
-              <div class="note"><svg class="ic"><use href="#i-info"/></svg><span>{{ $pesanan->isDelivery() ? 'Bayar tunai ke kurir saat pesanan tiba.' : 'Bayar tunai di kasir.' }} Kasir akan mengonfirmasi pesananmu.</span></div>
-            </div>
+            @include('pelanggan.partials.metode-bayar', ['teksTunai' => $pesanan->isDelivery() ? 'Bayar tunai ke kurir saat pesanan tiba' : 'Bayar tunai di kasir'])
             <button class="btn blk" type="submit" id="kirim" style="margin-top:18px;width:100%">Lanjutkan Pembayaran <svg class="ic"><use href="#i-arr"/></svg></button>
           </form>
           @if ($menungguOtomatis)</details>@endif
@@ -316,9 +281,15 @@
   <div class="top stripes"><div class="stamp-out" style="display:inline-block"><div class="stamp" style="padding:24px 34px">
     <div class="ok"><svg class="ic" style="width:36px;height:36px;stroke-width:2.6"><use href="#i-check"/></svg></div><h3>Pesanan Dibuat!</h3></div></div></div>
   <div style="padding:22px 28px 6px"><div class="eyebrow" style="opacity:.7">Nomor pesanan</div><div class="ord">{{ $pesanan->kode() }}</div>
-    <span class="pill b" style="font-size:13px;padding:7px 14px">Menunggu Pembayaran</span>
-    <p style="font:500 14px/1.5 var(--f-body);opacity:.75;margin:14px 0 18px">Pilih metode pembayaran. Pembayaran Virtual Account &amp; QRIS dicek otomatis dan pesanan langsung diteruskan ke dapur.</p></div>
-  <div class="bot"><button class="btn blk" type="button" data-close-ovl>Bayar Sekarang <svg class="ic"><use href="#i-arr"/></svg></button><a class="btn o blk" href="{{ route('pelanggan.beranda') }}">Kembali ke Beranda</a></div>
+    @if ($tunai)
+      <span class="pill b" style="font-size:13px;padding:7px 14px">Menunggu Konfirmasi Kasir</span>
+      <p style="font:500 14px/1.5 var(--f-body);opacity:.75;margin:14px 0 18px">Pesananmu sudah dikirim ke kasir. {{ $pesanan->isDelivery() ? 'Bayar tunai ke kurir saat pesanan tiba' : 'Bayar tunai di kasir' }} sebesar <b>{{ $rp($pesanan->total) }}</b>.</p></div>
+      <div class="bot"><a class="btn blk" href="{{ route('pelanggan.tracking', ['pesanan' => $pesanan->id]) }}">Lacak Pesanan <svg class="ic"><use href="#i-arr"/></svg></a><a class="btn o blk" href="{{ route('pelanggan.beranda') }}">Kembali ke Beranda</a></div>
+    @else
+      <span class="pill b" style="font-size:13px;padding:7px 14px">Menunggu Pembayaran</span>
+      <p style="font:500 14px/1.5 var(--f-body);opacity:.75;margin:14px 0 18px">Selesaikan pembayaran {{ $bayar?->metodeLabel() }} di halaman ini. Setelah dibayar, pesanan otomatis diteruskan ke dapur.</p></div>
+      <div class="bot"><button class="btn blk" type="button" data-close-ovl>Bayar Sekarang <svg class="ic"><use href="#i-arr"/></svg></button><a class="btn o blk" href="{{ route('pelanggan.tracking', ['pesanan' => $pesanan->id]) }}">Lacak Pesanan</a></div>
+    @endif
 </div></div>
 @endif
 @endpush
@@ -330,19 +301,6 @@
       o.addEventListener('click', function (e) { if (e.target === o || e.target.closest('[data-close-ovl]')) o.classList.remove('on'); });
     });
 
-    /* pilih metode & bank */
-    var pay = document.getElementById('pay');
-    pay && pay.addEventListener('click', function (e) {
-      var b = e.target.closest('.opt'); if (!b || b.disabled) return;
-      metode.value = b.dataset.p;
-      pay.querySelectorAll('.opt').forEach(function (x) { x.classList.toggle('on', x === b); });
-      document.querySelectorAll('.panel').forEach(function (x) { x.classList.toggle('on', x.dataset.panel === b.dataset.p); });
-    });
-    var banks = document.getElementById('banks');
-    banks && banks.addEventListener('click', function (e) {
-      var b = e.target.closest('button'); if (!b) return;
-      bankIn.value = b.dataset.bank; banks.querySelectorAll('button').forEach(function (x) { x.classList.toggle('on', x === b); });
-    });
     var f = document.getElementById('fBayar');
     f && f.addEventListener('submit', function () { kirim.disabled = true; kirim.textContent = 'Memproses…'; });
 

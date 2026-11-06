@@ -174,6 +174,8 @@
   $persen = fn ($v) => \App\Models\PengaturanSistem::persen($v);
   $rp = fn ($n) => 'Rp '.number_format((float) $n, 0, ',', '.');
   $layanan = old('jenis_layanan', Pesanan::LAYANAN_DELIVERY);
+  $metode = old('metode', $midtransAktif ? \App\Models\Pembayaran::METODE_TRANSFER : \App\Models\Pembayaran::METODE_TUNAI);
+  $bankPilih = old('bank', array_key_first($bank));
   $zonaDipilih = (int) old('id_zona', $zona->first()?->id);
   $u = auth()->user();
   $prevRadius = 0;
@@ -269,10 +271,10 @@
           <div class="note" style="margin-top:14px"><svg class="ic"><use href="#i-edit"/></svg>Catatan untuk tiap menu (mis. "pedas", "es sedikit") diisi di halaman Keranjang.</div>
         </section>
 
-        <!-- 3. Pembayaran (info) -->
-        <section class="card sec soft">
-          <div class="sec-title" style="margin-bottom:12px"><span class="no" style="background:var(--bl);color:var(--m)">3</span><div><h2>Pembayaran</h2><p>Dilakukan setelah pesanan dibuat.</p></div></div>
-          <div class="note"><svg class="ic"><use href="#i-shield"/></svg><span>Setelah konfirmasi, pesanan tersimpan dengan status <b>Menunggu Pembayaran</b>. Bayar dengan Virtual Account atau QRIS (dicek otomatis, langsung masuk dapur), atau tunai di kasir.</span></div>
+        <!-- 3. Metode pembayaran -->
+        <section class="card sec">
+          <div class="sec-title" style="margin-bottom:12px"><span class="no">3</span><div><h2>Pilih metode pembayaran</h2><p>{{ $midtransAktif ? 'Virtual Account & QRIS dicek otomatis dan pesanan langsung diteruskan ke dapur.' : 'Bayar tunai saat pesanan diambil atau diantar.' }}</p></div></div>
+          @include('pelanggan.partials.metode-bayar', ['teksTunai' => $layanan === Pesanan::LAYANAN_DELIVERY ? 'Bayar tunai ke kurir saat pesanan tiba' : 'Bayar tunai di kasir'])
         </section>
       </div>
 
@@ -315,6 +317,8 @@
       ongRow.style.display = s === 'delivery' ? '' : 'none';
       ongZone.textContent = z ? z.dataset.nama : '-'; ongVal.textContent = rp(ong);
       grand.textContent = rp(dasar + ong); svcBadge.textContent = label[s];
+      var t = s === 'delivery' ? 'Bayar tunai ke kurir saat pesanan tiba' : 'Bayar tunai di kasir';
+      tunaiSub.textContent = t; tunaiInfo.textContent = t + '.';
     }
     document.querySelectorAll('.svc-opt').forEach(function (b) {
       b.addEventListener('click', function () {

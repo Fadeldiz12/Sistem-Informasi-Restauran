@@ -8,6 +8,7 @@ use App\Models\Pesanan;
 use App\Models\TiketDapur;
 use App\Models\User;
 use App\Models\ZonaPengiriman;
+use App\Services\PesananService;
 use Database\Seeders\MasterDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -37,15 +38,16 @@ class KasirTest extends TestCase
 
     private function pesananOnline(string $layanan = 'take_away', ?string $metode = 'tunai'): Pesanan
     {
-        $this->actingAs($this->pelanggan)->postJson('/keranjang', ['id_menu' => $this->pizza->id]);
         $data = ['jenis_layanan' => $layanan] + ($layanan === 'delivery' ? ['alamat' => 'Jl. Karya 8', 'id_zona' => ZonaPengiriman::first()->id] : []);
-        $this->actingAs($this->pelanggan)->post('/checkout', $data);
-        $p = Pesanan::latest('id')->firstOrFail();
-        if ($metode) {
-            $this->actingAs($this->pelanggan)->post("/pesanan/{$p->id}/pembayaran", ['metode' => $metode]);
+        if (! $metode) {
+            // pesanan lama (sebelum metode bayar wajib dipilih di checkout)
+            return app(PesananService::class)->buat([['id_menu' => $this->pizza->id, 'jumlah' => 1]], $layanan, $this->pelanggan, data: $data);
         }
 
-        return $p->fresh();
+        $this->actingAs($this->pelanggan)->postJson('/keranjang', ['id_menu' => $this->pizza->id]);
+        $this->actingAs($this->pelanggan)->post('/checkout', $data + ['metode' => $metode])->assertSessionHasNoErrors();
+
+        return Pesanan::latest('id')->firstOrFail();
     }
 
     public function test_halaman_kasir_tampil_dan_role_lain_ditolak(): void
