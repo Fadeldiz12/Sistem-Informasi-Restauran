@@ -69,6 +69,7 @@ class PengeluaranController extends Controller
         ], [
             'tanggal.before_or_equal' => 'Tanggal pengeluaran tidak boleh di masa depan.',
             'nominal.max' => 'Nominal maksimal Rp 9.999.999.999.',
+            'tanggal.date_format' => 'Format tanggal tidak valid. Pilih tanggal dari kalender.',
         ]);
     }
 }

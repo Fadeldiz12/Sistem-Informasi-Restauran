@@ -33,9 +33,11 @@
   .catrow a.cat.on { background: var(--m); color: var(--cr); }
   .catrow a.cat.on b { opacity: .85; }
   .navno { display: inline-grid; place-items: center; height: 20px; padding: 0 7px; border-radius: 999px; background: var(--bl); color: var(--m); font: 700 10.5px var(--f-accent); letter-spacing: .04em; }
-  .catrow .kact { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); display: none; gap: 4px; }
+  /* tombol ubah/hapus kategori selalu terlihat (redup), jelas saat diarahkan (QA A4-#15) */
+  .catrow .kact { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); display: flex; gap: 4px; opacity: .45; transition: opacity .15s; }
   .catrow .kact .ab { width: 30px; height: 30px; }
-  .catrow:hover .kact, .catrow:focus-within .kact { display: flex; }
+  .catrow:hover .kact, .catrow:focus-within .kact { opacity: 1; }
+  .catrow a.cat { padding-right: 84px !important; }
   .catrow:hover a.cat .meta, .catrow:focus-within a.cat .meta { visibility: hidden; }
   @media (hover: none) { .catrow .kact { display: flex; } .catrow a.cat .meta { visibility: hidden; } }
   .navlist { display: grid; gap: 6px; margin-top: 4px; }

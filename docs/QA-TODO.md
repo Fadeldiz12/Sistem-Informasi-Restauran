@@ -88,16 +88,16 @@ Satu fase = satu (atau beberapa) commit. Setiap fase selesai → saya lapor & ta
 - [x] A3-#18 Qty input kasir tidak bisa diketik, tombol kecil, maksimal 99 diam
 - [x] A3-#20 Koneksi putus saat Simpan → keranjang kasir hilang
 - [x] A3-#21 Nama bahan sangat panjang mendorong kolom aksi keluar
-- [ ] A4-#6 Laporan owner di HP: kolom Laba terpotong
-- [ ] A4-#10 Toast peringatan kurir pakai ikon ✓
-- [ ] A4-#11 Upload bukti: file bukan gambar diterima di pratinjau
-- [ ] A4-#12 Nominal tagih tunai tidak jelas termasuk ongkir
-- [ ] A4-#13 `=` A1-#16 Logout tanpa konfirmasi (kurir/pelanggan), tanpa pesan "Anda sudah keluar"
-- [ ] A4-#15 Tombol ubah/hapus kategori hanya muncul saat hover
-- [ ] A4-#20 Label sidebar "Pengeluaran Operasiona" terpotong
-- [ ] A4-#21 Singkatan "M" vs "jt", "RUGI −Rp"
-- [ ] A4-#22 Pesan "berformat Y-m-d"
-- [ ] A4-#24 Status kurir "Diterima" sudah terpilih otomatis
+- [x] A4-#6 Laporan owner di HP: kolom Laba terpotong
+- [x] A4-#10 Toast peringatan kurir pakai ikon ✓
+- [x] A4-#11 Upload bukti: file bukan gambar diterima di pratinjau
+- [x] A4-#12 Nominal tagih tunai tidak jelas termasuk ongkir
+- [x] A4-#13 `=` A1-#16 Logout tanpa konfirmasi (kurir/pelanggan), tanpa pesan "Anda sudah keluar"
+- [x] A4-#15 Tombol ubah/hapus kategori hanya muncul saat hover
+- [x] A4-#20 Label sidebar "Pengeluaran Operasiona" terpotong
+- [x] A4-#21 Singkatan "M" vs "jt", "RUGI −Rp"
+- [x] A4-#22 Pesan "berformat Y-m-d"
+- [x] A4-#24 Status kurir "Diterima" sudah terpilih otomatis
 
 ## Fase 6 — Bahasa, istilah & kesan pertama (9 temuan)
 - [ ] A1-#18 `=` A2-#18 `=` A3-#10 `=` A3-#22 `=` A4-#7 `=` A4-#14 `=` A4-#23 Glosarium & sapu istilah: FIFO, ROP, Navbar, Logout/Keluar, OTP, Dine In/Take Away, "Selesai" makna ganda, ORD vs T-xxxx

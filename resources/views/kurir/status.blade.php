@@ -22,13 +22,14 @@
         <a class="btn o sm" href="https://www.google.com/maps/search/?api=1&query={{ urlencode($kirim->alamat) }}" target="_blank" rel="noopener"><svg class="ic" style="width:15px;height:15px"><use href="#i-nav"/></svg>Maps</a></div></div></div>
 
     <form method="post" action="{{ route('kurir.tugas.diterima', $kirim) }}" enctype="multipart/form-data" id="fStatus">@csrf
-      <div class="eyebrow" style="margin:20px 0 4px">Pilih status pengiriman</div>
+      <div class="eyebrow" style="margin:20px 0 4px">Sudah sampai? Pilih Diterima lalu unggah bukti</div>
+      @php $pilihTerima = old('uang_diterima') !== null || $errors->any(); @endphp
       <div id="opts">
-        <button type="button" class="opt" data-s="jalan"><span class="rad"></span><div><b style="font:700 15px var(--f-title)">Dalam Perjalanan</b><div style="font-size:12px;opacity:.75">Pesanan sedang menuju pelanggan · sejak {{ $kirim->updated_at->format('H:i') }}</div></div><span class="pill b now" style="font-size:10px">Saat ini</span></button>
-        <button type="button" class="opt on" data-s="terima"><span class="rad"></span><div><b style="font:700 15px var(--f-title)">Diterima</b><div style="font-size:12px;opacity:.8">Wajib unggah foto bukti pengiriman</div></div></button>
+        <button type="button" @class(['opt', 'on' => ! $pilihTerima]) data-s="jalan"><span class="rad"></span><div><b style="font:700 15px var(--f-title)">Dalam Perjalanan</b><div style="font-size:12px;opacity:.75">Pesanan sedang menuju pelanggan · sejak {{ ($kirim->berangkat_pada ?? $kirim->updated_at)->format('H:i') }}</div></div><span class="pill b now" style="font-size:10px">Saat ini</span></button>
+        <button type="button" @class(['opt', 'on' => $pilihTerima]) data-s="terima"><span class="rad"></span><div><b style="font:700 15px var(--f-title)">Diterima pelanggan</b><div style="font-size:12px;opacity:.8">Wajib unggah foto bukti pengiriman</div></div></button>
       </div>
 
-      <div class="need on" id="need">
+      <div @class(['need', 'on' => $pilihTerima]) id="need">
         <div class="field" style="margin-top:16px"><label for="bukti">Foto bukti pengiriman</label>
           <label class="drop" for="bukti" id="dropBox" style="flex-direction:column;text-align:center;padding:20px"><svg class="ic" style="width:28px;height:28px"><use href="#i-image"/></svg><b style="font:600 14px var(--f-title)">Ambil / unggah foto</b><span style="font-size:12px;opacity:.7">JPG / PNG · foto dari kamera otomatis dikecilkan</span></label>
           <input type="file" name="bukti" id="bukti" accept="image/jpeg,image/png,image/webp" hidden>
@@ -72,9 +73,11 @@
     }
     input.addEventListener('change', function () {
       var f = input.files[0]; if (!f) return;
+      // file bukan gambar (mis. dokumen dari menu File) langsung ditolak (QA A4-#11)
+      if (!/^image\//.test(f.type)) { toast('File ini bukan foto. Pilih foto JPG atau PNG.', 'warn'); input.value = ''; return; }
       kecilkan(f).then(function (hasil) {
         if (hasil !== f && window.DataTransfer) { try { var dt = new DataTransfer(); dt.items.add(hasil); input.files = dt.files; } catch (e) { hasil = f; } }
-        if (hasil.size > 5 * 1048576) { toast('Ukuran foto maksimal 5 MB'); input.value = ''; return; }
+        if (hasil.size > 5 * 1048576) { toast('Ukuran foto maksimal 5 MB', 'warn'); input.value = ''; return; }
         tampil(hasil);
       });
     });
@@ -84,11 +87,12 @@
       opts.querySelectorAll('.opt').forEach(function (x) { x.classList.toggle('on', x === b); });
       need.classList.toggle('on', b.dataset.s === 'terima');
     });
+    function sorot(el) { el.classList.remove('perlu'); void el.offsetWidth; el.classList.add('perlu'); el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
     form.addEventListener('submit', function (e) {
-      if (!need.classList.contains('on')) { e.preventDefault(); toast('Status tetap Dalam Perjalanan'); return; }
-      if (!siap) { e.preventDefault(); toast('Unggah foto bukti pengiriman dulu'); return; }
+      if (!need.classList.contains('on')) { e.preventDefault(); toast('Pilih "Diterima pelanggan" bila pesanan sudah sampai', 'warn'); sorot(opts); return; }
+      if (!siap) { e.preventDefault(); toast('Unggah foto bukti pengiriman dulu', 'warn'); sorot(dropBox); return; }
       var u = document.getElementById('uang');
-      if (u && !u.checked) { e.preventDefault(); toast('Centang konfirmasi uang tunai sudah diterima'); }
+      if (u && !u.checked) { e.preventDefault(); toast('Centang konfirmasi uang tunai sudah diterima', 'warn'); sorot(u.closest('.cek')); }
     });
   })();
 </script>

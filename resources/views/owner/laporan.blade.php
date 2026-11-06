@@ -30,6 +30,17 @@
     .unduh { width: 100%; } .unduh .btn { flex: 1; }
     .tbl-lap td, .tbl-lap th { padding-left: 6px; padding-right: 6px; font-size: 12.5px; }
   }
+  /* HP: tiap tanggal jadi kartu supaya kolom Laba tidak terpotong (QA A4-#6) */
+  @media (max-width: 760px) {
+    .tbl-lap thead { display: none; }
+    .tbl-lap, .tbl-lap tbody { display: block; }
+    .tbl-lap tr { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px 10px; padding: 12px 0; border-bottom: 1px solid var(--m15); }
+    .tbl-lap tr td { display: block; padding: 0 !important; border: none !important; text-align: left !important; }
+    .tbl-lap tr td:first-child { grid-column: 1 / -1; }
+    .tbl-lap tr td[data-label]::before { content: attr(data-label); display: block; font: 800 10px var(--f-accent); letter-spacing: .1em; text-transform: uppercase; opacity: .6; }
+    .tbl-lap tr.total { padding: 12px 14px; border-radius: 14px; background: var(--m); color: var(--cr); }
+    .tbl-lap tr.total td { background: none !important; border-radius: 0 !important; }
+  }
 </style>
 @endpush
 
@@ -51,7 +62,7 @@
   <div class="grid g3" style="margin-top:18px">
     <div class="card stat f"><div class="top"><span class="eyebrow">Total pendapatan</span><span class="ico"><svg class="ic"><use href="#i-cash"/></svg></span></div><div class="v">{{ \App\Services\LaporanService::ringkas($pendapatan) }}</div><div class="t">Dari pembayaran berstatus Lunas</div></div>
     <div class="card stat b"><div class="top"><span class="eyebrow">Total pengeluaran</span><span class="ico"><svg class="ic"><use href="#i-wallet"/></svg></span></div><div class="v">{{ \App\Services\LaporanService::ringkas($pengeluaran) }}</div><div class="t">Pengeluaran operasional</div></div>
-    <div class="stamp-out"><div class="stamp" style="padding:22px;height:100%"><div style="display:flex;justify-content:space-between"><span class="eyebrow">{{ $laba < 0 ? 'Rugi' : 'Laba' }}</span><svg class="ic"><use href="#i-chart"/></svg></div><div style="font:700 clamp(24px,2.2vw,32px) var(--f-title);margin:12px 0 6px">{{ \App\Services\LaporanService::ringkas($laba) }}</div><div style="font-size:12.5px;opacity:.72">Pendapatan − pengeluaran</div></div></div>
+    <div class="stamp-out"><div class="stamp" style="padding:22px;height:100%"><div style="display:flex;justify-content:space-between"><span class="eyebrow">{{ $laba < 0 ? 'Rugi' : 'Laba' }}</span><svg class="ic"><use href="#i-chart"/></svg></div><div style="font:700 clamp(24px,2.2vw,32px) var(--f-title);margin:12px 0 6px">{{ \App\Services\LaporanService::ringkas(abs($laba)) }}</div><div style="font-size:12.5px;opacity:.72">Pendapatan − pengeluaran</div></div></div>
   </div>
 
   <div class="card" style="margin-top:18px"><div class="card-head"><div><h2>Laporan Keuangan · {{ $judulPeriode }}</h2><p>Rincian per tanggal · {{ $baris->count() }} hari</p></div>
@@ -63,9 +74,9 @@
     @else
       <div class="tbl-wrap"><table class="tbl-lap"><thead><tr><th>Tanggal</th><th>Pendapatan</th><th>Pengeluaran</th><th>Laba</th></tr></thead><tbody>
         @foreach ($baris as $b)
-          <tr @class(['nol' => ! $b['pendapatan'] && ! $b['pengeluaran']])><td><b>{{ $b['tanggal']->translatedFormat('d M Y') }}</b></td><td>{{ $rp($b['pendapatan']) }}</td><td>{{ $rp($b['pengeluaran']) }}</td><td><b @class(['rugi' => $b['laba'] < 0])>{{ $rp($b['laba']) }}</b></td></tr>
+          <tr @class(['nol' => ! $b['pendapatan'] && ! $b['pengeluaran']])><td><b>{{ $b['tanggal']->translatedFormat('d M Y') }}</b></td><td data-label="Pendapatan">{{ $rp($b['pendapatan']) }}</td><td data-label="Pengeluaran">{{ $rp($b['pengeluaran']) }}</td><td data-label="{{ $b['laba'] < 0 ? 'Rugi' : 'Laba' }}"><b @class(['rugi' => $b['laba'] < 0])>{{ $rp($b['laba']) }}</b></td></tr>
         @endforeach
-        <tr class="total"><td>TOTAL</td><td>{{ $rp($pendapatan) }}</td><td>{{ $rp($pengeluaran) }}</td><td @class(['rugi' => $laba < 0])>{{ $rp($laba) }}</td></tr>
+        <tr class="total"><td>TOTAL</td><td data-label="Pendapatan">{{ $rp($pendapatan) }}</td><td data-label="Pengeluaran">{{ $rp($pengeluaran) }}</td><td data-label="{{ $laba < 0 ? 'Rugi' : 'Laba' }}" @class(['rugi' => $laba < 0])>{{ $rp($laba) }}</td></tr>
       </tbody></table></div>
     @endif
     <div class="note" style="margin-top:14px"><svg class="ic"><use href="#i-info"/></svg><span>Pendapatan dihitung dari pembayaran berstatus Lunas pada tanggal pembayaran (pesanan yang dibatalkan tidak dihitung). Pengeluaran diambil dari menu Pengeluaran Operasional.</span></div>

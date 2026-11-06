@@ -170,4 +170,11 @@ class AuthTest extends TestCase
         $this->get('/registrasi')->assertOk()->assertSee(route('syarat'))->assertDontSee('name="setuju" value="1" required checked', false);
         $this->get('/syarat-ketentuan')->assertOk()->assertSee('Syarat &amp; Ketentuan', false)->assertSee('Pembatalan');
     }
+
+    public function test_logout_memberi_pesan_sudah_keluar(): void
+    {
+        $u = User::factory()->create();
+        $this->actingAs($u)->post('/logout')->assertRedirect('/login');
+        $this->get('/login')->assertSee('Anda sudah keluar.');
+    }
 }

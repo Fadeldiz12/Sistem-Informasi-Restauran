@@ -158,7 +158,7 @@ class LaporanService
         $n = abs($n);
 
         return $tanda.match (true) {
-            $n >= 1e9 => 'Rp '.$f($n / 1e9).' M',
+            $n >= 1e9 => 'Rp '.$f($n / 1e9).' miliar',
             $n >= 1e6 => 'Rp '.$f($n / 1e6).' jt',
             default => 'Rp '.number_format($n, 0, ',', '.'),
         };

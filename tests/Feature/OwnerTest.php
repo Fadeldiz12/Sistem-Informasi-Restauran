@@ -6,6 +6,7 @@ use App\Models\Menu;
 use App\Models\Pengeluaran;
 use App\Models\Pesanan;
 use App\Models\User;
+use App\Services\LaporanService;
 use App\Services\PesananService;
 use Database\Seeders\MasterDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -150,5 +151,13 @@ class OwnerTest extends TestCase
 
         $this->actingAs($this->owner)->delete("/owner/pengeluaran/{$p->id}")->assertSessionHasNoErrors();
         $this->assertSame(0, Pengeluaran::count());
+    }
+
+    public function test_pesan_format_tanggal_dan_singkatan_miliar(): void
+    {
+        $this->actingAs($this->owner)->from('/owner/laporan')->get('/owner/laporan?dari=06/11/2026&sampai=abc')
+            ->assertSessionHasErrors(['dari' => 'Format tanggal tidak valid. Pilih tanggal dari kalender.']);
+        $this->assertSame('Rp 1,5 miliar', LaporanService::ringkas(1_500_000_000));
+        $this->assertSame('Rp 18,02 jt', LaporanService::ringkas(18_020_000));
     }
 }

@@ -2,7 +2,7 @@
   $nav = [
     ['owner.dashboard', 'i-chart', 'Dashboard Penjualan', 'Dashboard'],
     ['owner.laporan', 'i-file', 'Laporan Keuangan', 'Laporan'],
-    ['owner.pengeluaran', 'i-wallet', 'Pengeluaran Operasional', 'Pengeluaran'],
+    ['owner.pengeluaran', 'i-wallet', 'Pengeluaran', 'Pengeluaran'],
     ['owner.pengguna', 'i-users', 'Pengguna & Role', 'Pengguna'],
   ];
 @endphp

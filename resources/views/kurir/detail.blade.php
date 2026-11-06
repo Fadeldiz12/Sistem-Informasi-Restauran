@@ -22,11 +22,11 @@
     <a class="btn o sm" style="width:100%;margin-top:12px" href="https://www.google.com/maps/search/?api=1&query={{ urlencode($kirim->alamat) }}" target="_blank" rel="noopener"><svg class="ic" style="width:15px;height:15px"><use href="#i-nav"/></svg>Buka di Maps</a></div>
 
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
-    <div class="card b" style="padding:14px"><div class="eyebrow" style="font-size:9.5px">Ongkos kirim</div><div style="font:700 20px var(--f-title);margin-top:2px">{{ $rp($p->ongkir) }}</div><div style="font-size:11.5px;opacity:.75">{{ $kirim->zona?->nama_zona }} · {{ $km }} km</div></div>
+    <div class="card b" style="padding:14px"><div class="eyebrow" style="font-size:9.5px">Ongkos kirim</div><div style="font:700 20px var(--f-title);margin-top:2px">{{ $rp($p->ongkir) }}</div><div style="font-size:11.5px;opacity:.75">{{ $kirim->zona?->nama_zona }} · {{ $km }} km · sudah di dalam total</div></div>
     @if ($p->isLunas())
       <div class="card f" style="padding:14px"><div class="eyebrow" style="font-size:9.5px">Pembayaran</div><div style="font:700 20px var(--f-title);margin-top:2px">Lunas</div><div style="font-size:11.5px;opacity:.8">{{ $p->pembayaran->metodeLabel() }}</div></div>
     @else
-      <div class="card f" style="padding:14px"><div class="eyebrow" style="font-size:9.5px">Tagih tunai</div><div style="font:700 20px var(--f-title);margin-top:2px">{{ $rp($p->total) }}</div><div style="font-size:11.5px;opacity:.8">Bayar di tempat</div></div>
+      <div class="card f" style="padding:14px"><div class="eyebrow" style="font-size:9.5px">Total ditagih</div><div style="font:700 20px var(--f-title);margin-top:2px">{{ $rp($p->total) }}</div><div style="font-size:11.5px;opacity:.8">Bayar di tempat · sudah termasuk ongkir</div></div>
     @endif
   </div>
 

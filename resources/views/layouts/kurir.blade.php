@@ -44,7 +44,14 @@
 </nav>
 <div class="toast" id="toast"><svg class="ic"><use href="#i-check"/></svg><span id="toastMsg"></span></div>
 <script>
-  function toast(m) { var t = document.getElementById('toast'); document.getElementById('toastMsg').textContent = m; t.classList.add('on'); clearTimeout(window._t); window._t = setTimeout(function () { t.classList.remove('on'); }, 2800); }
+  // toast(m) untuk sukses, toast(m, 'warn') untuk peringatan (ikon tanda seru, warna berbeda, tampil lebih lama)
+  function toast(m, jenis) {
+    var t = document.getElementById('toast'), warn = jenis === 'warn';
+    document.getElementById('toastMsg').textContent = m;
+    t.querySelector('use').setAttribute('href', warn ? '#i-alert' : '#i-check');
+    t.classList.toggle('warn', warn); t.classList.add('on');
+    clearTimeout(window._t); window._t = setTimeout(function () { t.classList.remove('on'); }, warn ? 4200 : 2800);
+  }
   @if (session('status')) toast(@json(session('status'))); @endif
   // tombol kirim form: cegah klik ganda
   document.addEventListener('submit', function (e) { var b = e.target.querySelector('button[type=submit]'); if (b && !e.defaultPrevented) setTimeout(function () { b.disabled = true; }, 0); });

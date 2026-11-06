@@ -206,3 +206,8 @@ html { background: var(--cr); }
 .field label.drop { display: flex; font: 400 14px/1.45 var(--f-body); letter-spacing: 0; text-transform: none; margin-bottom: 0; }
 .toast { bottom: calc(86px + env(safe-area-inset-bottom)); width: max-content; max-width: calc(100% - 32px); border-radius: 18px; line-height: 1.4; }
 .tabbar a > span { display: block; height: 21px; }
+
+/* toast peringatan & isian yang perlu dilengkapi (QA A4-#10) */
+.toast.warn { background: var(--cr); color: var(--m); box-shadow: 0 0 0 2px var(--m), 0 12px 28px rgba(40, 40, 40, .2); }
+.perlu { outline: 2.5px solid var(--m); outline-offset: 3px; border-radius: 18px; animation: perlu .5s ease 2; }
+@keyframes perlu { 50% { outline-color: transparent; } }

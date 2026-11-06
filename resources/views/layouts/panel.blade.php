@@ -51,7 +51,7 @@
   <div class="big-ic" style="background:var(--bl)"><svg class="ic"><use href="#i-logout"/></svg></div>
   <h3 style="font:700 24px var(--f-title)">Logout dari sistem?</h3>
   <p style="opacity:.75;margin:10px 28px 22px">Sesi login akan dihapus dan Anda diarahkan kembali ke halaman login.</p>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 28px 28px"><button class="btn o lg" data-close>Batal</button><a class="btn lg" href="#" data-logout>Ya, Logout</a></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 28px 28px"><button class="btn o lg" data-close>Batal</button><a class="btn lg" href="#" data-logout data-langsung>Ya, Keluar</a></div>
 </div></div>
 <div class="ovl" id="mKonfirmasi"><div class="modal sm">
   <div class="big-ic" style="background:var(--bl)"><svg class="ic"><use href="#i-alert"/></svg></div>
