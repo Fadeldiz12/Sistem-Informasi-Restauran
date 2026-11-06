@@ -14,6 +14,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class CheckoutController extends Controller
@@ -71,7 +72,10 @@ class CheckoutController extends Controller
             'jenis_layanan' => ['required', Rule::in(array_keys(Pesanan::LABEL_LAYANAN))],
             'nomor_meja' => ['required_if:jenis_layanan,'.Pesanan::LAYANAN_DINE_IN, 'nullable', 'string', 'max:10'],
             'alamat' => ['required_if:jenis_layanan,'.Pesanan::LAYANAN_DELIVERY, 'nullable', 'string', 'max:500'],
-            'id_zona' => ['required_if:jenis_layanan,'.Pesanan::LAYANAN_DELIVERY, 'nullable', 'integer', 'exists:zona_pengiriman,id'],
+            // titik antar dari peta; zona & ongkir dihitung server dari jarak ke restoran
+            'lat' => ['required_if:jenis_layanan,'.Pesanan::LAYANAN_DELIVERY, 'nullable', 'numeric', 'between:-90,90'],
+            'lng' => ['required_if:jenis_layanan,'.Pesanan::LAYANAN_DELIVERY, 'nullable', 'numeric', 'between:-180,180'],
+            'patokan' => ['nullable', 'string', 'max:255'],
             'metode' => ['required', Rule::in(array_keys(Pembayaran::LABEL_METODE))],
             'bank' => ['nullable', 'required_if:metode,'.Pembayaran::METODE_TRANSFER, Rule::in(array_keys(MidtransService::BANK))],
         ], [
@@ -80,13 +84,18 @@ class CheckoutController extends Controller
             'bank.required_if' => 'Pilih bank untuk Virtual Account.',
             'nomor_meja.required_if' => 'Isi nomor meja untuk Dine In.',
             'alamat.required_if' => 'Isi alamat pengiriman untuk Delivery.',
-            'id_zona.required_if' => 'Pilih zona pengiriman untuk Delivery.',
+            'lat.required_if' => 'Tentukan titik pengantaran di peta (pakai lokasi saya, cari alamat, atau geser pin).',
+            'lng.required_if' => 'Tentukan titik pengantaran di peta (pakai lokasi saya, cari alamat, atau geser pin).',
         ]);
 
         $set = PengaturanSistem::aktif();
         if (! $set->sedangBuka()) {
             // banner "Restoran sedang tutup" sudah tampil di halaman checkout; tidak perlu pesan kedua
             return back()->withInput()->with('tutup', true);
+        }
+
+        if ($data['jenis_layanan'] === Pesanan::LAYANAN_DELIVERY) {
+            $data += $this->zonaDariTitik($set, (float) $data['lat'], (float) $data['lng']);
         }
 
         $items = $this->keranjang->items();
@@ -123,5 +132,29 @@ class CheckoutController extends Controller
     private function pesanDibuang(array $dibuang): string
     {
         return collect($dibuang)->join(', ', ' dan ').' sedang habis dan sudah dihapus dari keranjang.';
+    }
+
+    /**
+     * Zona pengiriman dari jarak titik antar ke restoran. Di luar zona terjauh → ditolak.
+     *
+     * @return array{id_zona: int, jarak_km: float}
+     */
+    private function zonaDariTitik(PengaturanSistem $set, float $lat, float $lng): array
+    {
+        $jarak = $set->jarakKm($lat, $lng);
+        $zona = ZonaPengiriman::untukJarak($jarak);
+        if (! $zona) {
+            $maks = (float) ZonaPengiriman::max('radius_km');
+            throw ValidationException::withMessages([
+                'lat' => 'Titik pengantaran '.self::km($jarak).' km dari restoran, di luar jangkauan Delivery (maksimal '.self::km($maks).' km). Silakan pilih Take Away.',
+            ]);
+        }
+
+        return ['id_zona' => $zona->id, 'jarak_km' => $jarak];
+    }
+
+    private static function km(float $n): string
+    {
+        return rtrim(rtrim(number_format($n, 1, ',', '.'), '0'), ',');
     }
 }

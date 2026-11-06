@@ -178,7 +178,8 @@
   .track > * { position: relative; }
   .track h2 { font: 700 clamp(28px, 2.6vw, 40px) / 1.12 var(--f-title); margin: 14px 0 12px; }
   .track p { opacity: .85; max-width: 440px; }
-  .steps { display: grid; grid-template-columns: repeat(5, 1fr); margin-top: 18px; }
+  /* jumlah kolom mengikuti jumlah langkah (5 untuk Dine In/Take Away, 6 untuk Delivery) supaya selalu satu baris */
+  .steps { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); margin-top: 18px; }
   .step { position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; font: 700 12px / 1.3 var(--f-accent); }
   .step::before { content: ''; position: absolute; top: 15px; left: -50%; width: 100%; height: 2.5px; background: var(--m15); z-index: 0; }
   .step:first-child::before { display: none; }
@@ -187,6 +188,7 @@
   .step.done .dot { background: var(--m); color: var(--cr); box-shadow: none; }
   .step.now .dot { background: var(--bl); box-shadow: 0 0 0 6px rgba(178, 194, 210, .5), inset 0 0 0 1.8px var(--m); }
   .step small { display: block; font: 500 11px var(--f-body); opacity: .65; }
+  @media (max-width: 520px) { .step { font-size: 10.5px; gap: 6px; } .step .dot { width: 26px; height: 26px; } .step::before { top: 12px; } }
   .order-mini { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
   .order-mini b { font: 700 20px var(--f-title); display: block; margin-top: 2px; }
 
@@ -484,7 +486,7 @@
 <script src="{{ asset('js/pelanggan.js') }}?v={{ filemtime(public_path('js/pelanggan.js')) }}"></script>
 @php
   $infoZona = $ongkirMin !== null
-      ? '<span class="pill b">Ongkir mulai Rp '.number_format($ongkirMin, 0, ',', '.').'</span><span>Pilih zona saat checkout</span>'
+      ? '<span class="pill b">Ongkir mulai Rp '.number_format($ongkirMin, 0, ',', '.').'</span><span>Sesuai titik di peta</span>'
       : '<span class="pill b">Delivery belum tersedia</span>';
 @endphp
 <script>
@@ -492,10 +494,10 @@
   const modes = {
     delivery:  { lbl: 'Kirim ke', val: @json(auth()->user()->alamat ?? ''), icon: '#i-pin',
                  zone: @json($infoZona) },
-    take_away: { lbl: 'Ambil di kasir', val: 'Secepatnya setelah pesanan siap', icon: '#i-clock',
-                 zone: '<span class="pill b">Tanpa ongkir</span><span>Siap ± 20 menit setelah dikonfirmasi kasir</span>' },
-    dine_in:   { lbl: 'Nomor meja', val: 'Pilih nomor meja saat checkout', icon: '#i-dine',
-                 zone: '<span class="pill b">Makan di restoran</span><span>Masuk antrean dapur setelah dikonfirmasi kasir</span>' }
+    take_away: { lbl: 'Ambil di kasir', val: 'Setelah pesanan siap', icon: '#i-clock',
+                 zone: '<span class="pill b">Tanpa ongkir</span><span>Siap ± 20 menit</span>' },
+    dine_in:   { lbl: 'Nomor meja', val: 'Pilih di checkout', icon: '#i-dine',
+                 zone: '<span class="pill b">Makan di restoran</span><span>Dikonfirmasi kasir dulu</span>' }
   };
   // pilihan layanan disimpan (cookie) supaya ikut terpilih di checkout
   function pilihLayanan(mode) {

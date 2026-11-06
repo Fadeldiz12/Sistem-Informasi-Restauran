@@ -137,6 +137,10 @@ Route::middleware(['auth', 'role:'.User::ROLE_KASIR])->prefix('kasir')->name('ka
     Route::get('/pesanan/{pesanan}/struk', [Kasir\PembayaranController::class, 'struk'])->name('struk');
     Route::post('/pesanan/{pesanan}/selesai', [Kasir\PembayaranController::class, 'selesai'])->name('selesai');
 
+    Route::get('/tutup-hari', [Kasir\TutupHariController::class, 'index'])->name('eod');
+    Route::post('/tutup-hari', [Kasir\TutupHariController::class, 'store'])->name('eod.store');
+    Route::get('/tutup-hari/{tutup}/cetak', [Kasir\TutupHariController::class, 'cetak'])->name('eod.cetak');
+
     Route::get('/setoran', [Kasir\SetoranController::class, 'index'])->name('setoran');
     Route::post('/setoran/{kurir}', [Kasir\SetoranController::class, 'terima'])->name('setoran.terima');
 });

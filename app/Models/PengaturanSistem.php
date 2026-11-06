@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
 #[Table('pengaturan_sistem')]
-#[Fillable(['pajak', 'biaya_layanan', 'jam_buka', 'jam_tutup'])]
+#[Fillable(['pajak', 'biaya_layanan', 'jam_buka', 'jam_tutup', 'lat_resto', 'lng_resto'])]
 class PengaturanSistem extends Model
 {
     protected function casts(): array
@@ -86,6 +86,30 @@ class PengaturanSistem extends Model
             'biaya_layanan' => 0,
             'jam_buka' => '10:00',
             'jam_tutup' => '22:00',
+            'lat_resto' => self::LAT_AWAL,
+            'lng_resto' => self::LNG_AWAL,
         ]);
+    }
+
+    /**
+     * Titik awal restoran (Jl. Gatot Subroto, Medan) bila admin belum menentukan titiknya di peta.
+     */
+    public const LAT_AWAL = 3.5905;
+
+    public const LNG_AWAL = 98.6437;
+
+    /**
+     * Jarak garis lurus (km) dari restoran ke sebuah titik, rumus haversine.
+     */
+    public function jarakKm(float $lat, float $lng): float
+    {
+        $lat0 = deg2rad((float) ($this->lat_resto ?? self::LAT_AWAL));
+        $lng0 = deg2rad((float) ($this->lng_resto ?? self::LNG_AWAL));
+        $lat1 = deg2rad($lat);
+        $lng1 = deg2rad($lng);
+
+        $a = sin(($lat1 - $lat0) / 2) ** 2 + cos($lat0) * cos($lat1) * sin(($lng1 - $lng0) / 2) ** 2;
+
+        return round(6371 * 2 * asin(min(1, sqrt($a))), 2);
     }
 }

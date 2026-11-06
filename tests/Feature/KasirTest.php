@@ -6,6 +6,7 @@ use App\Models\BahanBaku;
 use App\Models\Menu;
 use App\Models\MutasiBahanBaku;
 use App\Models\Pembayaran;
+use App\Models\PengaturanSistem;
 use App\Models\Pesanan;
 use App\Models\TiketDapur;
 use App\Models\User;
@@ -42,8 +43,10 @@ class KasirTest extends TestCase
 
     private function pesananOnline(string $layanan = 'take_away', ?string $metode = 'tunai'): Pesanan
     {
-        $data = ['jenis_layanan' => $layanan] + ($layanan === 'delivery' ? ['alamat' => 'Jl. Karya 8', 'id_zona' => ZonaPengiriman::first()->id] : []);
+        $data = ['jenis_layanan' => $layanan] + ($layanan === 'delivery' ? ['alamat' => 'Jl. Karya 8', 'lat' => PengaturanSistem::LAT_AWAL + 0.018, 'lng' => PengaturanSistem::LNG_AWAL] : []);
         if (! $metode) {
+            $data += $layanan === 'delivery' ? ['id_zona' => ZonaPengiriman::first()->id] : [];
+
             // pesanan lama (sebelum metode bayar wajib dipilih di checkout)
             return app(PesananService::class)->buat([['id_menu' => $this->pizza->id, 'jumlah' => 1]], $layanan, $this->pelanggan, data: $data);
         }

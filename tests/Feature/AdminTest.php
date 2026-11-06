@@ -314,8 +314,9 @@ class AdminTest extends TestCase
     public function test_ubah_pengaturan_sistem(): void
     {
         $this->actingAs($this->admin)->put('/admin/pengaturan', [
-            'pajak' => '11', 'biaya_layanan' => '2.5', 'jam_buka' => '09:00', 'jam_tutup' => '21:30',
+            'pajak' => '11', 'biaya_layanan' => '2.5', 'jam_buka' => '09:00', 'jam_tutup' => '21:30', 'lat_resto' => '3.5911', 'lng_resto' => '98.6501',
         ])->assertRedirect('/admin/pengaturan')->assertSessionHas('status');
+        $this->assertEqualsWithDelta(3.5911, (float) PengaturanSistem::aktif()->lat_resto, 0.00001);
 
         $set = PengaturanSistem::aktif();
         $this->assertSame(1, PengaturanSistem::count());
@@ -330,7 +331,7 @@ class AdminTest extends TestCase
     public function test_jam_operasional_lewat_tengah_malam(): void
     {
         $this->actingAs($this->admin)->put('/admin/pengaturan', [
-            'pajak' => '10', 'biaya_layanan' => '5', 'jam_buka' => '16:00', 'jam_tutup' => '02:00',
+            'pajak' => '10', 'biaya_layanan' => '5', 'jam_buka' => '16:00', 'jam_tutup' => '02:00', 'lat_resto' => '3.59', 'lng_resto' => '98.64',
         ])->assertSessionHasNoErrors();
 
         $set = PengaturanSistem::aktif();

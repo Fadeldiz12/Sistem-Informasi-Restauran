@@ -48,7 +48,7 @@ class AkunTest extends TestCase
     public function test_halaman_login_tanpa_google_dan_facebook(): void
     {
         $this->get('/login')->assertOk()->assertSee('Masuk ke')->assertSee('Daftar &amp; Pesan Sekarang', false)->assertDontSee('Google')->assertDontSee('Facebook')
-            ->assertSee(route('password.request'), false)->assertSee('SISTEM MANAJEMEN RESTORAN');
+            ->assertSee(route('password.request'), false)->assertSee('PESAN · LACAK · NIKMATI');
         $this->get('/registrasi')->assertOk()->assertSee('Buat Akun Baru')->assertDontSee('Google');
         $this->get('/auth/google')->assertNotFound();
     }

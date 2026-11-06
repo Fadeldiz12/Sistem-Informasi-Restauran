@@ -40,4 +40,22 @@ class ZonaPengiriman extends Model
     {
         return round($jarakKm * (float) $this->tarif_per_km, 2);
     }
+
+    /**
+     * Zona untuk jarak tertentu: zona dengan radius terkecil yang masih mencakup jarak itu, atau null bila di luar jangkauan.
+     */
+    public static function untukJarak(float $km): ?self
+    {
+        return static::where('radius_km', '>=', $km)->orderBy('radius_km')->first();
+    }
+
+    /**
+     * URL Google Maps untuk titik (lat, lng), dipakai tombol "Buka di Maps" kurir.
+     */
+    public static function urlMaps(?float $lat, ?float $lng, string $alamat): string
+    {
+        return $lat !== null && $lng !== null
+            ? 'https://www.google.com/maps/dir/?api=1&destination='.$lat.','.$lng
+            : 'https://www.google.com/maps/search/?api=1&query='.urlencode($alamat);
+    }
 }
