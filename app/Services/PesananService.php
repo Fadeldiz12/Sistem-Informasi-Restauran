@@ -299,11 +299,11 @@ class PesananService
         });
     }
 
-    public function tolak(Pesanan $pesanan, User $kasir): void
+    public function tolak(Pesanan $pesanan, User $kasir, ?string $alasan = null): void
     {
         $this->pastikanMenunggu($pesanan);
 
-        $pesanan->update(['status' => Pesanan::STATUS_DIBATALKAN, 'id_kasir' => $kasir->id]);
+        $pesanan->update(['status' => Pesanan::STATUS_DIBATALKAN, 'id_kasir' => $kasir->id, 'alasan_batal' => $alasan]);
     }
 
     /**
@@ -454,8 +454,11 @@ class PesananService
 
     private function pastikanMenunggu(Pesanan $pesanan): void
     {
+        if ($pesanan->status === Pesanan::STATUS_DIBATALKAN) {
+            throw ValidationException::withMessages(['pesanan' => "{$pesanan->kode()} sudah ditolak/dibatalkan."]);
+        }
         if ($pesanan->status !== Pesanan::STATUS_MENUNGGU) {
-            throw ValidationException::withMessages(['pesanan' => 'Pesanan ini sudah diproses sebelumnya.']);
+            throw ValidationException::withMessages(['pesanan' => "{$pesanan->kode()} sudah dikonfirmasi sebelumnya."]);
         }
     }
 }

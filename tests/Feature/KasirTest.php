@@ -97,11 +97,15 @@ class KasirTest extends TestCase
     public function test_tolak_pesanan_online(): void
     {
         $p = $this->pesananOnline();
-        $this->actingAs($this->kasir)->post("/kasir/online/{$p->id}/tolak")->assertSessionHasNoErrors();
+        $this->actingAs($this->kasir)->post("/kasir/online/{$p->id}/tolak")->assertSessionHasErrors('alasan');
+        $this->actingAs($this->kasir)->post("/kasir/online/{$p->id}/tolak", ['alasan' => 'Lainnya'])->assertSessionHasErrors('alasan_lain');
+        $this->actingAs($this->kasir)->post("/kasir/online/{$p->id}/tolak", ['alasan' => 'Menu habis'])->assertSessionHasNoErrors();
 
-        $this->assertSame(Pesanan::STATUS_DIBATALKAN, $p->fresh()->status);
+        $this->assertSame([Pesanan::STATUS_DIBATALKAN, 'Menu habis'], [$p->fresh()->status, $p->fresh()->alasan_batal]);
         $this->assertNull($p->fresh()->tiketDapur);
-        $this->actingAs($this->pelanggan)->get("/tracking?pesanan={$p->id}")->assertSee('dibatalkan oleh kasir');
+        $this->actingAs($this->pelanggan)->get("/tracking?pesanan={$p->id}")->assertSee('dibatalkan oleh kasir. Alasan: Menu habis');
+        // dikonfirmasi dari tab lama: pesannya jelas
+        $this->actingAs($this->kasir)->post("/kasir/online/{$p->id}/terima")->assertSessionHasErrors(['pesanan' => "{$p->kode()} sudah ditolak/dibatalkan."]);
         $this->actingAs($this->kasir)->get('/kasir/pembayaran')->assertDontSee($p->kode());
     }
 

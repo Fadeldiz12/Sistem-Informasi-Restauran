@@ -81,8 +81,29 @@
   @csrf
   <div class="mh"><div><div class="eyebrow" style="opacity:.7">{{ $pesanan->kode() }}</div><h3>Tolak Pesanan</h3></div><button type="button" class="icon-btn" data-close><svg class="ic"><use href="#i-x"/></svg></button></div>
   <div class="mb"><p style="font-size:14px">Tolak pesanan <b>{{ $pesanan->kode() }}</b> dari <b>{{ $pesanan->namaPemesan() }}</b>?</p>
-    <div class="note" style="margin-top:14px"><svg class="ic"><use href="#i-info"/></svg><span>Status pesanan menjadi <b>Dibatalkan</b> dan langsung terlihat di halaman lacak pesanan pelanggan.</span></div></div>
+    <div class="field" style="margin-top:14px"><label>Alasan (tampil ke pelanggan)</label>
+      <div class="chips" id="tolakChips">@foreach (\App\Http\Controllers\Kasir\PesananOnlineController::ALASAN_TOLAK as $a)<button type="button" data-a="{{ $a }}" @class(['on' => old('alasan') === $a])>{{ $a }}</button>@endforeach</div>
+      <input type="hidden" name="alasan" id="tolakAlasan" value="{{ old('alasan') }}">
+      <div class="in" id="tolakLainWrap" style="margin-top:10px;{{ old('alasan') === 'Lainnya' ? '' : 'display:none' }}"><svg class="ic"><use href="#i-edit"/></svg><input name="alasan_lain" id="tolakLain" maxlength="200" value="{{ old('alasan_lain') }}" placeholder="Tulis alasannya"></div></div>
+    <div class="note" style="margin-top:14px"><svg class="ic"><use href="#i-info"/></svg><span>Status pesanan menjadi <b>Dibatalkan</b> dan alasannya langsung terlihat di halaman lacak pesanan pelanggan.</span></div></div>
   <div class="mf"><button type="button" class="btn o" data-close>Batal</button><button class="btn" type="submit">Tolak Pesanan</button></div></form></div>
+@endif
+@endpush
+
+@push('scripts')
+@if ($pesanan)
+<script>
+  (function () {
+    tolakChips.addEventListener('click', function (e) {
+      var b = e.target.closest('button'); if (!b) return;
+      tolakAlasan.value = b.dataset.a;
+      tolakChips.querySelectorAll('button').forEach(function (x) { x.classList.toggle('on', x === b); });
+      tolakLainWrap.style.display = b.dataset.a === 'Lainnya' ? '' : 'none';
+      if (b.dataset.a === 'Lainnya') tolakLain.focus();
+    });
+    @if ($errors->has('alasan') || $errors->has('alasan_lain')) openModal('mTolak'); @endif
+  })();
+</script>
 @endif
 @endpush
 

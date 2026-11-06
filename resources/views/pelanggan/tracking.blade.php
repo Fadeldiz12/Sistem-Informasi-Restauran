@@ -192,7 +192,7 @@
           <span class="pill m" style="font-size:13px;padding:8px 16px">@if ($pesanan->status === Pesanan::STATUS_DIANTAR)<svg class="ic" style="width:15px;height:15px"><use href="#i-truck"/></svg>@endif{{ $statusTeks($pesanan) }}</span></div>
 
         @if ($pesanan->status === Pesanan::STATUS_DIBATALKAN)
-          <div class="batal-note" style="margin-top:20px">Pesanan ini dibatalkan oleh kasir. Jika sudah membayar, hubungi restoran di {{ config('resto.telepon') }}.</div>
+          <div class="batal-note" style="margin-top:20px">Pesanan ini dibatalkan oleh kasir{{ $pesanan->alasan_batal ? '. Alasan: '.$pesanan->alasan_batal : '' }}. Jika sudah membayar, hubungi restoran di {{ config('resto.telepon') }}.</div>
         @elseif (! $pesanan->isLunas())
           <div style="margin:20px 24px 0;display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:12px 16px;border-radius:16px;background:var(--pp)">
             <svg class="ic"><use href="#i-card"/></svg>
