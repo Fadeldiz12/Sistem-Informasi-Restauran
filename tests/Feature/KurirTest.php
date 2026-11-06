@@ -6,6 +6,7 @@ use App\Models\Menu;
 use App\Models\Pembayaran;
 use App\Models\Pengiriman;
 use App\Models\Pesanan;
+use App\Models\Setoran;
 use App\Models\User;
 use App\Models\ZonaPengiriman;
 use App\Services\DapurService;
@@ -214,7 +215,14 @@ class KurirTest extends TestCase
         $this->actingAs($this->kasir)->get('/kasir/setoran')->assertOk()->assertSee('Bayu Saputra')->assertSee($a->kode())->assertSee('Terima Setoran');
         $this->actingAs($this->kurir)->get('/kasir/setoran')->assertForbidden();
 
-        $this->actingAs($this->kasir)->post("/kasir/setoran/{$this->kurir->id}", ['ids' => [$bayar->id]])->assertSessionHas('status');
+        $this->actingAs($this->kasir)->post("/kasir/setoran/{$this->kurir->id}", ['ids' => [$bayar->id]])->assertSessionHasErrors('uang_dihitung');
+        $this->actingAs($this->kasir)->post("/kasir/setoran/{$this->kurir->id}", ['ids' => [$bayar->id], 'uang_dihitung' => (string) ((int) $a->total - 5000)])
+            ->assertSessionHasErrors('catatan'); // kurang tanpa catatan ditolak
+        $this->actingAs($this->kasir)->post("/kasir/setoran/{$this->kurir->id}", ['ids' => [$bayar->id], 'uang_dihitung' => (string) ((int) $a->total - 5000), 'catatan' => 'kurang kembalian'])
+            ->assertSessionHas('status', fn ($m) => str_contains($m, 'selisih -Rp 5.000'));
+        $setoran = Setoran::firstOrFail();
+        $this->assertEquals(-5000, $setoran->selisih());
+        $this->actingAs($this->kasir)->get('/kasir/setoran')->assertSee('Selisih Setoran Hari Ini')->assertSee('kurang kembalian');
         $bayar->refresh();
         $this->assertNotNull($bayar->disetor_pada);
         $this->assertSame($this->kasir->id, $bayar->id_kasir);
@@ -223,7 +231,7 @@ class KurirTest extends TestCase
         $this->actingAs($this->kurir)->get('/kurir/riwayat')->assertDontSee('Uang tunai yang kamu bawa');
 
         // dikirim ulang: tidak tercatat dua kali
-        $this->actingAs($this->kasir)->post("/kasir/setoran/{$this->kurir->id}", ['ids' => [$bayar->id]])->assertSessionHas('error');
+        $this->actingAs($this->kasir)->post("/kasir/setoran/{$this->kurir->id}", ['ids' => [$bayar->id], 'uang_dihitung' => '1000'])->assertSessionHas('error');
     }
 
     public function test_kurir_yang_membawa_uang_tunai_tidak_bisa_dihapus_atau_diganti_role(): void
@@ -243,7 +251,7 @@ class KurirTest extends TestCase
         $this->assertSame($this->kurir->id, $bayar->fresh()->id_kurir);
 
         // setelah setoran diterima kasir, akun boleh dihapus
-        $this->actingAs($this->kasir)->post("/kasir/setoran/{$this->kurir->id}", ['ids' => [$bayar->id]]);
+        $this->actingAs($this->kasir)->post("/kasir/setoran/{$this->kurir->id}", ['ids' => [$bayar->id], 'uang_dihitung' => (string) (int) $bayar->jumlah]);
         $this->actingAs($admin)->delete("/admin/pengguna/{$this->kurir->id}")->assertSessionHas('status');
         $this->assertNull($this->kurir->fresh());
     }

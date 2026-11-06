@@ -104,4 +104,34 @@
     if (boot.dataset.toast) toast(boot.dataset.toast);
     if (boot.dataset.reopen) openModal(boot.dataset.reopen);
   }
+
+  /* Form dengan data-konfirmasi="pesan" meminta persetujuan lewat dialog sebelum dikirim
+     (mis. Mulai Masak yang langsung memotong stok). */
+  var formKonfirmasi = null;
+  document.addEventListener('submit', function (e) {
+    var f = e.target;
+    if (!f.dataset || !f.dataset.konfirmasi || f._sudahSetuju) return;
+    e.preventDefault();
+    formKonfirmasi = f;
+    document.getElementById('konfJudul').textContent = f.dataset.konfirmasiJudul || 'Lanjutkan?';
+    document.getElementById('konfPesan').textContent = f.dataset.konfirmasi;
+    openModal('mKonfirmasi');
+  }, true);
+  var konfOk = document.getElementById('konfOk');
+  if (konfOk) konfOk.addEventListener('click', function () {
+    if (!formKonfirmasi) return;
+    formKonfirmasi._sudahSetuju = true;
+    konfOk.disabled = true;
+    formKonfirmasi.requestSubmit ? formKonfirmasi.requestSubmit() : formKonfirmasi.submit();
+  });
+
+  /* Semua tombol kirim di panel: nonaktif + "Memproses…" setelah ditekan, supaya tidak terkirim dua kali.
+     Dinilai setelah script halaman: bila pengiriman dibatalkan (validasi / konfirmasi), tombol tetap aktif. */
+  document.addEventListener('submit', function (e) {
+    var f = e.target, b = e.submitter || (f.querySelector && f.querySelector('button[type=submit], button:not([type])'));
+    setTimeout(function () {
+      if (e.defaultPrevented || !b || b.disabled) return;
+      b.disabled = true; b.dataset.label = b.innerHTML; b.textContent = 'Memproses…';
+    }, 0);
+  });
 })();

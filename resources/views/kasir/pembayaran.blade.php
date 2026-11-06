@@ -72,12 +72,12 @@
       <div class="card" style="padding:16px"><div class="card-head" style="margin-bottom:10px"><h2>Belum Lunas</h2><span class="pill m">{{ $daftar->count() }}</span></div>
         @foreach ($daftar as $p)
           @php $mt = $p->pembayaran?->metode ?? Pembayaran::METODE_TUNAI; @endphp
-          <a @class(['qi', 'on' => $pesanan->id === $p->id]) href="{{ route('kasir.pembayaran', ['pesanan' => $p->id]) }}"><div style="display:flex;justify-content:space-between;align-items:center"><b style="font:700 14px var(--f-title)">{{ $p->kode() }}</b><span @class(['pill', 'b' => $mt !== Pembayaran::METODE_TUNAI, 'c' => $pesanan->id === $p->id]) style="font-size:10.5px;padding:3px 9px"><svg class="ic" style="width:12px;height:12px"><use href="#{{ $ikonMetode[$mt] }}"/></svg>{{ Pembayaran::LABEL_METODE[$mt] }}</span></div>
+          <a @class(['qi', 'on' => $pesanan->id === $p->id]) href="{{ route('kasir.pembayaran', ['pesanan' => $p->id]) }}#detail"><div style="display:flex;justify-content:space-between;align-items:center"><b style="font:700 14px var(--f-title)">{{ $p->kode() }}</b><span @class(['pill', 'b' => $mt !== Pembayaran::METODE_TUNAI, 'c' => $pesanan->id === $p->id]) style="font-size:10.5px;padding:3px 9px"><svg class="ic" style="width:12px;height:12px"><use href="#{{ $ikonMetode[$mt] }}"/></svg>{{ Pembayaran::LABEL_METODE[$mt] }}</span></div>
             <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:12.5px;gap:8px"><span style="opacity:.85;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ $p->namaPemesan() }} · {{ $p->layananLabel() }}</span><b style="font:700 13.5px var(--f-title);white-space:nowrap">{{ $rp($p->total) }}</b></div></a>
         @endforeach
       </div>
 
-      <div class="card">
+      <div class="card" id="detail">
         <div class="card-head"><div><h2>{{ $pesanan->kode() }} · {{ $pesanan->namaPemesan() }}</h2><p>{{ $pesanan->layananDetail() }}{{ $pesanan->kasir ? ' · kasir '.$pesanan->kasir->nama : '' }}</p></div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="pill {{ $pesanan->statusPill() }}">{{ $pesanan->statusLabel() }}</span>
             <button type="button" class="btn o sm js-batal" data-url="{{ route('kasir.pesanan.batal', $pesanan) }}" data-kode="{{ $pesanan->kode() }}" data-dimasak="{{ $pesanan->tiketDapur && $pesanan->tiketDapur->status_masak !== \App\Models\TiketDapur::STATUS_ANTRE ? 1 : 0 }}"><svg class="ic" style="width:15px;height:15px"><use href="#i-x"/></svg>Batalkan</button></div></div>
@@ -105,7 +105,7 @@
       <div class="grid" style="align-content:start">
         <div class="card" style="padding:14px" id="padWrap"><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px" id="pad">@foreach (['1','2','3','4','5','6','7','8','9','000','0','⌫'] as $k)<button type="button" class="key" data-k="{{ $k }}">{{ $k }}</button>@endforeach</div></div>
         <label class="card soft" style="display:flex;gap:10px;align-items:center;padding:14px 16px;font:600 13px var(--f-body);cursor:pointer"><span class="toggle"><input type="checkbox" name="cetak" value="1" checked><i></i></span>Cetak struk setelah lunas</label>
-        <button class="btn lg" type="submit" id="btnLunas"><svg class="ic"><use href="#i-check"/></svg>Tandai Lunas</button>
+        <button class="btn lg aksi-utama" type="submit" id="btnLunas"><svg class="ic"><use href="#i-check"/></svg>Tandai Lunas</button>
         <p style="font-size:12px;opacity:.6;text-align:center">Pembayaran lunas otomatis dicatat sebagai pemasukan untuk laporan owner.</p>
       </div>
     </div>

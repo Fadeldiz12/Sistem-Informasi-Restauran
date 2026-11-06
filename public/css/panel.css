@@ -269,3 +269,12 @@
 .switch-row { display: flex; gap: 12px; align-items: center; padding: 12px 14px; border-radius: 14px; background: var(--pp); font: 600 13.5px var(--f-body); }
 .switch-row > span { flex: 1; }
 .switch-row small { display: block; font-size: 12px; opacity: .7; font-weight: 500; }
+
+/* tombol nonaktif terlihat redup di semua halaman panel */
+.btn[disabled], .btn:disabled { opacity: .45; cursor: not-allowed; }
+
+/* pola daftar + detail di HP: pilih item langsung melompat ke detail, tombol aksi utama menempel di bawah */
+#detail { scroll-margin-top: 16px; }
+@media (max-width: 760px) {
+  .aksi-utama { position: sticky; bottom: calc(76px + env(safe-area-inset-bottom)); z-index: 5; box-shadow: 0 10px 24px rgba(40, 40, 40, .22); }
+}

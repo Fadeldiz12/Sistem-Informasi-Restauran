@@ -358,4 +358,23 @@ class KasirTest extends TestCase
         $this->actingAs($this->pelanggan)->post('/checkout', ['jenis_layanan' => 'dine_in', 'nomor_meja' => '3', 'metode' => 'tunai'])->assertSessionHasNoErrors();
         $this->assertSame('03', Pesanan::latest('id')->first()->nomor_meja);
     }
+
+    public function test_pesan_error_input_pesanan_mudah_dipahami(): void
+    {
+        $this->actingAs($this->kasir)->post('/kasir/input', ['jenis_layanan' => 'take_away', 'items' => [['id_menu' => $this->pizza->id, 'jumlah' => 0]]])
+            ->assertSessionHasErrors(['items.0.jumlah' => 'Jumlah porsi minimal 1.']);
+        $this->actingAs($this->kasir)->post('/kasir/input', ['jenis_layanan' => 'take_away', 'items' => [['id_menu' => 9999, 'jumlah' => 1]]])
+            ->assertSessionHasErrors(['items.0.id_menu' => 'Salah satu menu sudah tidak tersedia. Muat ulang halaman lalu pilih lagi.']);
+    }
+
+    public function test_notifikasi_pesanan_siap_untuk_kasir(): void
+    {
+        $p = $this->inputKasir('09');
+        $this->actingAs($this->kasir)->getJson('/kasir/notifikasi')->assertOk()->assertJson(['siap' => 0]);
+
+        $p->update(['status' => Pesanan::STATUS_SIAP]);
+        $this->actingAs($this->kasir)->getJson('/kasir/notifikasi')->assertJson(['siap' => 1, 'pesanan' => [['id' => $p->id, 'kode' => $p->kode()]]]);
+        $this->actingAs($this->kasir)->get('/kasir/input')->assertSee('data-badge-siap', false);
+        $this->actingAs($this->pelanggan)->getJson('/kasir/notifikasi')->assertForbidden();
+    }
 }

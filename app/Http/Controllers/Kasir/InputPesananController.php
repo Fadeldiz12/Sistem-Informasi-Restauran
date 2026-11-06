@@ -103,6 +103,15 @@ class InputPesananController extends Controller
         ], [
             'items.required' => 'Pilih minimal satu menu.',
             'nomor_meja.required_if' => 'Pilih nomor meja untuk Dine In.',
+            'items.*.jumlah.min' => 'Jumlah porsi minimal 1.',
+            'items.*.jumlah.max' => 'Jumlah porsi maksimal 99 per menu.',
+            'items.*.jumlah.integer' => 'Jumlah porsi harus angka bulat.',
+            'items.*.id_menu.exists' => 'Salah satu menu sudah tidak tersedia. Muat ulang halaman lalu pilih lagi.',
+            'items.*.id_menu.distinct' => 'Menu yang sama dipilih dua kali.',
+        ], [
+            'items.*.jumlah' => 'jumlah porsi',
+            'items.*.id_menu' => 'menu',
+            'items.*.catatan' => 'catatan',
         ]);
     }
 }

@@ -80,14 +80,14 @@ Satu fase = satu (atau beberapa) commit. Setiap fase selesai → saya lapor & ta
 - [x] A2-#26 Link footer `#` mati, nomor telepon bukan `tel:`
 
 ## Fase 5 — UX staf: kasir, dapur, kurir, admin, owner (19 temuan)
-- [ ] A3-#9 Mulai Masak / Terima Setoran tanpa konfirmasi, undo, loading; setoran tanpa jumlah dihitung
-- [ ] A3-#12 HP: pilih item di daftar → balik ke atas, tombol aksi di luar layar
-- [ ] A3-#14 Kasir tidak diberi tahu pesanan "Siap" di luar dashboard
-- [ ] A3-#16 Pesan error "Items.0.jumlah"
-- [ ] A3-#17 Tombol Simpan nonaktif tampak aktif; petunjuk "di sebelah kiri" di HP
-- [ ] A3-#18 Qty input kasir tidak bisa diketik, tombol kecil, maksimal 99 diam
-- [ ] A3-#20 Koneksi putus saat Simpan → keranjang kasir hilang
-- [ ] A3-#21 Nama bahan sangat panjang mendorong kolom aksi keluar
+- [x] A3-#9 Mulai Masak / Terima Setoran tanpa konfirmasi, undo, loading; setoran tanpa jumlah dihitung
+- [x] A3-#12 HP: pilih item di daftar → balik ke atas, tombol aksi di luar layar
+- [x] A3-#14 Kasir tidak diberi tahu pesanan "Siap" di luar dashboard
+- [x] A3-#16 Pesan error "Items.0.jumlah"
+- [x] A3-#17 Tombol Simpan nonaktif tampak aktif; petunjuk "di sebelah kiri" di HP
+- [x] A3-#18 Qty input kasir tidak bisa diketik, tombol kecil, maksimal 99 diam
+- [x] A3-#20 Koneksi putus saat Simpan → keranjang kasir hilang
+- [x] A3-#21 Nama bahan sangat panjang mendorong kolom aksi keluar
 - [ ] A4-#6 Laporan owner di HP: kolom Laba terpotong
 - [ ] A4-#10 Toast peringatan kurir pakai ikon ✓
 - [ ] A4-#11 Upload bukti: file bukan gambar diterima di pratinjau

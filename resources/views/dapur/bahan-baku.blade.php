@@ -21,6 +21,9 @@
   .stok-cell { display: flex; gap: 10px; align-items: center; }
   .stok-cell b { min-width: 44px; }
   tr.kritis td:first-child b { color: var(--m); }
+  /* nama bahan yang sangat panjang dibungkus supaya kolom aksi tetap terlihat (QA A3-#21) */
+  td:first-child b { overflow-wrap: anywhere; word-break: break-word; }
+  td:first-child { max-width: 320px; }
   tr.kritis { background: rgba(151, 23, 58, .05); }
   .riwayat { display: grid; gap: 0; }
   .riwayat div { display: flex; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--m15); font-size: 13.5px; }

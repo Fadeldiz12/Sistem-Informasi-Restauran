@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Table('pembayaran')]
-#[Fillable(['id_pesanan', 'id_kasir', 'metode', 'jumlah', 'uang_diterima', 'bukti_bayar', 'status_bayar', 'waktu_bayar', 'kode_transaksi', 'bank', 'nomor_va', 'qris_url', 'kedaluwarsa_pada', 'id_kurir', 'disetor_pada'])]
+#[Fillable(['id_pesanan', 'id_kasir', 'metode', 'jumlah', 'uang_diterima', 'bukti_bayar', 'status_bayar', 'waktu_bayar', 'kode_transaksi', 'bank', 'nomor_va', 'qris_url', 'kedaluwarsa_pada', 'id_kurir', 'disetor_pada', 'id_setoran'])]
 class Pembayaran extends Model
 {
     public const METODE_TUNAI = 'tunai';

@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Kasir;
 
 use App\Http\Controllers\Controller;
 use App\Models\Pembayaran;
+use App\Models\Setoran;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 /**
@@ -28,6 +30,7 @@ class SetoranController extends Controller
             'totalBelum' => (float) $belum->flatten()->sum('jumlah'),
             'riwayat' => Pembayaran::whereNotNull('id_kurir')->whereDate('disetor_pada', today())
                 ->with(['kurir', 'kasir', 'pesanan'])->latest('disetor_pada')->get(),
+            'setoranHariIni' => Setoran::with(['kurir', 'kasir'])->whereDate('waktu_setor', today())->latest('waktu_setor')->get(),
         ]);
     }
 
@@ -37,27 +40,54 @@ class SetoranController extends Controller
      */
     public function terima(Request $request, User $kurir): RedirectResponse
     {
+        $request->merge(['uang_dihitung' => str_replace(['.', ' '], '', (string) $request->input('uang_dihitung'))]);
         $data = $request->validate([
             'ids' => ['required', 'array', 'min:1'],
             'ids.*' => ['integer'],
+            'uang_dihitung' => ['required', 'numeric', 'min:0', 'max:9999999999'],
+            'catatan' => ['nullable', 'string', 'max:255'],
+        ], [
+            'uang_dihitung.required' => 'Hitung uang dari kurir lalu isi jumlahnya.',
         ]);
 
-        $jumlah = DB::transaction(function () use ($data, $kurir, $request) {
+        $hasil = DB::transaction(function () use ($data, $kurir, $request) {
             $daftar = Pembayaran::belumDisetor()->where('id_kurir', $kurir->id)
                 ->whereIn('id', $data['ids'])->lockForUpdate()->get();
+            if ($daftar->isEmpty()) {
+                return null;
+            }
 
+            $seharusnya = (float) $daftar->sum('jumlah');
+            $diterima = (float) $data['uang_dihitung'];
+            if (round($diterima - $seharusnya, 2) != 0 && blank($data['catatan'] ?? null)) {
+                throw ValidationException::withMessages(['catatan' => 'Uang yang dihitung berbeda dari seharusnya. Tulis catatan selisihnya (mis. kurang kembalian, akan dilunasi besok).']);
+            }
+
+            $setoran = Setoran::create([
+                'id_kurir' => $kurir->id,
+                'id_kasir' => $request->user()->id,
+                'jumlah_seharusnya' => $seharusnya,
+                'jumlah_diterima' => $diterima,
+                'catatan' => $data['catatan'] ?? null,
+                'waktu_setor' => now(),
+            ]);
             Pembayaran::whereKey($daftar->modelKeys())->update([
                 'disetor_pada' => now(),
                 'id_kasir' => $request->user()->id,
+                'id_setoran' => $setoran->id,
             ]);
 
-            return [$daftar->count(), (float) $daftar->sum('jumlah')];
+            return [$daftar->count(), $setoran];
         });
 
-        if ($jumlah[0] === 0) {
+        if ($hasil === null) {
             return back()->with('error', 'Setoran ini sudah diterima sebelumnya.');
         }
 
-        return back()->with('status', "Setoran {$kurir->nama} diterima · {$jumlah[0]} pesanan · Rp ".number_format($jumlah[1], 0, ',', '.'));
+        [$jumlah, $setoran] = $hasil;
+        $selisih = $setoran->selisih();
+
+        return back()->with('status', "Setoran {$kurir->nama} diterima · {$jumlah} pesanan · Rp ".number_format((float) $setoran->jumlah_diterima, 0, ',', '.')
+            .($selisih != 0 ? ' · selisih '.($selisih < 0 ? '-' : '+').'Rp '.number_format(abs($selisih), 0, ',', '.').' dicatat' : ''));
     }
 }

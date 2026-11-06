@@ -72,6 +72,7 @@ class AppServiceProvider extends ServiceProvider
         View::composer('partials.panel.sidebar-kasir', function ($view) {
             $view->with('sidebarCount', [
                 'online' => Pesanan::menungguKonfirmasi()->count(),
+                'siap' => Pesanan::where('status', Pesanan::STATUS_SIAP)->where('jenis_layanan', '!=', Pesanan::LAYANAN_DELIVERY)->count(),
                 'pembayaran' => Pesanan::belumLunas()->count(),
                 'setoran' => Pembayaran::belumDisetor()->distinct()->count('id_kurir'),
             ]);

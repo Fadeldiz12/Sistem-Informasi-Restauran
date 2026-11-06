@@ -120,6 +120,7 @@ Route::middleware(['auth', 'role:'.User::ROLE_ADMIN])->prefix('admin')->name('ad
 // Kasir
 Route::middleware(['auth', 'role:'.User::ROLE_KASIR])->prefix('kasir')->name('kasir.')->group(function () {
     Route::get('/dashboard', Kasir\DashboardController::class)->name('dashboard');
+    Route::get('/notifikasi', Kasir\NotifikasiController::class)->name('notifikasi');
 
     Route::get('/input', [Kasir\InputPesananController::class, 'create'])->name('input');
     Route::post('/input', [Kasir\InputPesananController::class, 'store'])->name('input.store');
