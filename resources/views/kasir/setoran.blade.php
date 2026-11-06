@@ -14,7 +14,7 @@
   .setor-row:last-child { border-bottom: 0; }
   .setor-row b { font: 600 13.5px var(--f-title); }
   .setor-row .r { margin-left: auto; font: 600 13.5px var(--f-title); white-space: nowrap; }
-  .setor-total { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 12px; padding-top: 12px; border-top: 1.5px dashed var(--m60); }
+  .setor-total { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; margin-top: 12px; padding-top: 12px; border-top: 1.5px dashed var(--m60); }
 </style>
 @endpush
 
@@ -34,7 +34,10 @@
         @endforeach
         <form method="post" action="{{ route('kasir.setoran.terima', $idKurir) }}" class="setor-total">@csrf
           @foreach ($daftar as $b)<input type="hidden" name="ids[]" value="{{ $b->id }}">@endforeach
-          <div><div class="eyebrow">Total diterima</div><b style="font:700 22px var(--f-title)">{{ $rp($daftar->sum('jumlah')) }}</b></div>
+          <div><div class="eyebrow">Seharusnya</div><b style="font:700 22px var(--f-title)">{{ $rp($daftar->sum('jumlah')) }}</b></div>
+          <div class="field" style="flex:1;min-width:180px"><label>Uang yang dihitung</label><div class="in"><span class="suf" style="opacity:1">Rp</span><input name="uang_dihitung" class="js-uang" data-harus="{{ (int) $daftar->sum('jumlah') }}" inputmode="numeric" placeholder="Hitung lalu isi" required value="{{ old('uang_dihitung') }}"></div>
+            <small class="js-selisih" style="display:block;margin-top:6px;font-size:12.5px"></small></div>
+          <div class="field js-catatan" style="flex-basis:100%;display:none"><label>Catatan selisih</label><div class="in"><svg class="ic"><use href="#i-edit"/></svg><input name="catatan" maxlength="255" placeholder="Mis. kurang Rp 5.000, akan dilunasi besok" value="{{ old('catatan') }}"></div></div>
           <button class="btn" type="submit"><svg class="ic"><use href="#i-check"/></svg>Terima Setoran</button>
         </form>
       </div>
@@ -42,6 +45,14 @@
       <div class="card" style="grid-column:1/-1"><div class="empty"><svg class="ic" style="width:30px;height:30px;margin-bottom:8px"><use href="#i-check"/></svg><br>Tidak ada uang tunai yang belum disetor kurir.</div></div>
     @endforelse
   </div>
+
+  @if ($setoranHariIni->contains(fn ($s) => $s->selisih() != 0))
+    <div class="card" style="margin-top:18px"><div class="card-head"><div><h2>Selisih Setoran Hari Ini</h2><p>Setoran yang uangnya tidak sama dengan seharusnya</p></div></div>
+      @foreach ($setoranHariIni->filter(fn ($s) => $s->selisih() != 0) as $s)
+        <div class="setor-row"><b>{{ $s->kurir?->nama ?? 'Kurir dihapus' }}</b><span style="opacity:.8">{{ $s->waktu_setor->format('H:i') }} · seharusnya {{ $rp($s->jumlah_seharusnya) }}, diterima {{ $rp($s->jumlah_diterima) }}{{ $s->catatan ? ' · '.$s->catatan : '' }}</span><span class="r" style="font-weight:700">{{ $s->selisih() < 0 ? '-' : '+' }}{{ $rp(abs($s->selisih())) }}</span></div>
+      @endforeach
+    </div>
+  @endif
 
   <div class="card" style="margin-top:18px"><div class="card-head"><div><h2>Setoran Hari Ini</h2><p>{{ now()->translatedFormat('l, j F Y') }}</p></div></div>
     <div class="tbl-wrap"><table class="tbl-stack"><thead><tr><th>Pesanan</th><th>Kurir</th><th>Jumlah</th><th>Disetor</th><th>Diterima oleh</th></tr></thead><tbody>
@@ -52,3 +63,23 @@
       @endforelse
     </tbody></table></div></div>
 @endsection
+
+@push('scripts')
+<script>
+  (function () {
+    // ketik uang yang dihitung: tampilkan selisihnya; catatan wajib bila tidak sama
+    document.querySelectorAll('.js-uang').forEach(function (inp) {
+      var f = inp.closest('form'), info = f.querySelector('.js-selisih'), cat = f.querySelector('.js-catatan');
+      function cek() {
+        var d = inp.value.replace(/\D/g, ''); inp.value = d ? (+d).toLocaleString('id-ID') : '';
+        if (!d) { info.textContent = ''; cat.style.display = 'none'; return; }
+        var s = +d - +inp.dataset.harus;
+        info.textContent = s === 0 ? '✓ Sesuai' : (s < 0 ? 'Kurang ' : 'Lebih ') + rp(Math.abs(s));
+        info.style.fontWeight = s === 0 ? '' : '700';
+        cat.style.display = s === 0 ? 'none' : '';
+      }
+      inp.addEventListener('input', cek); cek();
+    });
+  })();
+</script>
+@endpush

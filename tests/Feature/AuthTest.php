@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\User;
 use Database\Seeders\UserSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Routing\Middleware\ThrottleRequests;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -122,7 +123,7 @@ class AuthTest extends TestCase
 
         $user = User::where('email', 'sari@example.com')->firstOrFail();
         $this->assertSame(User::ROLE_PELANGGAN, $user->role);
-        $this->assertSame('0812 3456 7890', $user->no_hp);
+        $this->assertSame('081234567890', $user->no_hp); // spasi dirapikan
         $this->assertNull($user->email_verified_at);
         $this->assertGuest(); // aktif setelah kode OTP dimasukkan
     }
@@ -143,8 +144,37 @@ class AuthTest extends TestCase
         $this->assertGuest();
 
         $this->followingRedirects()->from('/registrasi')
-            ->post('/registrasi', ['nama' => 'Sari', 'hp' => '0812', 'email' => 'ada@example.com', 'password' => 'rahasia123', 'password_confirmation' => 'rahasia123', 'setuju' => 1])
+            ->post('/registrasi', ['nama' => 'Sari', 'hp' => '081234567890', 'email' => 'ada@example.com', 'password' => 'rahasia123', 'password_confirmation' => 'rahasia123', 'setuju' => 1])
             ->assertSee('Email sudah terdaftar.')
             ->assertSee('value="Sari"', false);
+    }
+
+    public function test_registrasi_menolak_nomor_hp_nama_dan_password_lemah(): void
+    {
+        $this->withoutMiddleware(ThrottleRequests::class); // banyak percobaan dalam satu menit
+        $isi = ['nama' => 'Sari', 'hp' => '081234567890', 'email' => 'baru@example.com', 'password' => 'rahasia123', 'password_confirmation' => 'rahasia123', 'setuju' => 1];
+
+        $this->post('/registrasi', ['hp' => '- - -'] + $isi)->assertSessionHasErrors('hp');
+        $this->post('/registrasi', ['hp' => '12345678901'] + $isi)->assertSessionHasErrors(['hp' => 'Nomor HP tidak valid. Gunakan nomor HP aktif, contoh: 081234567890.']);
+        $this->post('/registrasi', ['hp' => '08'] + $isi)->assertSessionHasErrors('hp');
+        $this->post('/registrasi', ['nama' => '<script>alert(1)</script>'] + $isi)->assertSessionHasErrors('nama');
+        $this->post('/registrasi', ['password' => '11111111', 'password_confirmation' => '11111111'] + $isi)->assertSessionHasErrors('password');
+        $this->assertSame(0, User::where('email', 'baru@example.com')->count());
+
+        $this->post('/registrasi', ['nama' => "Sari O'Neil", 'hp' => '+62 812-3456-7890'] + $isi)->assertSessionHasNoErrors();
+        $this->assertSame('+6281234567890', User::firstWhere('email', 'baru@example.com')->no_hp);
+    }
+
+    public function test_syarat_ketentuan_bisa_dibaca_dan_tidak_tercentang_otomatis(): void
+    {
+        $this->get('/registrasi')->assertOk()->assertSee(route('syarat'))->assertDontSee('name="setuju" value="1" required checked', false);
+        $this->get('/syarat-ketentuan')->assertOk()->assertSee('Syarat &amp; Ketentuan', false)->assertSee('Pembatalan');
+    }
+
+    public function test_logout_memberi_pesan_sudah_keluar(): void
+    {
+        $u = User::factory()->create();
+        $this->actingAs($u)->post('/logout')->assertRedirect('/login');
+        $this->get('/login')->assertSee('Anda sudah keluar.');
     }
 }

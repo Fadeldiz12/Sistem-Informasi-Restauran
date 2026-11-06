@@ -8,6 +8,7 @@ use App\Models\PengaturanSistem;
 use App\Models\Pesanan;
 use App\Models\User;
 use App\Models\ZonaPengiriman;
+use App\Support\Keranjang;
 use Database\Seeders\MasterDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -85,7 +86,7 @@ class PesananPelangganTest extends TestCase
 
         $this->actingAs($this->pelanggan)->get('/checkout')->assertOk()->assertSee('Rp 145.000')->assertSee('Rp 14.500')->assertSee('Rp 7.250');
 
-        $res = $this->actingAs($this->pelanggan)->post('/checkout', ['jenis_layanan' => 'delivery', 'alamat' => 'Jl. Sei Batang Hari 27', 'id_zona' => $zonaB->id]);
+        $res = $this->actingAs($this->pelanggan)->post('/checkout', ['metode' => 'tunai', 'jenis_layanan' => 'delivery', 'alamat' => 'Jl. Sei Batang Hari 27', 'id_zona' => $zonaB->id]);
 
         $pesanan = Pesanan::firstOrFail();
         $res->assertRedirect("/pesanan/{$pesanan->id}/pembayaran");
@@ -106,11 +107,11 @@ class PesananPelangganTest extends TestCase
         $this->actingAs($this->pelanggan)->get('/checkout')->assertRedirect('/keranjang');
 
         $this->isiKeranjang();
-        $this->actingAs($this->pelanggan)->post('/checkout', ['jenis_layanan' => 'dine_in'])->assertSessionHasErrors('nomor_meja');
-        $this->actingAs($this->pelanggan)->post('/checkout', ['jenis_layanan' => 'delivery'])->assertSessionHasErrors(['alamat', 'id_zona']);
-        $this->actingAs($this->pelanggan)->post('/checkout', ['jenis_layanan' => 'antar_jemput'])->assertSessionHasErrors('jenis_layanan');
+        $this->actingAs($this->pelanggan)->post('/checkout', ['metode' => 'tunai', 'jenis_layanan' => 'dine_in'])->assertSessionHasErrors('nomor_meja');
+        $this->actingAs($this->pelanggan)->post('/checkout', ['metode' => 'tunai', 'jenis_layanan' => 'delivery'])->assertSessionHasErrors(['alamat', 'id_zona']);
+        $this->actingAs($this->pelanggan)->post('/checkout', ['metode' => 'tunai', 'jenis_layanan' => 'antar_jemput'])->assertSessionHasErrors('jenis_layanan');
 
-        $this->actingAs($this->pelanggan)->post('/checkout', ['jenis_layanan' => 'dine_in', 'nomor_meja' => '07'])->assertSessionHasNoErrors();
+        $this->actingAs($this->pelanggan)->post('/checkout', ['metode' => 'tunai', 'jenis_layanan' => 'dine_in', 'nomor_meja' => '07'])->assertSessionHasNoErrors();
         $this->assertSame(['dine_in', '07', 0.0], [Pesanan::first()->jenis_layanan, Pesanan::first()->nomor_meja, (float) Pesanan::first()->ongkir]);
     }
 
@@ -120,11 +121,14 @@ class PesananPelangganTest extends TestCase
         Carbon::setTestNow(today()->setTime(23, 0));
 
         $this->actingAs($this->pelanggan)->get('/checkout')->assertSee('Restoran sedang tutup');
-        $this->actingAs($this->pelanggan)->post('/checkout', ['jenis_layanan' => 'take_away'])->assertSessionHas('error');
+        // ditolak; banner tutup sudah tampil di halaman, jadi tidak ada pesan error kedua (QA A2-#23)
+        $this->actingAs($this->pelanggan)->from('/checkout')->post('/checkout', ['metode' => 'tunai', 'jenis_layanan' => 'take_away'])
+            ->assertRedirect('/checkout')->assertSessionMissing('error');
+        $this->assertSame(1, substr_count($this->actingAs($this->pelanggan)->get('/checkout')->getContent(), 'role="alert">Restoran sedang tutup'));
         $this->assertSame(0, Pesanan::count());
 
         PengaturanSistem::aktif()->update(['jam_tutup' => '23:30']);
-        $this->actingAs($this->pelanggan)->post('/checkout', ['jenis_layanan' => 'take_away'])->assertSessionHasNoErrors();
+        $this->actingAs($this->pelanggan)->post('/checkout', ['metode' => 'tunai', 'jenis_layanan' => 'take_away'])->assertSessionHasNoErrors();
         $this->assertSame(1, Pesanan::count());
     }
 
@@ -133,7 +137,7 @@ class PesananPelangganTest extends TestCase
     private function buatPesanan(string $layanan = 'take_away'): Pesanan
     {
         $this->isiKeranjang();
-        $this->actingAs($this->pelanggan)->post('/checkout', ['jenis_layanan' => $layanan]);
+        $this->actingAs($this->pelanggan)->post('/checkout', ['metode' => 'tunai', 'jenis_layanan' => $layanan]);
 
         return Pesanan::latest('id')->firstOrFail();
     }
@@ -163,7 +167,25 @@ class PesananPelangganTest extends TestCase
         $this->actingAs($this->pelanggan)->get("/pesanan/{$p->id}/pembayaran")->assertSee('belum diaktifkan');
         $this->actingAs($this->pelanggan)->post("/pesanan/{$p->id}/pembayaran", ['metode' => 'transfer', 'bank' => 'bca'])
             ->assertSessionHasErrors('metode');
-        $this->assertNull($p->fresh()->pembayaran);
+        $this->assertSame('tunai', $p->fresh()->pembayaran->metode);
+    }
+
+    public function test_checkout_wajib_memilih_metode_pembayaran(): void
+    {
+        config(['services.midtrans.server_key' => null]);
+        $this->isiKeranjang();
+
+        $this->actingAs($this->pelanggan)->get('/checkout')->assertSee('Pilih metode pembayaran')->assertSee('belum diaktifkan');
+        $this->actingAs($this->pelanggan)->post('/checkout', ['jenis_layanan' => 'take_away'])->assertSessionHasErrors('metode');
+        // VA gagal dibuat: pesanan tidak ikut tersimpan dan keranjang tetap ada
+        $this->actingAs($this->pelanggan)->post('/checkout', ['jenis_layanan' => 'take_away', 'metode' => 'transfer', 'bank' => 'bca'])->assertSessionHasErrors('metode');
+        $this->assertSame(0, Pesanan::count());
+
+        $this->actingAs($this->pelanggan)->post('/checkout', ['jenis_layanan' => 'take_away', 'metode' => 'tunai'])->assertSessionHasNoErrors();
+        $p = Pesanan::firstOrFail();
+        $this->assertSame([Pembayaran::METODE_TUNAI, Pembayaran::STATUS_MENUNGGU], [$p->pembayaran->metode, $p->pembayaran->status_bayar]);
+        // langsung terlihat kasir untuk dikonfirmasi
+        $this->assertTrue(Pesanan::menungguKonfirmasi()->whereKey($p->id)->exists());
     }
 
     // ---------- lacak pesanan
@@ -171,19 +193,79 @@ class PesananPelangganTest extends TestCase
     public function test_tracking_menampilkan_timeline_sesuai_layanan(): void
     {
         $this->isiKeranjang();
-        $this->actingAs($this->pelanggan)->post('/checkout', ['jenis_layanan' => 'delivery', 'alamat' => 'Jl. A', 'id_zona' => ZonaPengiriman::first()->id]);
+        $this->actingAs($this->pelanggan)->post('/checkout', ['metode' => 'tunai', 'jenis_layanan' => 'delivery', 'alamat' => 'Jl. A', 'id_zona' => ZonaPengiriman::first()->id]);
         $p = Pesanan::firstOrFail();
 
         $html = $this->actingAs($this->pelanggan)->get('/tracking')->assertOk()
             ->assertSeeInOrder(['Pesanan Dibuat', 'Dikonfirmasi', 'Dimasak', 'Siap Diantar', 'Dalam Perjalanan', 'Diterima'])
-            ->assertSee('Bayar Sekarang')->getContent();
+            ->assertSee('Ganti metode')->getContent();
         $this->assertSame(1, substr_count($html, 'class="st now"'));
 
         $this->isiKeranjang();
-        $this->actingAs($this->pelanggan)->post('/checkout', ['jenis_layanan' => 'take_away']);
+        $this->actingAs($this->pelanggan)->post('/checkout', ['metode' => 'tunai', 'jenis_layanan' => 'take_away']);
         $q = Pesanan::latest('id')->first();
         $this->actingAs($this->pelanggan)->get("/tracking?pesanan={$q->id}")
             ->assertSeeInOrder(['Pesanan Dibuat', 'Dikonfirmasi', 'Dimasak', 'Siap Diambil', 'Selesai'])
             ->assertDontSee('Dalam Perjalanan</b>', false);
+    }
+
+    // ---------- QA fase 4: keranjang & checkout
+
+    public function test_batas_50_porsi_dan_menu_habis_diberi_tahu(): void
+    {
+        $this->actingAs($this->pelanggan)->postJson('/keranjang', ['id_menu' => $this->tea->id, 'jumlah' => 50])->assertOk();
+        $this->actingAs($this->pelanggan)->postJson('/keranjang', ['id_menu' => $this->tea->id])
+            ->assertStatus(422)->assertJson(['message' => $this->tea->nama_menu.' sudah 50 porsi, batas maksimal per menu.']);
+
+        $this->tea->update(['tersedia' => false]);
+        $this->actingAs($this->pelanggan)->get('/keranjang')->assertSee($this->tea->nama_menu.' sedang habis dan sudah dihapus dari keranjang.');
+    }
+
+    public function test_hapus_item_bisa_dibatalkan_dengan_catatan_kembali(): void
+    {
+        $this->actingAs($this->pelanggan)->postJson('/keranjang', ['id_menu' => $this->tea->id, 'jumlah' => 3, 'catatan' => 'es sedikit'])->assertOk();
+        $raw = session(Keranjang::KEY);
+        $this->assertSame(['jumlah' => 3, 'catatan' => 'es sedikit'], $raw[$this->tea->id]);
+    }
+
+    public function test_back_setelah_checkout_ke_pesanan_yang_baru_dibuat(): void
+    {
+        $this->isiKeranjang();
+        $this->actingAs($this->pelanggan)->post('/checkout', ['metode' => 'tunai', 'jenis_layanan' => 'take_away']);
+        $p = Pesanan::firstOrFail();
+
+        $this->actingAs($this->pelanggan)->get('/checkout')->assertRedirect("/pesanan/{$p->id}/pembayaran")->assertSessionHas('status');
+        $this->actingAs($this->pelanggan)->get('/keranjang')->assertSee("Pesanan {$p->kode()} sudah dibuat.");
+    }
+
+    public function test_zona_tidak_terpilih_otomatis(): void
+    {
+        $this->isiKeranjang();
+        $html = $this->actingAs($this->pelanggan)->get('/checkout')->assertSee(config('resto.alamat'))->getContent();
+        $this->assertDoesNotMatchRegularExpression('/name="id_zona"[^>]*checked/', $html);
+    }
+
+    public function test_metode_bayar_terkunci_setelah_dikonfirmasi_dan_teks_selesai(): void
+    {
+        $kasir = User::factory()->create(['role' => User::ROLE_KASIR]);
+        $p = $this->buatPesanan();
+        app(\App\Services\PesananService::class)->konfirmasi($p->fresh(), $kasir);
+
+        $this->actingAs($this->pelanggan)->get("/tracking?pesanan={$p->id}")->assertDontSee('Ganti metode')->assertSee('Bayar tunai');
+        $this->actingAs($this->pelanggan)->get("/pesanan/{$p->id}/pembayaran")->assertDontSee('Simpan Metode Pembayaran');
+        $this->actingAs($this->pelanggan)->post("/pesanan/{$p->id}/pembayaran", ['metode' => 'tunai'])->assertSessionHasErrors('metode');
+
+        // dimasak, siap, lalu diserahkan: jam setiap langkah tercatat dan teks pembayaran sesuai status
+        $tiket = $p->fresh()->tiketDapur;
+        app(\App\Services\DapurService::class)->mulaiMasak($tiket);
+        app(\App\Services\DapurService::class)->selesaiMasak($tiket->fresh());
+        app(\App\Services\PesananService::class)->lunasi($p->fresh(), $kasir, 'tunai', 1000000);
+        app(\App\Services\PesananService::class)->selesaikan($p->fresh());
+
+        $langkah = collect(\App\Support\TimelinePesanan::untuk($p->fresh()))->pluck('waktu', 'label');
+        $this->assertNotNull($langkah['Dimasak']);
+        $this->assertNotNull($langkah['Siap Diambil']);
+        $this->assertNotNull($langkah['Selesai']);
+        $this->actingAs($this->pelanggan)->get("/pesanan/{$p->id}/pembayaran")->assertSee('Pesanan sudah selesai')->assertDontSee('diteruskan ke dapur');
     }
 }

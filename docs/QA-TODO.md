@@ -1,0 +1,117 @@
+# Rencana Perbaikan QA — Resto Flow
+
+Sumber: 4 laporan QA (A1 Akun, A2 Pelanggan, A3 Kasir & Dapur, A4 Kurir/Admin/Owner).
+Total **91 temuan** (High 8 · Medium 37 · Low 46). Beberapa temuan muncul di lebih dari satu laporan, jadi digabung (ditandai `=`).
+
+Prinsip urutan: **uang & data rusak dulu → alur pesanan macet → keamanan/akun → pengalaman pelanggan → UX staf → bahasa/istilah**.
+Satu fase = satu (atau beberapa) commit. Setiap fase selesai → saya lapor & tanya sebelum lanjut.
+
+---
+
+## Fase 0 — Persiapan
+- [x] Laravel Boost (sesuai CLAUDE.md)
+- [x] Jalankan test yang ada sebagai baseline (102 test lulus)
+- [x] Test dijalankan di SQLite **dan** MariaDB 10.11 (laporan diuji di MySQL) — keduanya lulus
+
+## Fase 1 — Uang & integritas data (13 temuan)
+- [x] **A3-#1 (High)** Kasir bisa melunasi pesanan Delivery COD / yang belum dikonfirmasi → uang hilang
+- [x] A3-#13 `=` daftar "Belum Lunas" ikut memuat pesanan Menunggu Konfirmasi (scope `belumLunas` yang sama)
+- [x] **A4-#1 (High)** Hapus/ubah role kurir yang masih bawa uang COD → setoran hilang
+- [x] **A3-#2 (High)** Hapus bahan baku yang dipakai resep → resep & 31 riwayat mutasi ikut terhapus (cascade)
+- [x] A3-#11 Ubah satuan bahan (kg→gram) tanpa konversi → stok salah 1000×
+- [x] A3-#5 Struk: uang diterima tidak disimpan, `?tunai=` bisa dimanipulasi, tidak bisa cetak ulang
+- [x] A3-#19 Kembalian sangat besar (salah ketik nol) tanpa konfirmasi
+- [x] A3-#23 `=` A4-#17 Harga besar → error 500 overflow kolom; "12,5" jadi 125; angka maksimal tanpa pemisah ribuan
+- [x] A4-#3 Harga menu Rp 0 lolos
+- [x] A4-#4 Zona: radius tumpang tindih & tarif Rp 0 lolos
+- [x] A4-#16 Nama menu duplikat lolos
+- [x] A3-#15 Bahan baku duplikat beda huruf, satuan bebas, tanggal mutasi 2001
+
+## Fase 2 — Alur pesanan yang macet / salah (9 temuan)
+- [x] **A2-#1 (High)** Pesanan tanpa metode bayar: pelanggan lihat "Menunggu Konfirmasi", kasir tidak melihatnya → menggantung selamanya
+- [x] **A3-#3 (High)** Kasir tidak bisa membatalkan/mengoreksi pesanan (tiket dapur ikut batal)
+- [x] A3-#4 `=` A2-#21 Validasi nomor meja di server (rentang 01–16, meja sedang dipakai)
+- [x] A2-#3 Timeline: "Dimasak" sudah dicentang padahal masih dimasak
+- [x] A3-#6 Tolak pesanan tanpa alasan; pesan "sudah diproses" untuk pesanan yang ditolak
+- [x] A3-#7 Dashboard kasir tidak menampilkan pesan error
+- [x] A3-#8 Mulai masak saat stok kurang: toast sukses + banner merah bertentangan
+- [x] A4-#9 Jam operasional lewat tengah malam (16:00–02:00) tidak bisa diatur
+
+## Fase 3 — Akun, login & keamanan (21 temuan)
+- [x] **A1-#21 (High)** Email OTP gagal terkirim → halaman debug 500, akun "yatim" tak bisa daftar ulang
+- [x] **A1-#3 (High)** `=` A4-#5 Halaman 429 bawaan Inggris, tanpa waktu tunggu, isian hilang
+- [x] A1-#4 Throttle login per IP untuk semua akun (login benar pun diblok)
+- [x] A1-#5 Tombol VERIFIKASI OTP macet saat kode < 6 digit
+- [x] A1-#6 `=` A2-#22 Tombol Back setelah logout menampilkan data (perlu `Cache-Control: no-store`)
+- [x] A1-#20 Mode debug & banner OTP (checklist deploy)
+- [x] A1-#8 `=` A2-#8 Halaman error 404/419/500/503 Indonesia + toast "Failed to fetch"/"Unauthenticated."
+- [x] A1-#14 Setelah login tidak kembali ke halaman tujuan, tanpa pesan "masuk dulu"
+- [x] A1-#19 Tidak ada "Ingat saya"
+- [x] A1-#11 Validasi Nomor HP (`- - -` diterima) & nama
+- [x] A1-#9 Checkbox S&K tercentang otomatis, S&K tak bisa dibaca
+- [x] A1-#10 Registrasi: petunjuk password, error per kolom, "(opsional)"
+- [x] A1-#12 Lupa password untuk email tak terdaftar → pesan menyesatkan
+- [x] A1-#13 Pesan OTP kedaluwarsa (nama tombol beda, tombol terkunci)
+- [x] A1-#15 Buka `/reset-password` langsung → pesan "sesi habis"
+- [x] A4-#2 Keterangan hak akses tidak berubah saat pilih role
+- [x] A4-#8 Turunkan role owner tanpa konfirmasi
+- [x] A4-#19 Password staf lemah (`11111111`) diterima
+
+## Fase 4 — Pengalaman pelanggan (20 temuan)
+- [x] A2-#12 Navigasi HP: menu jauh di bawah, "Lacak Pesanan" tersembunyi, tidak ada bottom nav
+- [x] A2-#2 Lacak Pesanan di HP: detail tertimbun di bawah 30 riwayat
+- [x] A2-#4 Tombol Cari tidak berfungsi
+- [x] A2-#5 Promo/hero statis tidak bisa dipesan, panah slide mati, "Semua promo" `#`
+- [x] A2-#6 Pilihan layanan di beranda tidak terbawa ke checkout; teks Dine In kontradiktif
+- [x] A2-#7 Zona A terpilih otomatis, tidak ada panduan jarak
+- [x] A2-#9 Restoran tutup: tidak ada banner, footer jam hardcode
+- [x] A2-#10 Menu habis hilang diam-diam dari keranjang / beranda
+- [x] A2-#11 Tidak ada halaman profil pelanggan (ubah nama/HP/alamat)
+- [x] A2-#13 Batas qty 50 tanpa pesan, toast "ditambahkan" palsu, tombol − di qty 1
+- [x] A2-#14 Hapus item keranjang tanpa "Batalkan"
+- [x] A2-#15 Back setelah checkout → "Keranjang masih kosong"
+- [x] A2-#16 Teks VA/QRIS padahal nonaktif, label tombol tunai, pesan `MIDTRANS_SERVER_KEY kosong`
+- [x] A2-#17 Tombol "Ubah Pembayaran" mencolok saat pesanan berjalan
+- [x] A2-#19 Chip "Pakai alamat profil" aktif padahal kosong
+- [x] A2-#20 Teks status salah setelah selesai ("diteruskan ke dapur", "menuju alamatmu")
+- [x] A2-#23 Pesan "Restoran tutup" tampil dua kali
+- [x] A2-#24 Kategori di strip atas berbeda dengan chip (Salad hilang)
+- [x] A2-#25 Jam per langkah timeline kosong
+- [x] A2-#26 Link footer `#` mati, nomor telepon bukan `tel:`
+
+## Fase 5 — UX staf: kasir, dapur, kurir, admin, owner (19 temuan)
+- [x] A3-#9 Mulai Masak / Terima Setoran tanpa konfirmasi, undo, loading; setoran tanpa jumlah dihitung
+- [x] A3-#12 HP: pilih item di daftar → balik ke atas, tombol aksi di luar layar
+- [x] A3-#14 Kasir tidak diberi tahu pesanan "Siap" di luar dashboard
+- [x] A3-#16 Pesan error "Items.0.jumlah"
+- [x] A3-#17 Tombol Simpan nonaktif tampak aktif; petunjuk "di sebelah kiri" di HP
+- [x] A3-#18 Qty input kasir tidak bisa diketik, tombol kecil, maksimal 99 diam
+- [x] A3-#20 Koneksi putus saat Simpan → keranjang kasir hilang
+- [x] A3-#21 Nama bahan sangat panjang mendorong kolom aksi keluar
+- [x] A4-#6 Laporan owner di HP: kolom Laba terpotong
+- [x] A4-#10 Toast peringatan kurir pakai ikon ✓
+- [x] A4-#11 Upload bukti: file bukan gambar diterima di pratinjau
+- [x] A4-#12 Nominal tagih tunai tidak jelas termasuk ongkir
+- [x] A4-#13 `=` A1-#16 Logout tanpa konfirmasi (kurir/pelanggan), tanpa pesan "Anda sudah keluar"
+- [x] A4-#15 Tombol ubah/hapus kategori hanya muncul saat hover
+- [x] A4-#20 Label sidebar "Pengeluaran Operasiona" terpotong
+- [x] A4-#21 Singkatan "M" vs "jt", "RUGI −Rp"
+- [x] A4-#22 Pesan "berformat Y-m-d"
+- [x] A4-#24 Status kurir "Diterima" sudah terpilih otomatis
+
+## Fase 6 — Bahasa, istilah & kesan pertama (9 temuan)
+- [x] A1-#18 `=` A2-#18 `=` A3-#10 `=` A3-#22 `=` A4-#7 `=` A4-#14 `=` A4-#23 Glosarium & sapu istilah: FIFO, ROP, Navbar, Logout/Keluar, OTP, Dine In/Take Away, "Selesai" makna ganda, ORD vs T-xxxx
+  - Keputusan pemilik: istilah *Password*, *OTP*, dan *Logout* tetap dipakai; Dine In / Take Away / Delivery tetap dengan keterangan Indonesia.
+- [x] A1-#7 Halaman pertama "Selamat Datang Kembali!" tanpa penjelasan aplikasi
+- [x] A1-#17 Target sentuh kecil di login/registrasi
+
+---
+Rekap: F1 13 · F2 9 · F3 21 · F4 20 · F5 19 · F6 9 = **91**
+
+---
+
+## Checklist sebelum aplikasi dipasang di hosting (A1-#20)
+- [ ] `.env`: `APP_ENV=production` dan `APP_DEBUG=false` (halaman error teknis tidak tampil ke pengguna; yang tampil halaman `errors/500` berbahasa Indonesia).
+- [ ] `MAIL_MAILER=smtp` dengan akun email yang aktif; coba daftar akun baru sekali untuk memastikan email OTP terkirim.
+- [ ] `php artisan migrate --force`, lalu `php artisan config:cache route:cache view:cache`.
+- [ ] Batas upload PHP (`upload_max_filesize`, `post_max_size`) minimal 5 MB untuk foto bukti pengiriman.

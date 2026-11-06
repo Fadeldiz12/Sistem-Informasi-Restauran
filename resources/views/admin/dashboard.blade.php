@@ -25,7 +25,7 @@
   $habis = $totalMenu - $menuTersedia;
   $perhatian = collect([
     ['route' => 'admin.menu', 'q' => ['status' => 'habis'], 'ikon' => 'i-alert', 'teks' => "{$habis} menu berstatus Habis", 'show' => $habis > 0],
-    ['route' => null, 'ikon' => 'i-box', 'teks' => "{$bahanKritis} bahan baku mencapai ROP (dapur)", 'show' => $bahanKritis > 0],
+    ['route' => null, 'ikon' => 'i-box', 'teks' => "{$bahanKritis} bahan baku hampir habis, perlu dipesan ulang (dapur)", 'show' => $bahanKritis > 0],
     ['route' => null, 'ikon' => 'i-receipt', 'teks' => "{$menungguKonfirmasi} pesanan menunggu konfirmasi kasir", 'show' => $menungguKonfirmasi > 0],
     ['route' => 'admin.zona', 'q' => [], 'ikon' => 'i-map', 'teks' => 'Belum ada zona pengiriman', 'show' => $jumlahZona === 0],
   ])->where('show', true);

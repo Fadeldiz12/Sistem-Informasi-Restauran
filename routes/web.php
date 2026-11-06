@@ -12,6 +12,7 @@ use App\Http\Controllers\MidtransController;
 use App\Http\Controllers\Owner;
 use App\Http\Controllers\Pelanggan;
 use App\Models\User;
+use App\Models\ZonaPengiriman;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -28,9 +29,12 @@ Route::get('/', function (Request $request) {
         : redirect()->route('login');
 });
 
+// Syarat & ketentuan (bisa dibaca tanpa login, ditautkan dari registrasi)
+Route::view('/syarat-ketentuan', 'syarat')->name('syarat');
+
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1,login')->name('login.submit');
+    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:30,1,login')->name('login.submit');
     Route::get('/registrasi', [AuthController::class, 'showRegister'])->name('registrasi');
     Route::post('/registrasi', [AuthController::class, 'register'])->middleware('throttle:5,1,registrasi')->name('registrasi.submit');
 
@@ -74,6 +78,12 @@ Route::middleware(['auth', 'role:'.User::ROLE_PELANGGAN])->name('pelanggan.')->g
     Route::get('/pesanan/{pesanan}/pembayaran/status', [Pelanggan\PembayaranController::class, 'status'])->name('pembayaran.status');
 
     Route::get('/tracking', Pelanggan\TrackingController::class)->name('tracking');
+
+    Route::get('/profil', [Pelanggan\ProfilController::class, 'edit'])->name('profil');
+    Route::put('/profil', [Pelanggan\ProfilController::class, 'update'])->name('profil.update');
+    Route::put('/profil/password', [Pelanggan\ProfilController::class, 'password'])->middleware('throttle:10,1,ganti-password')->name('profil.password');
+
+    Route::get('/bantuan', fn () => view('pelanggan.bantuan', ['zona' => ZonaPengiriman::orderBy('radius_km')->get()]))->name('bantuan');
 });
 
 // Notifikasi pembayaran dari Midtrans (webhook, tanpa login; diverifikasi lewat signature)
@@ -110,9 +120,13 @@ Route::middleware(['auth', 'role:'.User::ROLE_ADMIN])->prefix('admin')->name('ad
 // Kasir
 Route::middleware(['auth', 'role:'.User::ROLE_KASIR])->prefix('kasir')->name('kasir.')->group(function () {
     Route::get('/dashboard', Kasir\DashboardController::class)->name('dashboard');
+    Route::get('/notifikasi', Kasir\NotifikasiController::class)->name('notifikasi');
 
     Route::get('/input', [Kasir\InputPesananController::class, 'create'])->name('input');
     Route::post('/input', [Kasir\InputPesananController::class, 'store'])->name('input.store');
+    Route::get('/pesanan/{pesanan}/ubah', [Kasir\InputPesananController::class, 'edit'])->name('pesanan.ubah');
+    Route::put('/pesanan/{pesanan}', [Kasir\InputPesananController::class, 'update'])->name('pesanan.update');
+    Route::post('/pesanan/{pesanan}/batal', [Kasir\InputPesananController::class, 'batal'])->name('pesanan.batal');
 
     Route::get('/online', [Kasir\PesananOnlineController::class, 'index'])->name('online');
     Route::post('/online/{pesanan}/terima', [Kasir\PesananOnlineController::class, 'terima'])->name('online.terima');

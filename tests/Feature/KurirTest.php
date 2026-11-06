@@ -6,6 +6,7 @@ use App\Models\Menu;
 use App\Models\Pembayaran;
 use App\Models\Pengiriman;
 use App\Models\Pesanan;
+use App\Models\Setoran;
 use App\Models\User;
 use App\Models\ZonaPengiriman;
 use App\Services\DapurService;
@@ -71,7 +72,7 @@ class KurirTest extends TestCase
 
         $this->actingAs($this->kurir)->get('/kurir/tugas')->assertOk()
             ->assertSee('Bayu Saputra')
-            ->assertSeeInOrder(['FIFO #1', $a->kode(), 'Jl. Pertama', 'FIFO #2', $b->kode(), 'Jl. Kedua'])
+            ->assertSeeInOrder(['Antrean ke-1', $a->kode(), 'Jl. Pertama', 'Antrean ke-2', $b->kode(), 'Jl. Kedua'])
             ->assertSee('Menunggu tugas #1 diterima');
 
         $this->actingAs($this->kasir)->get('/kurir/tugas')->assertForbidden();
@@ -113,7 +114,7 @@ class KurirTest extends TestCase
         $this->actingAs($lain)->get("/kurir/tugas/{$a->pengiriman->id}")->assertRedirect(route('kurir.tugas'));
 
         // tugas berikutnya sekarang menjadi FIFO #1
-        $this->actingAs($lain)->get('/kurir/tugas')->assertSeeInOrder(['FIFO #1', $b->kode()]);
+        $this->actingAs($lain)->get('/kurir/tugas')->assertSeeInOrder(['Antrean ke-1', $b->kode()]);
 
         // pelanggan melihat nama kurir di halaman lacak
         $this->actingAs($this->pelanggan)->get("/tracking?pesanan={$a->id}")->assertSee('Bayu Saputra')->assertSee('Dalam Perjalanan');
@@ -214,7 +215,14 @@ class KurirTest extends TestCase
         $this->actingAs($this->kasir)->get('/kasir/setoran')->assertOk()->assertSee('Bayu Saputra')->assertSee($a->kode())->assertSee('Terima Setoran');
         $this->actingAs($this->kurir)->get('/kasir/setoran')->assertForbidden();
 
-        $this->actingAs($this->kasir)->post("/kasir/setoran/{$this->kurir->id}", ['ids' => [$bayar->id]])->assertSessionHas('status');
+        $this->actingAs($this->kasir)->post("/kasir/setoran/{$this->kurir->id}", ['ids' => [$bayar->id]])->assertSessionHasErrors('uang_dihitung');
+        $this->actingAs($this->kasir)->post("/kasir/setoran/{$this->kurir->id}", ['ids' => [$bayar->id], 'uang_dihitung' => (string) ((int) $a->total - 5000)])
+            ->assertSessionHasErrors('catatan'); // kurang tanpa catatan ditolak
+        $this->actingAs($this->kasir)->post("/kasir/setoran/{$this->kurir->id}", ['ids' => [$bayar->id], 'uang_dihitung' => (string) ((int) $a->total - 5000), 'catatan' => 'kurang kembalian'])
+            ->assertSessionHas('status', fn ($m) => str_contains($m, 'selisih -Rp 5.000'));
+        $setoran = Setoran::firstOrFail();
+        $this->assertEquals(-5000, $setoran->selisih());
+        $this->actingAs($this->kasir)->get('/kasir/setoran')->assertSee('Selisih Setoran Hari Ini')->assertSee('kurang kembalian');
         $bayar->refresh();
         $this->assertNotNull($bayar->disetor_pada);
         $this->assertSame($this->kasir->id, $bayar->id_kasir);
@@ -223,7 +231,29 @@ class KurirTest extends TestCase
         $this->actingAs($this->kurir)->get('/kurir/riwayat')->assertDontSee('Uang tunai yang kamu bawa');
 
         // dikirim ulang: tidak tercatat dua kali
-        $this->actingAs($this->kasir)->post("/kasir/setoran/{$this->kurir->id}", ['ids' => [$bayar->id]])->assertSessionHas('error');
+        $this->actingAs($this->kasir)->post("/kasir/setoran/{$this->kurir->id}", ['ids' => [$bayar->id], 'uang_dihitung' => '1000'])->assertSessionHas('error');
+    }
+
+    public function test_kurir_yang_membawa_uang_tunai_tidak_bisa_dihapus_atau_diganti_role(): void
+    {
+        $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+        $a = $this->siapDiantar();
+        $this->actingAs($this->kurir)->post("/kurir/tugas/{$a->pengiriman->id}/terima");
+        $this->actingAs($this->kurir)->post("/kurir/tugas/{$a->pengiriman->id}/diterima", ['bukti' => UploadedFile::fake()->image('b.jpg'), 'uang_diterima' => 1]);
+        $bayar = $a->fresh()->pembayaran;
+
+        $this->actingAs($admin)->delete("/admin/pengguna/{$this->kurir->id}")
+            ->assertSessionHas('error', fn ($m) => str_contains($m, 'belum disetor'));
+        $this->actingAs($admin)->put("/admin/pengguna/{$this->kurir->id}", [
+            'nama' => $this->kurir->nama, 'email' => $this->kurir->email, 'no_hp' => '081234567890', 'role' => User::ROLE_KASIR,
+        ])->assertSessionHasErrors('role');
+        $this->assertSame(User::ROLE_KURIR, $this->kurir->fresh()->role);
+        $this->assertSame($this->kurir->id, $bayar->fresh()->id_kurir);
+
+        // setelah setoran diterima kasir, akun boleh dihapus
+        $this->actingAs($this->kasir)->post("/kasir/setoran/{$this->kurir->id}", ['ids' => [$bayar->id], 'uang_dihitung' => (string) (int) $bayar->jumlah]);
+        $this->actingAs($admin)->delete("/admin/pengguna/{$this->kurir->id}")->assertSessionHas('status');
+        $this->assertNull($this->kurir->fresh());
     }
 
     public function test_pembayaran_online_tidak_masuk_setoran(): void

@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Pelanggan;
 
 use App\Http\Controllers\Controller;
 use App\Models\Menu;
+use App\Models\PengaturanSistem;
+use App\Models\Pesanan;
 use App\Support\Keranjang;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -14,12 +16,16 @@ class KeranjangController extends Controller
 {
     public function __construct(private Keranjang $keranjang) {}
 
-    public function index(): View
+    public function index(Request $request): View
     {
         $items = $this->keranjang->items();
         $diKeranjang = $items->pluck('menu.id');
+        $dibuang = $this->keranjang->dibuang();
 
         return view('pelanggan.keranjang', [
+            'dibuang' => $dibuang,
+            'set' => PengaturanSistem::aktif(),
+            'pesananTerakhir' => $items->isEmpty() ? $this->pesananBaru($request) : null,
             'items' => $items,
             'ringkasan' => $this->keranjang->ringkasan($items),
             // rekomendasi: menu tersedia lain yang belum ada di keranjang
@@ -32,6 +38,7 @@ class KeranjangController extends Controller
         $data = $request->validate([
             'id_menu' => ['required', 'integer', 'exists:menu,id'],
             'jumlah' => ['nullable', 'integer', 'min:1', 'max:'.Keranjang::MAKS_JUMLAH],
+            'catatan' => ['nullable', 'string', 'max:255'],
         ]);
 
         $menu = Menu::findOrFail($data['id_menu']);
@@ -39,9 +46,21 @@ class KeranjangController extends Controller
             return $this->balas($request, "{$menu->nama_menu} sedang habis.", 422);
         }
 
-        $this->keranjang->tambah($menu, $data['jumlah'] ?? 1);
+        if ($this->keranjang->tambah($menu, $data['jumlah'] ?? 1, $data['catatan'] ?? null) === 0) {
+            return $this->balas($request, $menu->nama_menu.' sudah '.Keranjang::MAKS_JUMLAH.' porsi, batas maksimal per menu.', 422);
+        }
 
         return $this->balas($request, "{$menu->nama_menu} ditambahkan ke keranjang");
+    }
+
+    /**
+     * Pesanan yang baru dibuat di sesi ini (mis. pelanggan menekan Back dari halaman pembayaran).
+     */
+    private function pesananBaru(Request $request): ?Pesanan
+    {
+        $id = $request->session()->get(CheckoutController::SESI_PESANAN_BARU);
+
+        return $id ? $request->user()->pesanan()->whereKey($id)->where('waktu_pesan', '>=', now()->subHour())->first() : null;
     }
 
     public function update(Request $request, int $menu): JsonResponse

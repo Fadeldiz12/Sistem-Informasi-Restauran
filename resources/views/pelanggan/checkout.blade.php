@@ -173,9 +173,12 @@
 @php
   $persen = fn ($v) => \App\Models\PengaturanSistem::persen($v);
   $rp = fn ($n) => 'Rp '.number_format((float) $n, 0, ',', '.');
-  $layanan = old('jenis_layanan', Pesanan::LAYANAN_DELIVERY);
-  $zonaDipilih = (int) old('id_zona', $zona->first()?->id);
+  $layanan = old('jenis_layanan', $zona->isEmpty() && $layananPilihan === Pesanan::LAYANAN_DELIVERY ? Pesanan::LAYANAN_TAKE_AWAY : $layananPilihan);
+  $metode = old('metode', $midtransAktif ? \App\Models\Pembayaran::METODE_TRANSFER : \App\Models\Pembayaran::METODE_TUNAI);
+  $bankPilih = old('bank', array_key_first($bank));
+  $zonaDipilih = (int) old('id_zona'); // tidak terpilih otomatis: pelanggan wajib memilih zona (QA A2-#7)
   $u = auth()->user();
+  $alamatLama = old('alamat', $u->alamat);
   $prevRadius = 0;
 @endphp
 
@@ -233,8 +236,14 @@
           </div>
 
           <div @class(['svc-panel', 'on' => $layanan === Pesanan::LAYANAN_DINE_IN]) data-panel="{{ Pesanan::LAYANAN_DINE_IN }}">
-            <div class="field"><label for="meja">Nomor meja</label><div class="in"><svg class="ic"><use href="#i-dine"/></svg><input id="meja" name="nomor_meja" value="{{ old('nomor_meja') }}" maxlength="10" placeholder="Contoh: 07"></div></div>
-            <div class="note" style="margin-top:14px"><svg class="ic"><use href="#i-info"/></svg>Nomor meja tertera di sudut meja. Pesanan masuk antrean dapur setelah dikonfirmasi kasir.</div>
+            <div class="field"><label for="meja">Nomor meja</label><div class="in"><svg class="ic"><use href="#i-dine"/></svg><select id="meja" name="nomor_meja">
+              <option value="">Pilih nomor meja</option>
+              @for ($i = 1; $i <= config('resto.jumlah_meja'); $i++)
+                @php $no = str_pad($i, 2, '0', STR_PAD_LEFT); @endphp
+                <option value="{{ $no }}" @selected(old('nomor_meja') === $no)>Meja {{ $no }}</option>
+              @endfor
+            </select></div></div>
+            <div class="note" style="margin-top:14px"><svg class="ic"><use href="#i-info"/></svg>Pilih Dine In hanya bila kamu sudah duduk di restoran. Nomor meja tertera di sudut meja. Pesanan masuk antrean dapur setelah dikonfirmasi kasir.</div>
           </div>
 
           <div @class(['svc-panel', 'on' => $layanan === Pesanan::LAYANAN_TAKE_AWAY]) data-panel="{{ Pesanan::LAYANAN_TAKE_AWAY }}">
@@ -242,15 +251,17 @@
           </div>
 
           <div @class(['svc-panel', 'on' => $layanan === Pesanan::LAYANAN_DELIVERY]) data-panel="{{ Pesanan::LAYANAN_DELIVERY }}">
-            <div class="field"><label for="alamat">Alamat pengiriman</label><div class="in ta"><svg class="ic" style="margin-top:2px"><use href="#i-pin"/></svg><textarea id="alamat" name="alamat" maxlength="500" placeholder="Nama jalan, nomor rumah, kelurahan, kecamatan">{{ old('alamat', $u->alamat) }}</textarea></div></div>
+            <div class="field"><label for="alamat">Alamat pengiriman</label><div class="in ta"><svg class="ic" style="margin-top:2px"><use href="#i-pin"/></svg><textarea id="alamat" name="alamat" maxlength="500" placeholder="Nama jalan, nomor rumah, kelurahan, kecamatan">{{ $alamatLama }}</textarea></div>@error('alamat')<div style="font:600 12.5px var(--f-body);margin-top:6px">{{ $message }}</div>@enderror</div>
             @if ($u->alamat)
-              <div class="chips" id="addrChips"><button type="button" class="on" data-addr="profil">Pakai alamat profil</button><button type="button" data-addr="lain">Alamat lain</button></div>
+              @php $pakaiProfil = trim((string) $alamatLama) !== '' && trim((string) $alamatLama) === trim($u->alamat); @endphp
+              <div class="chips" id="addrChips"><button type="button" @class(['on' => $pakaiProfil]) data-addr="profil">Pakai alamat profil</button><button type="button" @class(['on' => ! $pakaiProfil]) data-addr="lain">Alamat lain</button></div>
             @endif
             <div class="eyebrow" style="font-size:10.5px;margin-top:16px">Pilih zona sesuai jarak alamat dari restoran</div>
+            <div style="font-size:13px;opacity:.75;margin-top:4px">Restoran: {{ config('resto.alamat') }}</div>
             <div class="zones">
               @foreach ($zona as $z)
                 <label class="zone-opt"><input type="radio" name="id_zona" value="{{ $z->id }}" data-ongkir="{{ $z->ongkir() }}" data-nama="{{ $z->nama_zona }}" @checked($zonaDipilih === $z->id)>
-                  <span class="zn"><b>{{ $z->nama_zona }}</b><small>{{ rtrim(rtrim(number_format($prevRadius, 1, ',', '.'), '0'), ',') }} – {{ rtrim(rtrim(number_format((float) $z->radius_km, 1, ',', '.'), '0'), ',') }} km dari restoran</small></span>
+                  <span class="zn"><b>{{ $z->nama_zona }}</b><small>{{ rtrim(rtrim(number_format($prevRadius, 1, ',', '.'), '0'), ',') }} – {{ rtrim(rtrim(number_format((float) $z->radius_km, 1, ',', '.'), '0'), ',') }} km dari restoran{{ $z->contoh_wilayah ? ' · '.$z->contoh_wilayah : '' }}</small></span>
                   <span class="kt">{{ $rp($z->ongkir()) }}</span></label>
                 @php $prevRadius = (float) $z->radius_km; @endphp
               @endforeach
@@ -261,7 +272,7 @@
 
         <!-- 2. Data pemesan -->
         <section class="card sec">
-          <div class="sec-title"><span class="no">2</span><div><h2>Data pemesan</h2><p>Diambil dari profil akunmu.</p></div></div>
+          <div class="sec-title"><span class="no">2</span><div><h2>Data pemesan</h2><p>Diambil dari profil akunmu · <a href="{{ route('pelanggan.profil') }}" style="font-weight:700;text-decoration:underline">Ubah</a></p></div></div>
           <div class="grid2">
             <div class="field"><label>Nama</label><div class="in ro"><svg class="ic"><use href="#i-user"/></svg><input value="{{ $u->nama }}" readonly></div></div>
             <div class="field"><label>Nomor HP</label><div class="in ro"><svg class="ic"><use href="#i-phone"/></svg><input value="{{ $u->no_hp }}" readonly></div></div>
@@ -269,10 +280,10 @@
           <div class="note" style="margin-top:14px"><svg class="ic"><use href="#i-edit"/></svg>Catatan untuk tiap menu (mis. "pedas", "es sedikit") diisi di halaman Keranjang.</div>
         </section>
 
-        <!-- 3. Pembayaran (info) -->
-        <section class="card sec soft">
-          <div class="sec-title" style="margin-bottom:12px"><span class="no" style="background:var(--bl);color:var(--m)">3</span><div><h2>Pembayaran</h2><p>Dilakukan setelah pesanan dibuat.</p></div></div>
-          <div class="note"><svg class="ic"><use href="#i-shield"/></svg><span>Setelah konfirmasi, pesanan tersimpan dengan status <b>Menunggu Pembayaran</b>. Bayar dengan Virtual Account atau QRIS (dicek otomatis, langsung masuk dapur), atau tunai di kasir.</span></div>
+        <!-- 3. Metode pembayaran -->
+        <section class="card sec">
+          <div class="sec-title" style="margin-bottom:12px"><span class="no">3</span><div><h2>Pilih metode pembayaran</h2><p>{{ $midtransAktif ? 'Virtual Account & QRIS dicek otomatis dan pesanan langsung diteruskan ke dapur.' : 'Bayar tunai saat pesanan diambil atau diantar.' }}</p></div></div>
+          @include('pelanggan.partials.metode-bayar', ['teksTunai' => $layanan === Pesanan::LAYANAN_DELIVERY ? 'Bayar tunai ke kurir saat pesanan tiba' : 'Bayar tunai di kasir'])
         </section>
       </div>
 
@@ -313,8 +324,10 @@
     function hitung() {
       var s = jenisLayanan.value, z = zonaDipilih(), ong = s === 'delivery' && z ? +z.dataset.ongkir : 0;
       ongRow.style.display = s === 'delivery' ? '' : 'none';
-      ongZone.textContent = z ? z.dataset.nama : '-'; ongVal.textContent = rp(ong);
+      ongZone.textContent = z ? z.dataset.nama : 'belum dipilih'; ongVal.textContent = z ? rp(ong) : 'pilih zona';
       grand.textContent = rp(dasar + ong); svcBadge.textContent = label[s];
+      var t = s === 'delivery' ? 'Bayar tunai ke kurir saat pesanan tiba' : 'Bayar tunai di kasir';
+      tunaiSub.textContent = t; tunaiInfo.textContent = t + '.';
     }
     document.querySelectorAll('.svc-opt').forEach(function (b) {
       b.addEventListener('click', function () {

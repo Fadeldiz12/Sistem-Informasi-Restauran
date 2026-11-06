@@ -12,6 +12,7 @@ use App\Models\ZonaPengiriman;
 use Database\Seeders\MasterDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -67,7 +68,7 @@ class AdminTest extends TestCase
 
         // ubah tanpa password: password lama tetap
         $this->actingAs($this->admin)->put("/admin/pengguna/{$lia->id}", [
-            'nama' => 'Lia H.', 'email' => 'lia@simresto.test', 'no_hp' => '0857', 'role' => 'dapur', 'password' => '',
+            'nama' => 'Lia H.', 'email' => 'lia@simresto.test', 'no_hp' => '085712003478', 'role' => 'dapur', 'password' => '',
         ])->assertSessionHasNoErrors();
         $lia->refresh();
         $this->assertSame(['Lia H.', 'dapur', $hash], [$lia->nama, $lia->role, $lia->password]);
@@ -83,9 +84,18 @@ class AdminTest extends TestCase
         ])->assertRedirect('/admin/pengguna')->assertSessionHasErrors(['nama', 'email', 'no_hp', 'role', 'password']);
 
         $this->actingAs($this->admin)->followingRedirects()->from('/admin/pengguna')
-            ->post('/admin/pengguna', ['_modal' => 'mUser', 'nama' => 'X', 'email' => $this->admin->email, 'no_hp' => '08', 'role' => 'kasir', 'password' => 'rahasia123', 'password_confirmation' => 'rahasia123'])
+            ->post('/admin/pengguna', ['_modal' => 'mUser', 'nama' => 'X', 'email' => $this->admin->email, 'no_hp' => '081234567890', 'role' => 'kasir', 'password' => 'rahasia123', 'password_confirmation' => 'rahasia123'])
             ->assertSee('data-reopen="mUser"', false)
             ->assertSee('Email sudah digunakan.');
+    }
+
+    public function test_password_staf_wajib_huruf_dan_angka(): void
+    {
+        $isi = ['nama' => 'Kasir Baru', 'email' => 'kb@simresto.test', 'no_hp' => '081234567890', 'role' => 'kasir'];
+        $this->actingAs($this->admin)->post('/admin/pengguna', $isi + ['password' => '11111111', 'password_confirmation' => '11111111'])
+            ->assertSessionHasErrors('password');
+        $this->actingAs($this->admin)->post('/admin/pengguna', $isi + ['password' => 'kasir2026', 'password_confirmation' => 'kasir2026'])
+            ->assertSessionHasNoErrors();
     }
 
     public function test_admin_tidak_bisa_hapus_atau_ganti_peran_diri_sendiri(): void
@@ -94,7 +104,7 @@ class AdminTest extends TestCase
         $this->assertModelExists($this->admin);
 
         $this->actingAs($this->admin)->put("/admin/pengguna/{$this->admin->id}", [
-            'nama' => 'Dewi', 'email' => $this->admin->email, 'no_hp' => '08', 'role' => 'kasir',
+            'nama' => 'Dewi', 'email' => $this->admin->email, 'no_hp' => '081234567890', 'role' => 'kasir',
         ])->assertSessionHasErrors('role');
         $this->assertSame('admin', $this->admin->fresh()->role);
     }
@@ -216,6 +226,24 @@ class AdminTest extends TestCase
             'nama_menu' => '', 'id_kategori' => 999, 'harga' => 'abc',
             'foto' => UploadedFile::fake()->create('virus.exe', 10),
         ])->assertSessionHasErrors(['nama_menu', 'id_kategori', 'harga', 'foto']);
+
+        $kategori = Menu::firstWhere('nama_menu', 'Pizza Margherita')->id_kategori;
+        $isi = ['nama_menu' => 'Menu Baru QA', 'id_kategori' => $kategori];
+        // harga 0, desimal, dan terlalu besar ditolak
+        $this->actingAs($this->admin)->post('/admin/menu', $isi + ['harga' => '0'])->assertSessionHasErrors(['harga' => 'Harga harus lebih dari Rp 0.']);
+        $this->actingAs($this->admin)->post('/admin/menu', $isi + ['harga' => '12,5'])->assertSessionHasErrors('harga');
+        $this->actingAs($this->admin)->post('/admin/menu', $isi + ['harga' => '9.999.999.999'])
+            ->assertSessionHasErrors(['harga' => 'Harga maksimal Rp 99.999.999.']);
+        // nama menu yang sudah ada (beda huruf besar/kecil) ditolak
+        $this->actingAs($this->admin)->post('/admin/menu', ['nama_menu' => 'pizza margherita', 'id_kategori' => $kategori, 'harga' => '89.000'])
+            ->assertSessionHasErrors('nama_menu');
+        $this->assertSame(0, Menu::where('nama_menu', 'Menu Baru QA')->count());
+        $this->assertSame(1, Menu::where('nama_menu', 'Pizza Margherita')->count());
+
+        // mengubah menu tanpa mengganti namanya tetap boleh
+        $pizza = Menu::firstWhere('nama_menu', 'Pizza Margherita');
+        $this->actingAs($this->admin)->put("/admin/menu/{$pizza->id}", ['nama_menu' => 'Pizza Margherita', 'id_kategori' => $kategori, 'harga' => '95.000', 'tersedia' => 1])
+            ->assertSessionHasNoErrors();
     }
 
     public function test_toggle_tersedia_dan_filter_menu(): void
@@ -255,6 +283,18 @@ class AdminTest extends TestCase
         $this->actingAs($this->admin)->put("/admin/zona/{$zona->id}", ['nama_zona' => 'Zona D', 'radius_km' => 12, 'tarif_per_km' => 2000]);
         $this->assertEquals(24000, $zona->fresh()->ongkir());
 
+        // radius sama dengan zona lain ditolak
+        $lain = ZonaPengiriman::where('id', '!=', $zona->id)->first();
+        $this->actingAs($this->admin)->post('/admin/zona', ['nama_zona' => 'Zona Kembar', 'radius_km' => (float) $lain->radius_km, 'tarif_per_km' => '2.000'])
+            ->assertSessionHasErrors('radius_km');
+
+        // tarif Rp 0 harus dikonfirmasi sebagai ongkir gratis
+        $this->actingAs($this->admin)->post('/admin/zona', ['nama_zona' => 'Zona Gratis', 'radius_km' => 1, 'tarif_per_km' => '0'])
+            ->assertSessionHasErrors('tarif_per_km');
+        $this->actingAs($this->admin)->post('/admin/zona', ['nama_zona' => 'Zona Gratis', 'radius_km' => 1, 'tarif_per_km' => '0', 'konfirmasi_gratis' => 1])
+            ->assertSessionHasNoErrors();
+        $this->assertEquals(0, ZonaPengiriman::firstWhere('nama_zona', 'Zona Gratis')->ongkir());
+
         $this->actingAs($this->admin)->delete("/admin/zona/{$zona->id}")->assertSessionHas('status');
         $this->assertModelMissing($zona);
     }
@@ -287,10 +327,24 @@ class AdminTest extends TestCase
         $this->actingAs($this->admin)->get('/admin/dashboard')->assertSee('09:00 – 21:30')->assertSee('11%')->assertSee('2,5%');
     }
 
+    public function test_jam_operasional_lewat_tengah_malam(): void
+    {
+        $this->actingAs($this->admin)->put('/admin/pengaturan', [
+            'pajak' => '10', 'biaya_layanan' => '5', 'jam_buka' => '16:00', 'jam_tutup' => '02:00',
+        ])->assertSessionHasNoErrors();
+
+        $set = PengaturanSistem::aktif();
+        $this->assertTrue($set->sedangBuka(Carbon::parse('2026-11-06 23:30')));
+        $this->assertTrue($set->sedangBuka(Carbon::parse('2026-11-06 01:59')));
+        $this->assertFalse($set->sedangBuka(Carbon::parse('2026-11-06 02:00')));
+        $this->assertFalse($set->sedangBuka(Carbon::parse('2026-11-06 15:59')));
+        $this->assertTrue($set->sedangBuka(Carbon::parse('2026-11-06 16:00')));
+    }
+
     public function test_validasi_pengaturan(): void
     {
         $this->actingAs($this->admin)->put('/admin/pengaturan', [
-            'pajak' => 150, 'biaya_layanan' => 101, 'jam_buka' => '22:00', 'jam_tutup' => '10:00',
+            'pajak' => 150, 'biaya_layanan' => 101, 'jam_buka' => '22:00', 'jam_tutup' => '22:00',
         ])->assertSessionHasErrors(['pajak', 'biaya_layanan', 'jam_tutup']);
     }
 }

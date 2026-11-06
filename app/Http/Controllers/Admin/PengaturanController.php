@@ -26,9 +26,9 @@ class PengaturanController extends Controller
             'pajak' => ['required', 'numeric', 'min:0', 'max:100'],
             'biaya_layanan' => ['required', 'numeric', 'min:0', 'max:100'],
             'jam_buka' => ['required', 'date_format:H:i'],
-            'jam_tutup' => ['required', 'date_format:H:i', 'after:jam_buka'],
+            'jam_tutup' => ['required', 'date_format:H:i', 'different:jam_buka'],
         ], [
-            'jam_tutup.after' => 'Jam tutup harus setelah jam buka.',
+            'jam_tutup.different' => 'Jam tutup tidak boleh sama dengan jam buka.',
         ]);
 
         PengaturanSistem::aktif()->update($data);

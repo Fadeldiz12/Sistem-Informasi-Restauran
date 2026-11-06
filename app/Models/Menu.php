@@ -15,6 +15,11 @@ use Illuminate\Support\Str;
 #[Fillable(['id_kategori', 'nama_menu', 'harga', 'foto', 'tersedia'])]
 class Menu extends Model
 {
+    /**
+     * Harga menu tertinggi (Rp 99.999.999) supaya total pesanan tidak melebihi kapasitas kolom decimal(12,2).
+     */
+    public const HARGA_MAKS = 99_999_999;
+
     protected function casts(): array
     {
         return [
@@ -59,6 +64,16 @@ class Menu extends Model
     /**
      * Hanya menu yang tersedia (yang ditampilkan ke pelanggan).
      */
+    /**
+     * Menu promo yang bisa dipesan: menu tersedia di kategori "Promo".
+     */
+    #[Scope]
+    protected function promo(Builder $query): void
+    {
+        $query->where('tersedia', true)
+            ->whereHas('kategori', fn ($k) => $k->whereRaw('LOWER(TRIM(nama_kategori)) = ?', [mb_strtolower(Kategori::NAMA_PROMO)]));
+    }
+
     #[Scope]
     protected function tersedia(Builder $query): void
     {

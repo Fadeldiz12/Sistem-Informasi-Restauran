@@ -29,6 +29,10 @@
     @if (session('error'))
       <div class="alert" role="alert">{{ session('error') }}</div>
     @endif
+    {{-- error validasi dari aksi di halaman ini (mis. tombol Selesai dari tab lama); halaman dengan tampilan error sendiri memakai section error-sendiri --}}
+    @if ($errors->any() && ! old('_modal') && ! View::hasSection('error-sendiri'))
+      <div class="alert" role="alert">{{ $errors->first() }}</div>
+    @endif
 
     @yield('content')
   </main>
@@ -40,14 +44,20 @@
   <div class="big-ic" style="background:var(--m);color:var(--cr)"><svg class="ic"><use href="#i-trash"/></svg></div>
   <h3 style="font:700 24px var(--f-title)">@yield('delete-title', 'Hapus data ini?')</h3>
   <div class="pill p" style="margin-top:12px;font-size:13px;padding:7px 14px" id="delName"></div>
-  <p style="opacity:.75;margin:12px 28px 22px">Data akan dihapus dari database dan tidak dapat dikembalikan.</p>
+  <p style="opacity:.75;margin:12px 28px 22px">@yield('delete-text', 'Data akan dihapus permanen dan tidak dapat dikembalikan.')</p>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 28px 28px"><button class="btn o lg" data-close>Tidak</button><button class="btn lg" id="delOk">Ya, Hapus</button></div>
 </div></div>
 <div class="ovl" id="mLogout"><div class="modal sm">
   <div class="big-ic" style="background:var(--bl)"><svg class="ic"><use href="#i-logout"/></svg></div>
   <h3 style="font:700 24px var(--f-title)">Logout dari sistem?</h3>
   <p style="opacity:.75;margin:10px 28px 22px">Sesi login akan dihapus dan Anda diarahkan kembali ke halaman login.</p>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 28px 28px"><button class="btn o lg" data-close>Batal</button><a class="btn lg" href="#" data-logout>Ya, Logout</a></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 28px 28px"><button class="btn o lg" data-close>Batal</button><a class="btn lg" href="#" data-logout data-langsung>Ya, Logout</a></div>
+</div></div>
+<div class="ovl" id="mKonfirmasi"><div class="modal sm">
+  <div class="big-ic" style="background:var(--bl)"><svg class="ic"><use href="#i-alert"/></svg></div>
+  <h3 style="font:700 22px var(--f-title)" id="konfJudul">Lanjutkan?</h3>
+  <p style="opacity:.75;margin:10px 28px 22px" id="konfPesan"></p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 28px 28px"><button class="btn o lg" data-close>Batal</button><button class="btn lg" id="konfOk">Ya, lanjutkan</button></div>
 </div></div>
 <div class="toast" id="toast"><svg class="ic"><use href="#i-check"/></svg><span id="toastMsg">Tersimpan</span></div>
 
@@ -56,5 +66,7 @@
 <script src="{{ asset('js/panel.js') }}?v={{ filemtime(public_path('js/panel.js')) }}"></script>
 @stack('scripts')
 @include('partials.logout')
+{{-- halaman dari cache Back/Forward dimuat ulang supaya sesi yang sudah keluar tidak menampilkan data --}}
+<script>window.addEventListener('pageshow', function (e) { if (e.persisted) location.reload(); });</script>
 </body>
 </html>

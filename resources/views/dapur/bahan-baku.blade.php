@@ -6,8 +6,9 @@
 @section('title', 'Bahan Baku')
 @section('crumb', 'Dapur / Bahan Baku')
 @section('heading', 'Kelola Bahan Baku')
-@section('sub', 'Catat stok masuk dan pemakaian; sistem menghitung ROP dan memberi notifikasi stok kritis')
+@section('sub', 'Catat stok masuk & keluar; sistem menghitung batas pesan ulang (ROP) dan memberi tahu bila stok hampir habis')
 @section('delete-title', 'Hapus bahan baku ini?')
+@section('delete-text', 'Bahan diarsipkan: hilang dari daftar, tetapi riwayat stoknya tetap tersimpan. Bahan yang masih dipakai resep tidak bisa dihapus.')
 
 @php
   $a = fn ($n) => BahanBakuService::angka($n);
@@ -20,6 +21,9 @@
   .stok-cell { display: flex; gap: 10px; align-items: center; }
   .stok-cell b { min-width: 44px; }
   tr.kritis td:first-child b { color: var(--m); }
+  /* nama bahan yang sangat panjang dibungkus supaya kolom aksi tetap terlihat (QA A3-#21) */
+  td:first-child b { overflow-wrap: anywhere; word-break: break-word; }
+  td:first-child { max-width: 320px; }
   tr.kritis { background: rgba(151, 23, 58, .05); }
   .riwayat { display: grid; gap: 0; }
   .riwayat div { display: flex; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--m15); font-size: 13.5px; }
@@ -35,28 +39,28 @@
 
 @section('content')
   @if ($kritis->isNotEmpty())
-    <div class="card f" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:14px 20px;border-radius:18px;margin-bottom:18px"><svg class="ic" style="width:22px;height:22px"><use href="#i-alert"/></svg><span style="flex:1;min-width:220px;font:600 14px var(--f-accent)">Notifikasi stok kritis: {{ $kritis->pluck('nama_bahan')->join(', ', ' dan ') }} berada pada atau di bawah ROP. Segera lakukan pemesanan ulang.</span></div>
+    <div class="card f" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:14px 20px;border-radius:18px;margin-bottom:18px"><svg class="ic" style="width:22px;height:22px"><use href="#i-alert"/></svg><span style="flex:1;min-width:220px;font:600 14px var(--f-accent)">Notifikasi stok kritis: {{ $kritis->pluck('nama_bahan')->join(', ', ' dan ') }} hampir habis (sudah di batas pesan ulang). Segera pesan ke pemasok.</span></div>
   @endif
 
   <div class="grid g4">
     <div class="card stat f"><div class="top"><span class="eyebrow">Total bahan baku</span><span class="ico"><svg class="ic"><use href="#i-box"/></svg></span></div><div class="v">{{ $bahan->count() }}</div><div class="t">Terdaftar di dapur</div></div>
-    <div class="card stat b"><div class="top"><span class="eyebrow">Stok kritis</span><span class="ico"><svg class="ic"><use href="#i-alert"/></svg></span></div><div class="v">{{ $kritis->count() }}</div><div class="t">Stok ≤ ROP</div></div>
+    <div class="card stat b"><div class="top"><span class="eyebrow">Stok kritis</span><span class="ico"><svg class="ic"><use href="#i-alert"/></svg></span></div><div class="v">{{ $kritis->count() }}</div><div class="t">Stok ≤ batas pesan ulang</div></div>
     <div class="card stat "><div class="top"><span class="eyebrow">Mutasi hari ini</span><span class="ico"><svg class="ic"><use href="#i-refresh"/></svg></span></div><div class="v">{{ $masukHariIni + $pakaiHariIni }}</div><div class="t">Masuk {{ $masukHariIni }} · Pemakaian {{ $pakaiHariIni }}</div></div>
-    <div class="stamp-out"><div class="stamp" style="padding:20px 22px;height:100%"><div class="eyebrow">Rumus reorder point</div><div style="font:700 clamp(17px,1.5vw,22px) var(--f-title);margin:8px 0 4px;white-space:nowrap">ROP = (d × L) + SS</div>
-      <div style="font-size:12.5px;opacity:.72;line-height:1.5">d = rata-rata pemakaian {{ $hariRata }} hari terakhir · L = lead time · SS = safety stock</div></div></div>
+    <div class="stamp-out"><div class="stamp" style="padding:20px 22px;height:100%"><div class="eyebrow">Batas pesan ulang (ROP)</div><div style="font:700 clamp(17px,1.5vw,22px) var(--f-title);margin:8px 0 4px;white-space:nowrap">ROP = (d × L) + SS</div>
+      <div style="font-size:12.5px;opacity:.72;line-height:1.5">d = rata-rata pemakaian per hari ({{ $hariRata }} hari terakhir) · L = lama pengiriman pemasok (hari) · SS = stok cadangan minimum</div></div></div>
   </div>
 
   <div class="card" style="margin-top:18px"><div class="card-head">
       <div class="chips" data-filter-for="tbB"><button class="on" data-f="all">Semua</button><button data-f="kritis">Kritis<span>{{ $kritis->count() }}</span></button><button data-f="aman">Aman<span>{{ $bahan->count() - $kritis->count() }}</span></button></div>
       <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn o" id="btnMutasi" @disabled($bahan->isEmpty())><svg class="ic"><use href="#i-refresh"/></svg>Catat Mutasi Stok</button><button class="btn" id="btnTambah"><svg class="ic"><use href="#i-plus"/></svg>Tambah Bahan Baku</button></div></div>
-    <div class="tbl-wrap"><table class="tbl-stack"><thead><tr><th>Bahan baku</th><th>Stok</th><th>Parameter ROP</th><th>ROP</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="tbB">
+    <div class="tbl-wrap"><table class="tbl-stack"><thead><tr><th>Bahan baku</th><th>Stok</th><th>Pemakaian · kirim · cadangan</th><th>Batas pesan ulang</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="tbB">
       @forelse ($bahan as $b)
         @php $k = $b->isStokKritis(); $persen = min(100, round((float) $b->stok / max((float) $b->rop * 2, 0.01) * 100)); @endphp
         <tr data-f="{{ $k ? 'kritis' : 'aman' }}" @class(['kritis' => $k]) data-id="{{ $b->id }}" data-url="{{ route('dapur.bahan-baku.update', $b) }}" data-nama="{{ $b->nama_bahan }}" data-satuan="{{ $b->satuan }}"
             data-stok="{{ (float) $b->stok }}" data-d="{{ (float) $b->rata_pemakaian }}" data-l="{{ $b->lead_time }}" data-ss="{{ (float) $b->safety_stock }}">
           <td><b>{{ $b->nama_bahan }}</b><div style="font-size:12px;opacity:.6">{{ $b->satuan }}</div></td>
           <td><div class="stok-cell"><b>{{ $a($b->stok) }}</b><div class="bar dark ropbar" style="width:90px"><i style="width:{{ $persen }}%"></i></div></div></td>
-          <td style="font-size:13px">d {{ $a($b->rata_pemakaian) }} · L {{ $b->lead_time }} hr · SS {{ $a($b->safety_stock) }}</td>
+          <td style="font-size:13px">{{ $a($b->rata_pemakaian) }}/hari · kirim {{ $b->lead_time }} hari · cadangan {{ $a($b->safety_stock) }}</td>
           <td><span @class(['kt', 'm' => $k])>{{ $a($b->rop) }}</span></td>
           <td>@if ($k)<span class="pill m">Kritis · pesan ulang</span>@else<span class="pill b">Aman</span>@endif</td>
           <td><div class="acts"><button class="ab js-mutasi" title="Catat mutasi"><svg class="ic"><use href="#i-refresh"/></svg></button><button class="ab js-edit" title="Ubah"><svg class="ic"><use href="#i-edit"/></svg></button><button class="ab f js-del" data-url="{{ route('dapur.bahan-baku.destroy', $b) }}" data-name="{{ $b->nama_bahan }}" title="Hapus"><svg class="ic"><use href="#i-trash"/></svg></button></div></td>
@@ -93,11 +97,11 @@
       <div class="field"><label for="bNama">Nama bahan</label><div class="in"><svg class="ic"><use href="#i-box"/></svg><input type="text" name="nama_bahan" id="bNama" value="{{ old('nama_bahan') }}" maxlength="100" placeholder="Contoh: Keju Cheddar" required></div></div>
       <div class="field"><label for="bSat">Satuan</label><div class="in"><svg class="ic"><use href="#i-tag"/></svg><select name="satuan" id="bSat">@foreach ($satuan as $s)<option @selected(old('satuan', 'kg') === $s)>{{ $s }}</option>@endforeach</select></div></div>
       <div class="field" id="bStokWrap" @if ($bEdit) hidden @endif><label for="bStok">Stok awal</label><div class="in"><svg class="ic"><use href="#i-box"/></svg><input type="number" name="stok" id="bStok" value="{{ old('stok', 0) }}" step="0.01" min="0" @disabled($bEdit)></div></div>
-      <div class="field"><label for="bL">Lead time (L)</label><div class="in"><svg class="ic"><use href="#i-clock"/></svg><input type="number" name="lead_time" id="bL" value="{{ old('lead_time', 2) }}" min="0" max="365" required><span class="suf">hari</span></div></div>
-      <div class="field"><label for="bS">Safety stock (SS)</label><div class="in"><svg class="ic"><use href="#i-lock"/></svg><input type="number" name="safety_stock" id="bS" value="{{ old('safety_stock', 1) }}" step="0.01" min="0" required></div></div>
-      <div class="field"><label>Rata-rata pemakaian/hari (d)</label><div class="in" style="opacity:.75"><svg class="ic"><use href="#i-chart"/></svg><input id="bD" value="0" readonly><span class="suf">otomatis</span></div></div>
+      <div class="field"><label for="bL">Lama pengiriman pemasok, hari (L)</label><div class="in"><svg class="ic"><use href="#i-clock"/></svg><input type="number" name="lead_time" id="bL" value="{{ old('lead_time', 2) }}" min="0" max="365" required><span class="suf">hari</span></div></div>
+      <div class="field"><label for="bS">Stok cadangan minimum (SS)</label><div class="in"><svg class="ic"><use href="#i-lock"/></svg><input type="number" name="safety_stock" id="bS" value="{{ old('safety_stock', 1) }}" step="0.01" min="0" required></div></div>
+      <div class="field"><label>Rata-rata pemakaian per hari (d)</label><div class="in" style="opacity:.75"><svg class="ic"><use href="#i-chart"/></svg><input id="bD" value="0" readonly><span class="suf">otomatis</span></div></div>
     </div>
-    <div class="mods" style="margin-top:18px"><div class="mod"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><div><div class="eyebrow" style="opacity:.8">ROP dihitung otomatis</div><div id="bF" style="font-size:13.5px;margin-top:4px">(0 × 2) + 1</div></div><b id="bR" style="font:700 30px var(--f-title)">1</b></div></div></div>
+    <div class="mods" style="margin-top:18px"><div class="mod"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><div><div class="eyebrow" style="opacity:.8">Batas pesan ulang dihitung otomatis</div><div id="bF" style="font-size:13.5px;margin-top:4px">(0 × 2) + 1</div></div><b id="bR" style="font:700 30px var(--f-title)">1</b></div></div></div>
     <p style="font-size:12.5px;opacity:.7;margin-top:10px" id="bNote">d dihitung dari pemakaian {{ $hariRata }} hari terakhir. Untuk bahan baru, d = 0 sampai ada catatan pemakaian.</p>
   </div>
   <div class="mf"><button type="button" class="btn o" data-close>Batal</button><button class="btn" type="submit"><svg class="ic"><use href="#i-check"/></svg>Simpan</button></div></form></div>
@@ -120,7 +124,7 @@
       <div class="field"><label for="mTgl">Tanggal</label><div class="in"><svg class="ic"><use href="#i-cal"/></svg><input type="date" name="tanggal" id="mTgl" value="{{ old('tanggal', today()->toDateString()) }}" max="{{ today()->toDateString() }}" required></div></div>
     </div>
     <div class="stamp-out" style="margin-top:18px"><div class="stamp" style="padding:18px 22px;background:var(--bl)"><div class="eyebrow" id="pvJudul">Setelah disimpan</div>
-      <div class="pv-grid"><div><small>Stok baru</small><b id="pvStok">-</b></div><div><small>d & ROP dihitung ulang</small><b id="pvRop">-</b></div><div><small>Status</small><b id="pvSt">-</b></div></div></div></div>
+      <div class="pv-grid"><div><small>Stok baru</small><b id="pvStok">-</b></div><div><small>Batas pesan ulang baru</small><b id="pvRop">-</b></div><div><small>Status</small><b id="pvSt">-</b></div></div></div></div>
   </div>
   <div class="mf"><button type="button" class="btn o" data-close>Batal</button><button class="btn" type="submit"><svg class="ic"><use href="#i-check"/></svg>Simpan</button></div></form></div>
 @endpush

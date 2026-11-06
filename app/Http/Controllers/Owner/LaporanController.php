@@ -74,6 +74,8 @@ class LaporanController extends Controller
             'sampai' => ['required', 'date_format:Y-m-d', 'after_or_equal:dari'],
         ], [
             'sampai.after_or_equal' => 'Tanggal akhir tidak boleh sebelum tanggal awal.',
+            'dari.date_format' => 'Format tanggal tidak valid. Pilih tanggal dari kalender.',
+            'sampai.date_format' => 'Format tanggal tidak valid. Pilih tanggal dari kalender.',
         ], ['dari' => 'dari tanggal', 'sampai' => 'sampai tanggal']);
 
         $dari = CarbonImmutable::parse($data['dari']);

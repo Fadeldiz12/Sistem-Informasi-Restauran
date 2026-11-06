@@ -8,13 +8,30 @@
     if (!t) return; t.textContent = msg; t.classList.add('on');
     clearTimeout(window._pt); window._pt = setTimeout(function () { t.classList.remove('on'); }, 2600);
   };
+  /* toast dengan satu tombol aksi (mis. "Batalkan"), tampil lebih lama */
+  window.pToastAksi = function (msg, label, aksi) {
+    if (!t) return;
+    t.textContent = msg + ' ';
+    var b = document.createElement('button'); b.type = 'button'; b.textContent = label;
+    b.style.cssText = 'margin-left:10px;color:inherit;font:inherit;text-decoration:underline;font-weight:800;background:none;border:0;cursor:pointer';
+    b.addEventListener('click', function () { t.classList.remove('on'); aksi(); });
+    t.appendChild(b); t.classList.add('on');
+    clearTimeout(window._pt); window._pt = setTimeout(function () { t.classList.remove('on'); }, 6000);
+  };
   window.sendJson = function (url, method, data) {
     return fetch(url, {
       method: method,
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
       body: data ? JSON.stringify(data) : undefined
+    }).catch(function () {
+      // fetch gagal = tidak ada koneksi (pesan bawaan browser "Failed to fetch" tidak dipahami awam)
+      throw new Error('Koneksi internet terputus. Periksa sinyal lalu coba lagi.');
     }).then(function (r) {
       return r.json().catch(function () { return {}; }).then(function (j) {
+        if (r.status === 401 || r.status === 419) {
+          setTimeout(function () { location.href = j.login || '/login'; }, 1800);
+          throw new Error('Sesi kamu sudah berakhir. Mengarahkan ke halaman masuk…');
+        }
         if (!r.ok) {
           var msg = j.message || 'Terjadi kesalahan, coba lagi.';
           if (j.errors) { var k = Object.keys(j.errors)[0]; if (k) msg = j.errors[k][0]; }
@@ -27,7 +44,7 @@
   /* perbarui angka keranjang di header: { jumlah, subtotal } */
   window.setCart = function (r) {
     document.querySelectorAll('[data-cart-total]').forEach(function (el) { el.textContent = rp(r.subtotal); });
-    document.querySelectorAll('[data-cart-count]').forEach(function (el) { el.textContent = r.jumlah; });
+    document.querySelectorAll('[data-cart-count]').forEach(function (el) { el.textContent = r.jumlah; if (el.closest('.bnav')) el.hidden = !r.jumlah; });
   };
   var boot = document.getElementById('p-boot');
   if (boot && boot.dataset.toast) pToast(boot.dataset.toast);

@@ -3,6 +3,7 @@
 @use('App\Models\Pembayaran')
 
 @section('title', 'Pesanan Online')
+@section('error-sendiri', '1')
 @section('crumb', 'Kasir / Pesanan Online')
 @section('heading', 'Konfirmasi Pesanan Online')
 @section('sub', 'Pesanan online bayar tunai · VA & QRIS otomatis masuk dapur setelah lunas')
@@ -31,12 +32,12 @@
   <div class="grid split" style="grid-template-columns:minmax(260px,.32fr) minmax(0,1fr);align-items:start">
     <div class="card" style="padding:16px"><div class="card-head" style="margin-bottom:6px"><h2>Menunggu Konfirmasi</h2><span class="pill m">{{ $antrean->count() }}</span></div><p style="font-size:12.5px;opacity:.65;margin-bottom:12px">Pesanan online dari pelanggan · urut paling lama</p>
       @foreach ($antrean as $p)
-        <a @class(['qi', 'on' => $pesanan->id === $p->id]) href="{{ route('kasir.online', ['pesanan' => $p->id]) }}"><div style="display:flex;justify-content:space-between;align-items:center"><b style="font:700 14px var(--f-title)">{{ $p->kode() }}</b><span style="font-size:12px;opacity:.75;display:flex;gap:5px;align-items:center"><svg class="ic" style="width:13px;height:13px"><use href="#i-clock"/></svg>{{ $p->waktu_pesan->format('H:i') }}</span></div>
+        <a @class(['qi', 'on' => $pesanan->id === $p->id]) href="{{ route('kasir.online', ['pesanan' => $p->id]) }}#detail"><div style="display:flex;justify-content:space-between;align-items:center"><b style="font:700 14px var(--f-title)">{{ $p->kode() }}</b><span style="font-size:12px;opacity:.75;display:flex;gap:5px;align-items:center"><svg class="ic" style="width:13px;height:13px"><use href="#i-clock"/></svg>{{ $p->waktu_pesan->format('H:i') }}</span></div>
           <div style="font:700 13.5px var(--f-accent);margin-top:6px">{{ $p->namaPemesan() }}</div><div style="display:flex;justify-content:space-between;gap:8px;margin-top:6px;align-items:center"><span style="font-size:12px;opacity:.8">{{ $p->layananDetail() }}</span><span class="pill {{ $bayarPill($p) }}" style="font-size:10.5px;padding:3px 9px">{{ $p->bayarLabel() }}</span></div></a>
       @endforeach
     </div>
 
-    <div class="card" style="padding:0;overflow:hidden">
+    <div class="card" id="detail" style="padding:0;overflow:hidden">
       <div class="stripes" style="padding:22px 24px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap">
         <div class="stamp-out"><div class="stamp" style="padding:18px 24px"><div class="eyebrow">Detail pesanan online</div><div style="font:700 26px var(--f-title);margin-top:4px">{{ $pesanan->kode() }}</div><div style="font-size:12.5px;opacity:.7">Masuk {{ $pesanan->waktu_pesan->format('H:i') }} · {{ $pesanan->waktu_pesan->translatedFormat('l, j M Y') }}</div></div></div>
         <div style="display:grid;gap:8px;justify-items:end"><span class="pill b">Menunggu Konfirmasi</span><span class="pill m">@if ($pesanan->isDelivery())<svg class="ic" style="width:13px;height:13px"><use href="#i-truck"/></svg>@endif{{ $pesanan->layananDetail() }}</span></div></div>
@@ -68,7 +69,7 @@
       <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:16px 24px 22px;border-top:1.5px solid var(--m15)">
         <span style="font-size:12.5px;opacity:.7;display:flex;gap:8px;align-items:center"><svg class="ic" style="width:16px;height:16px"><use href="#i-info"/></svg>Status pesanan terlihat langsung di halaman lacak pelanggan</span>
         <div style="display:flex;gap:10px"><button class="btn o" data-open="mTolak"><svg class="ic"><use href="#i-x"/></svg>Tolak</button>
-          <form method="post" action="{{ route('kasir.online.terima', $pesanan) }}">@csrf<button class="btn" type="submit" @disabled(! $bisaTerima)><svg class="ic"><use href="#i-check"/></svg>Konfirmasi &amp; Kirim ke Dapur</button></form></div></div>
+          <form method="post" action="{{ route('kasir.online.terima', $pesanan) }}">@csrf<button class="btn aksi-utama" type="submit" @disabled(! $bisaTerima)><svg class="ic"><use href="#i-check"/></svg>Konfirmasi &amp; Kirim ke Dapur</button></form></div></div>
     </div>
   </div>
   @endif
@@ -80,8 +81,29 @@
   @csrf
   <div class="mh"><div><div class="eyebrow" style="opacity:.7">{{ $pesanan->kode() }}</div><h3>Tolak Pesanan</h3></div><button type="button" class="icon-btn" data-close><svg class="ic"><use href="#i-x"/></svg></button></div>
   <div class="mb"><p style="font-size:14px">Tolak pesanan <b>{{ $pesanan->kode() }}</b> dari <b>{{ $pesanan->namaPemesan() }}</b>?</p>
-    <div class="note" style="margin-top:14px"><svg class="ic"><use href="#i-info"/></svg><span>Status pesanan menjadi <b>Dibatalkan</b> dan langsung terlihat di halaman lacak pesanan pelanggan.</span></div></div>
+    <div class="field" style="margin-top:14px"><label>Alasan (tampil ke pelanggan)</label>
+      <div class="chips" id="tolakChips">@foreach (\App\Http\Controllers\Kasir\PesananOnlineController::ALASAN_TOLAK as $a)<button type="button" data-a="{{ $a }}" @class(['on' => old('alasan') === $a])>{{ $a }}</button>@endforeach</div>
+      <input type="hidden" name="alasan" id="tolakAlasan" value="{{ old('alasan') }}">
+      <div class="in" id="tolakLainWrap" style="margin-top:10px;{{ old('alasan') === 'Lainnya' ? '' : 'display:none' }}"><svg class="ic"><use href="#i-edit"/></svg><input name="alasan_lain" id="tolakLain" maxlength="200" value="{{ old('alasan_lain') }}" placeholder="Tulis alasannya"></div></div>
+    <div class="note" style="margin-top:14px"><svg class="ic"><use href="#i-info"/></svg><span>Status pesanan menjadi <b>Dibatalkan</b> dan alasannya langsung terlihat di halaman lacak pesanan pelanggan.</span></div></div>
   <div class="mf"><button type="button" class="btn o" data-close>Batal</button><button class="btn" type="submit">Tolak Pesanan</button></div></form></div>
+@endif
+@endpush
+
+@push('scripts')
+@if ($pesanan)
+<script>
+  (function () {
+    tolakChips.addEventListener('click', function (e) {
+      var b = e.target.closest('button'); if (!b) return;
+      tolakAlasan.value = b.dataset.a;
+      tolakChips.querySelectorAll('button').forEach(function (x) { x.classList.toggle('on', x === b); });
+      tolakLainWrap.style.display = b.dataset.a === 'Lainnya' ? '' : 'none';
+      if (b.dataset.a === 'Lainnya') tolakLain.focus();
+    });
+    @if ($errors->has('alasan') || $errors->has('alasan_lain')) openModal('mTolak'); @endif
+  })();
+</script>
 @endif
 @endpush
 

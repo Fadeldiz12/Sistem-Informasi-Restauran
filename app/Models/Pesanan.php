@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Table('pesanan')]
-#[Fillable(['id_pelanggan', 'id_kasir', 'jenis_layanan', 'nomor_meja', 'nama_pemesan', 'waktu_pesan', 'subtotal', 'ongkir', 'total', 'status'])]
+#[Fillable(['id_pelanggan', 'id_kasir', 'jenis_layanan', 'nomor_meja', 'nama_pemesan', 'waktu_pesan', 'subtotal', 'ongkir', 'total', 'status', 'alasan_batal', 'selesai_pada'])]
 class Pesanan extends Model
 {
     public const LAYANAN_DINE_IN = 'dine_in';
@@ -36,6 +36,7 @@ class Pesanan extends Model
     protected function casts(): array
     {
         return [
+            'selesai_pada' => 'datetime',
             'waktu_pesan' => 'datetime',
             'subtotal' => 'decimal:2',
             'ongkir' => 'decimal:2',
@@ -103,6 +104,11 @@ class Pesanan extends Model
 
     public function statusLabel(): string
     {
+        // pesanan online lama yang belum memilih metode bayar tidak terlihat di antrean kasir
+        if ($this->status === self::STATUS_MENUNGGU && $this->isOnline() && ! $this->pembayaran) {
+            return 'Belum Pilih Pembayaran';
+        }
+
         return self::LABEL_STATUS[$this->status] ?? $this->status;
     }
 
@@ -182,15 +188,18 @@ class Pesanan extends Model
     /**
      * Pesanan yang diproses kasir di menu Pembayaran:
      * pesanan di tempat yang belum lunas, atau pesanan online yang dibayar tunai.
-     * (VA & QRIS lunas otomatis lewat Midtrans, tidak perlu kasir.)
+     * Tidak termasuk: VA & QRIS (lunas otomatis lewat Midtrans), Delivery (tunai dibayar ke kurir),
+     * dan pesanan online yang belum dikonfirmasi kasir.
      */
     #[Scope]
     protected function belumLunas(Builder $query): void
     {
-        $query->where('status', '!=', self::STATUS_DIBATALKAN)->where(fn ($w) => $w
-            ->where(fn ($a) => $a->whereNull('id_pelanggan')
-                ->whereDoesntHave('pembayaran', fn ($b) => $b->where('status_bayar', Pembayaran::STATUS_LUNAS)))
-            ->orWhereHas('pembayaran', fn ($b) => $b->where('metode', Pembayaran::METODE_TUNAI)->where('status_bayar', Pembayaran::STATUS_MENUNGGU)));
+        $query->whereNotIn('status', [self::STATUS_DIBATALKAN, self::STATUS_MENUNGGU])
+            ->where('jenis_layanan', '!=', self::LAYANAN_DELIVERY)
+            ->where(fn ($w) => $w
+                ->where(fn ($a) => $a->whereNull('id_pelanggan')
+                    ->whereDoesntHave('pembayaran', fn ($b) => $b->where('status_bayar', Pembayaran::STATUS_LUNAS)))
+                ->orWhereHas('pembayaran', fn ($b) => $b->where('metode', Pembayaran::METODE_TUNAI)->where('status_bayar', Pembayaran::STATUS_MENUNGGU)));
     }
 
     /**

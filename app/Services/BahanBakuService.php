@@ -39,18 +39,78 @@ class BahanBakuService
     }
 
     /**
+     * Pasangan satuan yang bisa dikonversi otomatis: [satuan lama][satuan baru] => faktor pengali.
+     */
+    public const KONVERSI = [
+        'kg' => ['gram' => 1000],
+        'gram' => ['kg' => 0.001],
+        'liter' => ['ml' => 1000],
+        'ml' => ['liter' => 0.001],
+    ];
+
+    /**
      * Ubah data bahan (stok tidak diubah di sini, hanya lewat mutasi). ROP dihitung ulang.
+     * Bila satuan diganti (kg↔gram, liter↔ml), stok, safety stock, takaran resep, dan riwayat mutasi ikut dikonversi.
      */
     public function ubah(BahanBaku $bahan, array $data): BahanBaku
     {
-        $bahan->update([
-            'nama_bahan' => $data['nama_bahan'],
-            'satuan' => $data['satuan'],
-            'lead_time' => $data['lead_time'],
-            'safety_stock' => $data['safety_stock'],
-        ]);
+        return DB::transaction(function () use ($bahan, $data) {
+            $safetyStock = (float) $data['safety_stock'];
 
-        return $this->hitungUlang($bahan);
+            if ($data['satuan'] !== $bahan->satuan) {
+                $faktor = $this->gantiSatuan($bahan, $data['satuan']);
+                // safety stock yang tidak diubah di form masih dalam satuan lama
+                if ($safetyStock === (float) $bahan->getOriginal('safety_stock')) {
+                    $safetyStock = round($safetyStock * $faktor, 2);
+                }
+            }
+
+            $bahan->update([
+                'nama_bahan' => $data['nama_bahan'],
+                'satuan' => $data['satuan'],
+                'lead_time' => $data['lead_time'],
+                'safety_stock' => $safetyStock,
+            ]);
+
+            return $this->hitungUlang($bahan);
+        });
+    }
+
+    /**
+     * Konversi stok, takaran resep, dan riwayat mutasi ke satuan baru. Mengembalikan faktor pengalinya.
+     * Bahan yang belum punya stok, resep, maupun riwayat boleh ganti satuan apa saja (faktor 1).
+     */
+    private function gantiSatuan(BahanBaku $bahan, string $satuanBaru): float
+    {
+        $faktor = self::KONVERSI[$bahan->satuan][$satuanBaru] ?? null;
+        $resep = $bahan->resep()->get();
+        $mutasi = $bahan->mutasi()->get();
+
+        if ($faktor === null) {
+            if ((float) $bahan->stok > 0 || $resep->isNotEmpty() || $mutasi->isNotEmpty()) {
+                throw ValidationException::withMessages([
+                    'satuan' => "Satuan {$bahan->satuan} tidak bisa diganti ke {$satuanBaru} karena bahan ini sudah punya stok, resep, atau riwayat. "
+                        .'Yang bisa dikonversi otomatis hanya kg ↔ gram dan liter ↔ ml.',
+                ]);
+            }
+
+            return 1.0;
+        }
+
+        $nilai = collect([(float) $bahan->stok, (float) $bahan->safety_stock])
+            ->merge($resep->map(fn ($r) => (float) $r->jumlah))
+            ->merge($mutasi->map(fn ($m) => (float) $m->jumlah));
+        if ($nilai->contains(fn ($n) => abs(round($n * $faktor, 2) - $n * $faktor) > 1e-9)) {
+            throw ValidationException::withMessages([
+                'satuan' => "Ada stok, takaran resep, atau riwayat yang terlalu kecil untuk diubah ke {$satuanBaru} (lebih dari 2 angka desimal). Satuan tetap {$bahan->satuan}.",
+            ]);
+        }
+
+        $bahan->stok = round((float) $bahan->stok * $faktor, 2);
+        $resep->each(fn ($r) => $r->update(['jumlah' => round((float) $r->jumlah * $faktor, 2)]));
+        $mutasi->each(fn ($m) => $m->update(['jumlah' => round((float) $m->jumlah * $faktor, 2)]));
+
+        return $faktor;
     }
 
     /**
@@ -86,17 +146,10 @@ class BahanBakuService
      */
     public function pakaiUntukPesanan(Pesanan $pesanan): array
     {
-        $pesanan->loadMissing('detail.menu.resep');
-
-        $kebutuhan = [];
-        foreach ($pesanan->detail as $d) {
-            foreach ($d->menu?->resep ?? [] as $r) {
-                $kebutuhan[$r->id_bahan] = ($kebutuhan[$r->id_bahan] ?? 0) + $d->jumlah * (float) $r->jumlah;
-            }
-        }
+        $kebutuhan = $this->hitungKebutuhan($pesanan);
 
         $kurang = [];
-        DB::transaction(function () use ($kebutuhan, &$kurang) {
+        DB::transaction(function () use ($kebutuhan, $pesanan, &$kurang) {
             foreach ($kebutuhan as $idBahan => $butuh) {
                 $bahan = BahanBaku::whereKey($idBahan)->lockForUpdate()->first();
                 if (! $bahan) {
@@ -108,7 +161,7 @@ class BahanBakuService
                     $kurang[] = $bahan->nama_bahan;
                 }
                 if ($pakai > 0) {
-                    $bahan->mutasi()->create(['jenis' => MutasiBahanBaku::JENIS_PEMAKAIAN, 'jumlah' => $pakai, 'tanggal' => today()]);
+                    $bahan->mutasi()->create(['id_pesanan' => $pesanan->id, 'jenis' => MutasiBahanBaku::JENIS_PEMAKAIAN, 'jumlah' => $pakai, 'tanggal' => today()]);
                     $bahan->stok = round((float) $bahan->stok - $pakai, 2);
                     $bahan->save();
                 }
@@ -117,6 +170,69 @@ class BahanBakuService
         });
 
         return $kurang;
+    }
+
+    /**
+     * Total takaran per bahan untuk satu pesanan: jumlah porsi × takaran resep.
+     *
+     * @return array<int, float> id_bahan => kebutuhan
+     */
+    private function hitungKebutuhan(Pesanan $pesanan): array
+    {
+        $pesanan->loadMissing('detail.menu.resep');
+
+        $kebutuhan = [];
+        foreach ($pesanan->detail as $d) {
+            foreach ($d->menu?->resep ?? [] as $r) {
+                $kebutuhan[$r->id_bahan] = ($kebutuhan[$r->id_bahan] ?? 0) + $d->jumlah * (float) $r->jumlah;
+            }
+        }
+
+        return $kebutuhan;
+    }
+
+    /**
+     * Bahan yang dibutuhkan pesanan beserta stok saat ini, untuk ditampilkan ke dapur sebelum mulai memasak.
+     *
+     * @return array<int, array{nama: string, satuan: string, butuh: float, stok: float, kurang: bool}>
+     */
+    public function kebutuhanUntukPesanan(Pesanan $pesanan): array
+    {
+        $kebutuhan = $this->hitungKebutuhan($pesanan);
+        $bahan = BahanBaku::whereIn('id', array_keys($kebutuhan))->orderBy('nama_bahan')->get();
+
+        return $bahan->map(fn ($b) => [
+            'nama' => $b->nama_bahan,
+            'satuan' => $b->satuan,
+            'butuh' => round($kebutuhan[$b->id], 2),
+            'stok' => (float) $b->stok,
+            'kurang' => round($kebutuhan[$b->id], 2) > (float) $b->stok,
+        ])->all();
+    }
+
+    /**
+     * Batalkan pemakaian otomatis untuk satu pesanan (pesanan dibatalkan sebelum bahannya terpakai):
+     * stok dikembalikan dan catatan pemakaiannya dihapus supaya rata-rata pemakaian & ROP tetap akurat.
+     *
+     * @return int jumlah bahan yang stoknya dikembalikan
+     */
+    public function kembalikanUntukPesanan(Pesanan $pesanan): int
+    {
+        return DB::transaction(function () use ($pesanan) {
+            $mutasi = MutasiBahanBaku::where('id_pesanan', $pesanan->id)->where('jenis', MutasiBahanBaku::JENIS_PEMAKAIAN)->get();
+
+            foreach ($mutasi->groupBy('id_bahan') as $idBahan => $baris) {
+                $bahan = BahanBaku::withTrashed()->whereKey($idBahan)->lockForUpdate()->first();
+                MutasiBahanBaku::whereIn('id', $baris->pluck('id'))->delete();
+                if ($bahan) {
+                    $bahan->stok = round((float) $bahan->stok + (float) $baris->sum('jumlah'), 2);
+                    $bahan->save();
+                    $this->hitungUlang($bahan);
+                }
+            }
+
+            return $mutasi->pluck('id_bahan')->unique()->count();
+        });
     }
 
     public function hitungUlang(BahanBaku $bahan): BahanBaku

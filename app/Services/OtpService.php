@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 
 /**
  * Kode OTP lewat email: 6 digit, berlaku 10 menit, maksimal 5 kali salah,
@@ -21,6 +22,11 @@ class OtpService
     public const JEDA_DETIK = 60;
 
     public const MAKS_PERCOBAAN = 5;
+
+    /**
+     * Kunci error saat email gagal dikirim (berbeda dengan "kode" untuk jeda kirim ulang).
+     */
+    public const FIELD_GAGAL_KIRIM = 'email';
 
     /**
      * Buat dan kirim kode baru. Kode lama untuk email & tujuan yang sama tidak berlaku lagi.
@@ -42,17 +48,25 @@ class OtpService
         $kode = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
 
         KodeOtp::where('email', $email)->where('tujuan', $tujuan)->delete();
-        KodeOtp::create([
+        $otp = KodeOtp::create([
             'email' => $email,
             'tujuan' => $tujuan,
             'kode_hash' => Hash::make($kode),
             'kedaluwarsa_pada' => now()->addMinutes(self::BERLAKU_MENIT),
         ]);
 
-        Notification::route('mail', $email)->notify(new KodeOtpNotification($kode, $tujuan, $user->namaDepan()));
+        try {
+            Notification::route('mail', $email)->notify(new KodeOtpNotification($kode, $tujuan, $user->namaDepan()));
+        } catch (TransportExceptionInterface $e) {
+            // server email tidak bisa dihubungi (internet putus, app password dicabut, limit harian habis)
+            report($e);
+            $otp->delete();
 
-        // Pengembangan lokal tanpa server email: tampilkan kode di halaman OTP.
-        if (app()->isLocal() && config('mail.default') === 'log') {
+            throw ValidationException::withMessages([self::FIELD_GAGAL_KIRIM => 'Email kode verifikasi belum terkirim karena server email sedang bermasalah. Coba lagi beberapa saat lagi, atau hubungi restoran di '.config('resto.telepon').'.']);
+        }
+
+        // Pengembangan lokal tanpa server email: tampilkan kode di halaman OTP (tidak pernah untuk reset password).
+        if (config('app.debug') && app()->isLocal() && config('mail.default') === 'log' && $tujuan === KodeOtp::TUJUAN_REGISTRASI) {
             session()->flash('otp_dev', $kode);
         }
     }
@@ -62,9 +76,14 @@ class OtpService
      */
     public function sisaJeda(string $email, string $tujuan): int
     {
-        $terakhir = KodeOtp::where('email', Str::lower($email))->where('tujuan', $tujuan)->latest('id')->value('created_at');
+        $terakhir = KodeOtp::where('email', Str::lower($email))->where('tujuan', $tujuan)->latest('id')->first();
 
-        return $terakhir ? max(0, self::JEDA_DETIK - (int) $terakhir->diffInSeconds(now())) : 0;
+        // kode yang sudah tidak berlaku (kedaluwarsa / percobaan habis) boleh langsung diganti
+        if (! $terakhir || $terakhir->kedaluwarsa_pada->isPast() || $terakhir->percobaan >= self::MAKS_PERCOBAAN) {
+            return 0;
+        }
+
+        return max(0, self::JEDA_DETIK - (int) $terakhir->created_at->diffInSeconds(now()));
     }
 
     /**
@@ -75,10 +94,10 @@ class OtpService
         $otp = KodeOtp::where('email', Str::lower($email))->where('tujuan', $tujuan)->latest('id')->first();
 
         if (! $otp || $otp->kedaluwarsa_pada->isPast()) {
-            throw ValidationException::withMessages(['kode' => 'Kode sudah kedaluwarsa atau tidak ditemukan. Tekan "Kirim ulang kode".']);
+            throw ValidationException::withMessages(['kode' => 'Kode sudah tidak berlaku. Tekan "Kirim ulang" untuk mendapatkan kode baru.']);
         }
         if ($otp->percobaan >= self::MAKS_PERCOBAAN) {
-            throw ValidationException::withMessages(['kode' => 'Terlalu banyak percobaan salah. Minta kode baru.']);
+            throw ValidationException::withMessages(['kode' => 'Terlalu banyak percobaan salah. Tekan "Kirim ulang" untuk mendapatkan kode baru.']);
         }
         if (! Hash::check($kode, $otp->kode_hash)) {
             $otp->increment('percobaan');
@@ -86,7 +105,7 @@ class OtpService
 
             throw ValidationException::withMessages(['kode' => $sisa > 0
                 ? "Kode salah. Sisa {$sisa} kali percobaan."
-                : 'Kode salah dan percobaan sudah habis. Minta kode baru.']);
+                : 'Kode salah dan percobaan sudah habis. Tekan "Kirim ulang" untuk mendapatkan kode baru.']);
         }
 
         $otp->delete();

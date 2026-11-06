@@ -16,7 +16,22 @@ class Keranjang
 
     public const MAKS_JUMLAH = 50;
 
+    /**
+     * Nama menu yang baru saja dibuang dari keranjang karena habis / dihapus admin.
+     *
+     * @var array<int, string>
+     */
+    private array $dibuang = [];
+
     public function __construct(private Session $session) {}
+
+    /**
+     * @return array<int, string>
+     */
+    public function dibuang(): array
+    {
+        return $this->dibuang;
+    }
 
     /** @return array<int, array{jumlah:int, catatan:?string}> */
     public function raw(): array
@@ -43,6 +58,7 @@ class Keranjang
             $m = $menu->get($id);
             if (! $m || ! $m->tersedia) {
                 unset($raw[$id]);
+                $this->dibuang[] = $m?->nama_menu ?? 'Salah satu menu';
 
                 continue;
             }
@@ -59,15 +75,21 @@ class Keranjang
         return $items;
     }
 
-    public function tambah(Menu $menu, int $jumlah = 1): void
+    /**
+     * Tambah porsi. Mengembalikan jumlah porsi yang benar-benar ditambahkan (0 bila sudah di batas maksimal).
+     */
+    public function tambah(Menu $menu, int $jumlah = 1, ?string $catatan = null): int
     {
         $raw = $this->raw();
         $lama = $raw[$menu->id]['jumlah'] ?? 0;
+        $baru = min(self::MAKS_JUMLAH, $lama + max(1, $jumlah));
         $raw[$menu->id] = [
-            'jumlah' => min(self::MAKS_JUMLAH, $lama + max(1, $jumlah)),
-            'catatan' => $raw[$menu->id]['catatan'] ?? null,
+            'jumlah' => $baru,
+            'catatan' => $raw[$menu->id]['catatan'] ?? ($catatan !== null && trim($catatan) !== '' ? trim($catatan) : null),
         ];
         $this->session->put(self::KEY, $raw);
+
+        return $baru - $lama;
     }
 
     public function ubah(int $idMenu, ?int $jumlah, ?string $catatan, bool $ubahCatatan): void

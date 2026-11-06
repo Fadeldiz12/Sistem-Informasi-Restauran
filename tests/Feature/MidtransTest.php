@@ -36,7 +36,7 @@ class MidtransTest extends TestCase
 
         $this->pelanggan = User::factory()->create(['role' => User::ROLE_PELANGGAN, 'nama' => 'Rina Amalia', 'email' => 'rina@example.com']);
         $this->actingAs($this->pelanggan)->postJson('/keranjang', ['id_menu' => Menu::where('nama_menu', 'Pizza Beef Pepperoni')->value('id')]);
-        $this->actingAs($this->pelanggan)->post('/checkout', ['jenis_layanan' => 'take_away']);
+        $this->actingAs($this->pelanggan)->post('/checkout', ['metode' => 'tunai', 'jenis_layanan' => 'take_away']);
         $this->pesanan = Pesanan::firstOrFail();
     }
 
@@ -128,7 +128,7 @@ class MidtransTest extends TestCase
         Http::fake(['api.sandbox.midtrans.com/*' => Http::response(['status_code' => '401', 'status_message' => 'Access denied due to unauthorized transaction'])]);
         $this->actingAs($this->pelanggan)->post("/pesanan/{$this->pesanan->id}/pembayaran", ['metode' => 'transfer', 'bank' => 'bni'])
             ->assertSessionHasErrors(['metode' => 'Midtrans: Access denied due to unauthorized transaction']);
-        $this->assertNull($this->pesanan->fresh()->pembayaran);
+        $this->assertSame('tunai', $this->pesanan->fresh()->pembayaran->metode); // metode dari checkout tidak berubah
     }
 
     public function test_cek_status_lunas_langsung_ke_dapur(): void

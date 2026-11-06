@@ -39,6 +39,9 @@ class PasswordController extends Controller
 
     public function showReset(Request $request): View|RedirectResponse
     {
+        if (! $request->session()->has('reset')) {
+            return to_route('password.request')->with('status', 'Untuk membuat password baru, masukkan email lalu kode OTP yang kami kirim.');
+        }
         if (! $this->izinReset($request)) {
             return to_route('password.request')->withErrors(['email' => 'Sesi atur ulang password sudah habis. Minta kode OTP baru.']);
         }
@@ -53,7 +56,7 @@ class PasswordController extends Controller
         }
 
         $data = $request->validate([
-            'password' => ['required', 'confirmed', AturanPassword::min(8)],
+            'password' => ['required', 'confirmed', AturanPassword::defaults()],
         ], [
             'password.required' => 'Password baru wajib diisi.',
             'password.confirmed' => 'Konfirmasi password tidak sama.',

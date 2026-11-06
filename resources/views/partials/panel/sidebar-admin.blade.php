@@ -4,7 +4,7 @@
     ['admin.pengguna', 'i-users', 'Pengguna & Role', $sidebarCount['pengguna'] ?? null, 'Pengguna'],
     ['admin.menu', 'i-tag', 'Kategori & Menu', $sidebarCount['menu'] ?? null, 'Menu'],
     ['admin.zona', 'i-map', 'Zona & Tarif', $sidebarCount['zona'] ?? null, 'Zona'],
-    ['admin.pengaturan', 'i-settings', 'Pengaturan Sistem', null, 'Atur'],
+    ['admin.pengaturan', 'i-settings', 'Pengaturan Sistem', null, 'Pengaturan'],
   ];
 @endphp
 <aside class="side"><div class="side-in">

@@ -40,11 +40,11 @@ class KurirService
 
             if (! $teratas || $teratas->id !== $kirim->id) {
                 throw ValidationException::withMessages(['tugas' => self::antrean()->whereKey($kirim->id)->exists()
-                    ? 'Ambil tugas sesuai urutan FIFO. Tugas #1 harus diterima lebih dulu.'
+                    ? 'Ambil dulu tugas urutan pertama di daftar.'
                     : 'Tugas ini sudah diambil kurir lain atau belum siap diantar.']);
             }
 
-            $teratas->update(['id_kurir' => $kurir->id, 'status_kirim' => Pengiriman::STATUS_DALAM_PERJALANAN]);
+            $teratas->update(['id_kurir' => $kurir->id, 'status_kirim' => Pengiriman::STATUS_DALAM_PERJALANAN, 'berangkat_pada' => now()]);
             $teratas->pesanan()->update(['status' => Pesanan::STATUS_DIANTAR]);
 
             return $teratas;
@@ -73,8 +73,8 @@ class KurirService
 
         try {
             DB::transaction(function () use ($kirim, $kurir, $pesanan, $path, $tagihTunai) {
-                $kirim->update(['status_kirim' => Pengiriman::STATUS_DITERIMA, 'bukti_kirim' => $path]);
-                $pesanan->update(['status' => Pesanan::STATUS_SELESAI]);
+                $kirim->update(['status_kirim' => Pengiriman::STATUS_DITERIMA, 'bukti_kirim' => $path, 'diterima_pada' => now()]);
+                $pesanan->update(['status' => Pesanan::STATUS_SELESAI, 'selesai_pada' => now()]);
 
                 if ($tagihTunai) {
                     // uang dibawa kurir sampai disetor ke kasir (menu Setoran Kurir)

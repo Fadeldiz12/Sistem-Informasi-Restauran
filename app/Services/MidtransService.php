@@ -40,7 +40,7 @@ class MidtransService
     private function http(): PendingRequest
     {
         if (! $this->aktif()) {
-            throw new RuntimeException('Pembayaran online belum diaktifkan (MIDTRANS_SERVER_KEY kosong).');
+            throw new RuntimeException('Pembayaran online sedang tidak tersedia. Silakan pilih bayar tunai.');
         }
 
         return Http::baseUrl($this->baseUrl())

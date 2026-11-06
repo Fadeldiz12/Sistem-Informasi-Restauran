@@ -4,6 +4,7 @@
 @use('App\Models\Pesanan')
 
 @section('title', 'Pembayaran')
+@section('error-sendiri', '1')
 @section('crumb', 'Kasir / Pembayaran')
 @section('heading', 'Proses Pembayaran')
 @section('sub', 'Pembayaran tunai di kasir dan cetak struk · VA & QRIS online lunas otomatis')
@@ -30,13 +31,37 @@
   .struk .sr { display: flex; justify-content: space-between; gap: 10px; padding: 2px 0; }
   .struk .mut { opacity: .7; }
   #chg.kurang { color: var(--m); font-size: 20px !important; }
+  .tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+  .tabs a { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 999px; box-shadow: inset 0 0 0 1.4px var(--m); font: 700 13px var(--f-accent); }
+  .tabs a.on { background: var(--m); color: var(--cr); box-shadow: none; }
+  .lunas-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1.2px solid var(--m15); }
+  .lunas-row:last-child { border-bottom: 0; }
 </style>
 @endpush
 
 @section('content')
   @if ($errors->any())<div class="alert" role="alert">{{ $errors->first() }}</div>@endif
 
-  @if ($daftar->isEmpty())
+  <nav class="tabs" aria-label="Daftar pembayaran">
+    <a @class(['on' => $tab === 'belum']) href="{{ route('kasir.pembayaran') }}">Belum Lunas <span class="pill c" style="font-size:11px;padding:2px 8px">{{ $daftar->count() }}</span></a>
+    <a @class(['on' => $tab === 'lunas']) href="{{ route('kasir.pembayaran', ['tab' => 'lunas']) }}">Sudah Lunas Hari Ini <span class="pill c" style="font-size:11px;padding:2px 8px">{{ $lunasHariIni->count() }}</span></a>
+  </nav>
+
+  @if ($tab === 'lunas')
+    <div class="card">
+      <div class="card-head"><div><h2>Sudah Lunas Hari Ini</h2><p>Cetak ulang struk bila printer macet atau pelanggan meminta struk lagi.</p></div></div>
+      @forelse ($lunasHariIni as $p)
+        <div class="lunas-row">
+          <div style="min-width:0"><b style="font:700 14px var(--f-title)">{{ $p->kode() }}</b> · {{ $p->namaPemesan() }}
+            <div style="font-size:12.5px;opacity:.7">{{ $p->layananLabel() }} · {{ $p->pembayaran->metodeLabel() }} · {{ $p->pembayaran->waktu_bayar->format('H:i') }}</div></div>
+          <div style="display:flex;align-items:center;gap:12px;flex:none"><b style="font:700 14px var(--f-title)">{{ $rp($p->total) }}</b>
+            <a class="btn o sm" href="{{ route('kasir.struk', $p) }}" target="_blank" rel="noopener"><svg class="ic" style="width:15px;height:15px"><use href="#i-printer"/></svg>Cetak ulang struk</a></div>
+        </div>
+      @empty
+        <div class="empty" style="padding:40px 16px">Belum ada pembayaran lunas hari ini.</div>
+      @endforelse
+    </div>
+  @elseif ($daftar->isEmpty())
     <div class="card"><div class="empty" style="padding:50px 16px"><svg class="ic" style="width:34px;height:34px;margin-bottom:10px"><use href="#i-check"/></svg><br>Semua pesanan sudah lunas.</div></div>
   @else
   <form method="post" action="{{ route('kasir.pembayaran.lunas', $pesanan) }}" id="fLunas">
@@ -47,13 +72,15 @@
       <div class="card" style="padding:16px"><div class="card-head" style="margin-bottom:10px"><h2>Belum Lunas</h2><span class="pill m">{{ $daftar->count() }}</span></div>
         @foreach ($daftar as $p)
           @php $mt = $p->pembayaran?->metode ?? Pembayaran::METODE_TUNAI; @endphp
-          <a @class(['qi', 'on' => $pesanan->id === $p->id]) href="{{ route('kasir.pembayaran', ['pesanan' => $p->id]) }}"><div style="display:flex;justify-content:space-between;align-items:center"><b style="font:700 14px var(--f-title)">{{ $p->kode() }}</b><span @class(['pill', 'b' => $mt !== Pembayaran::METODE_TUNAI, 'c' => $pesanan->id === $p->id]) style="font-size:10.5px;padding:3px 9px"><svg class="ic" style="width:12px;height:12px"><use href="#{{ $ikonMetode[$mt] }}"/></svg>{{ Pembayaran::LABEL_METODE[$mt] }}</span></div>
+          <a @class(['qi', 'on' => $pesanan->id === $p->id]) href="{{ route('kasir.pembayaran', ['pesanan' => $p->id]) }}#detail"><div style="display:flex;justify-content:space-between;align-items:center"><b style="font:700 14px var(--f-title)">{{ $p->kode() }}</b><span @class(['pill', 'b' => $mt !== Pembayaran::METODE_TUNAI, 'c' => $pesanan->id === $p->id]) style="font-size:10.5px;padding:3px 9px"><svg class="ic" style="width:12px;height:12px"><use href="#{{ $ikonMetode[$mt] }}"/></svg>{{ Pembayaran::LABEL_METODE[$mt] }}</span></div>
             <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:12.5px;gap:8px"><span style="opacity:.85;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ $p->namaPemesan() }} · {{ $p->layananLabel() }}</span><b style="font:700 13.5px var(--f-title);white-space:nowrap">{{ $rp($p->total) }}</b></div></a>
         @endforeach
       </div>
 
-      <div class="card">
-        <div class="card-head"><div><h2>{{ $pesanan->kode() }} · {{ $pesanan->namaPemesan() }}</h2><p>{{ $pesanan->layananDetail() }}{{ $pesanan->kasir ? ' · kasir '.$pesanan->kasir->nama : '' }}</p></div><span class="pill {{ $pesanan->statusPill() }}">{{ $pesanan->statusLabel() }}</span></div>
+      <div class="card" id="detail">
+        <div class="card-head"><div><h2>{{ $pesanan->kode() }} · {{ $pesanan->namaPemesan() }}</h2><p>{{ $pesanan->layananDetail() }}{{ $pesanan->kasir ? ' · kasir '.$pesanan->kasir->nama : '' }}</p></div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="pill {{ $pesanan->statusPill() }}">{{ $pesanan->statusLabel() }}</span>
+            <button type="button" class="btn o sm js-batal" data-url="{{ route('kasir.pesanan.batal', $pesanan) }}" data-kode="{{ $pesanan->kode() }}" data-dimasak="{{ $pesanan->tiketDapur && $pesanan->tiketDapur->status_masak !== \App\Models\TiketDapur::STATUS_ANTRE ? 1 : 0 }}"><svg class="ic" style="width:15px;height:15px"><use href="#i-x"/></svg>Batalkan</button></div></div>
         <div class="seg" id="mtd" style="margin-bottom:16px">
           @foreach (Pembayaran::LABEL_METODE as $k => $l)
             <button type="button" @class(['on' => $metode === $k]) data-m="{{ $k }}"><svg class="ic" style="width:15px;height:15px"><use href="#{{ $ikonMetode[$k] }}"/></svg> {{ $l }}</button>
@@ -78,7 +105,7 @@
       <div class="grid" style="align-content:start">
         <div class="card" style="padding:14px" id="padWrap"><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px" id="pad">@foreach (['1','2','3','4','5','6','7','8','9','000','0','⌫'] as $k)<button type="button" class="key" data-k="{{ $k }}">{{ $k }}</button>@endforeach</div></div>
         <label class="card soft" style="display:flex;gap:10px;align-items:center;padding:14px 16px;font:600 13px var(--f-body);cursor:pointer"><span class="toggle"><input type="checkbox" name="cetak" value="1" checked><i></i></span>Cetak struk setelah lunas</label>
-        <button class="btn lg" type="submit" id="btnLunas"><svg class="ic"><use href="#i-check"/></svg>Tandai Lunas</button>
+        <button class="btn lg aksi-utama" type="submit" id="btnLunas"><svg class="ic"><use href="#i-check"/></svg>Tandai Lunas</button>
         <p style="font-size:12px;opacity:.6;text-align:center">Pembayaran lunas otomatis dicatat sebagai pemasukan untuk laporan owner.</p>
       </div>
     </div>
@@ -91,18 +118,19 @@
 <div class="ovl on" id="mStruk"><div class="modal" style="width:min(720px,100%)">
   <div class="mh"><div><div class="eyebrow" style="opacity:.7">Pembayaran berhasil · Lunas</div><h3>Cetak Struk</h3></div><button class="icon-btn" data-close><svg class="ic"><use href="#i-x"/></svg></button></div>
   <div class="mb" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start">
-    <div class="stripes" style="border-radius:20px;padding:20px"><div style="background:var(--pp);padding:20px 22px;font-size:13px;border-radius:4px">@include('kasir.partials.struk-isi', ['pesanan' => $struk, 'uangDiterima' => $uangDiterima])</div></div>
+    <div class="stripes" style="border-radius:20px;padding:20px"><div style="background:var(--pp);padding:20px 22px;font-size:13px;border-radius:4px">@include('kasir.partials.struk-isi', ['pesanan' => $struk])</div></div>
     <div style="display:grid;gap:12px"><div style="display:flex;gap:14px;align-items:center;padding:16px;border-radius:18px;background:var(--m);color:var(--cr)"><span style="width:48px;height:48px;border-radius:50%;background:var(--cr);color:var(--m);display:grid;place-items:center"><svg class="ic" style="width:24px;height:24px"><use href="#i-check"/></svg></span>
       <div><div class="eyebrow" style="opacity:.8">{{ $struk->kode() }}</div><b style="font:700 24px var(--f-title)">Rp {{ number_format($struk->total, 0, ',', '.') }}</b></div></div>
-      @if ($uangDiterima !== null)<div class="note"><svg class="ic"><use href="#i-cash"/></svg><span>Kembalian <b>Rp {{ number_format(max(0, $uangDiterima - (float) $struk->total), 0, ',', '.') }}</b></span></div>@endif
+      @if ($struk->pembayaran->kembalian() !== null)<div class="note"><svg class="ic"><use href="#i-cash"/></svg><span>Kembalian <b>Rp {{ number_format($struk->pembayaran->kembalian(), 0, ',', '.') }}</b></span></div>@endif
       <div class="note"><svg class="ic"><use href="#i-info"/></svg><span>Status pembayaran Lunas dan pemasukan tercatat pukul {{ $struk->pembayaran->waktu_bayar->format('H:i') }}.</span></div>
-      <a class="btn lg" href="{{ route('kasir.struk', array_filter(['pesanan' => $struk->id, 'tunai' => $uangDiterima])) }}" target="_blank" rel="noopener"><svg class="ic"><use href="#i-printer"/></svg>Cetak Struk</a><button class="btn o lg" data-close>Selesai</button></div></div>
+      <a class="btn lg" href="{{ route('kasir.struk', $struk) }}" target="_blank" rel="noopener"><svg class="ic"><use href="#i-printer"/></svg>Cetak Struk</a><button class="btn o lg" data-close>Tutup</button>
+      <p style="font-size:12px;opacity:.65;text-align:center">Struk bisa dicetak ulang dari tab <b>Sudah Lunas Hari Ini</b>.</p></div></div>
 </div></div>
 @endif
 @endpush
 
 @push('scripts')
-@if ($pesanan)
+@if ($pesanan && $tab === 'belum')
 <script>
   (function () {
     var total = {{ $total }};
@@ -131,9 +159,19 @@
       v = k === '⌫' ? v.slice(0, -1) : (v + k).replace(/^0+/, ''); cash.value = v ? (+v).toLocaleString('id-ID') : ''; chgCalc();
     });
     cash.addEventListener('input', function () { var v = num(cash.value); cash.value = v ? v.toLocaleString('id-ID') : ''; chgCalc(); });
-    fLunas.addEventListener('submit', function () { btnLunas.disabled = true; });
+    fLunas.addEventListener('submit', function (e) {
+      var kembali = num(cash.value) - total;
+      // salah ketik nominal (mis. kelebihan satu nol) -> minta konfirmasi
+      if (metode.value === 'tunai' && (kembali > total || kembali > 100000)
+        && !confirm('Kembalian ' + rp(kembali) + ' untuk tagihan ' + rp(total) + '. Nominal uang diterima sudah benar?')) {
+        e.preventDefault(); return;
+      }
+      btnLunas.disabled = true;
+    });
     setMetode(metode.value); chgCalc();
   })();
 </script>
 @endif
 @endpush
+
+@include('kasir.partials.modal-batal')

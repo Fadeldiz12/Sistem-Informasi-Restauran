@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Table('pengiriman')]
-#[Fillable(['id_pesanan', 'id_kurir', 'id_zona', 'alamat', 'jarak_km', 'waktu_siap', 'status_kirim', 'bukti_kirim'])]
+#[Fillable(['id_pesanan', 'id_kurir', 'id_zona', 'alamat', 'jarak_km', 'waktu_siap', 'status_kirim', 'bukti_kirim', 'berangkat_pada', 'diterima_pada'])]
 class Pengiriman extends Model
 {
     public const STATUS_MENUNGGU_KURIR = 'menunggu_kurir';
@@ -22,6 +22,8 @@ class Pengiriman extends Model
     protected function casts(): array
     {
         return [
+            'berangkat_pada' => 'datetime',
+            'diterima_pada' => 'datetime',
             'jarak_km' => 'decimal:2',
             'waktu_siap' => 'datetime',
         ];

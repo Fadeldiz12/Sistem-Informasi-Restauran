@@ -62,10 +62,19 @@
             <td style="text-align:right">
               @if ($p->status === Pesanan::STATUS_SIAP && ! $p->isDelivery() && $p->isLunas())
                 <form method="post" action="{{ route('kasir.selesai', $p) }}">@csrf<button class="btn sm" type="submit"><svg class="ic" style="width:15px;height:15px"><use href="#i-check"/></svg>Selesai</button></form>
-              @elseif (! $p->isLunas() && $p->status !== Pesanan::STATUS_MENUNGGU && ! $p->pembayaran?->isOtomatis())
+              @elseif (! $p->isLunas() && ! $p->isDelivery() && $p->status !== Pesanan::STATUS_MENUNGGU && ! $p->pembayaran?->isOtomatis())
                 <a class="btn o sm" href="{{ route('kasir.pembayaran', ['pesanan' => $p->id]) }}">Bayar</a>
               @elseif ($p->status === Pesanan::STATUS_MENUNGGU && $p->pembayaran?->metode === Pembayaran::METODE_TUNAI)
                 <a class="btn o sm" href="{{ route('kasir.online', ['pesanan' => $p->id]) }}">Konfirmasi</a>
+              @endif
+              @if ($p->isLunas())
+                <a class="btn o sm" style="margin-top:6px" href="{{ route('kasir.struk', $p) }}" target="_blank" rel="noopener" title="Cetak ulang struk"><svg class="ic" style="width:15px;height:15px"><use href="#i-printer"/></svg>Struk</a>
+              @endif
+              @if (in_array($p->id, $bisaDiubah, true))
+                <a class="btn o sm" style="margin-top:6px" href="{{ route('kasir.pesanan.ubah', $p) }}" title="Ubah menu, jumlah, atau meja"><svg class="ic" style="width:15px;height:15px"><use href="#i-edit"/></svg>Ubah</a>
+              @endif
+              @if (in_array($p->status, [Pesanan::STATUS_DIPROSES, Pesanan::STATUS_SIAP], true) && ! $p->isLunas())
+                <button type="button" class="btn o sm js-batal" style="margin-top:6px" data-url="{{ route('kasir.pesanan.batal', $p) }}" data-kode="{{ $p->kode() }}" data-dimasak="{{ $p->tiketDapur && $p->tiketDapur->status_masak !== \App\Models\TiketDapur::STATUS_ANTRE ? 1 : 0 }}" title="Batalkan pesanan"><svg class="ic" style="width:15px;height:15px"><use href="#i-x"/></svg>Batal</button>
               @endif
             </td></tr>
         @empty
@@ -78,3 +87,5 @@
 @push('scripts')
 <script>setTimeout(function () { if (!document.querySelector('.ovl.on')) location.reload(); }, 60000);</script>
 @endpush
+
+@include('kasir.partials.modal-batal')

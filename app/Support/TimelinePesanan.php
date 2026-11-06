@@ -34,20 +34,24 @@ class TimelinePesanan
         $langkah = [
             ['label' => 'Pesanan Dibuat', 'ket' => 'Menunggu konfirmasi kasir', 'waktu' => $jam($p->waktu_pesan), 'done' => true, 'ikon' => null],
             ['label' => 'Dikonfirmasi', 'ket' => 'Kasir menerima pesanan, tiket dikirim ke dapur', 'waktu' => $jam($tiket?->waktu_masuk), 'done' => $sampai(Pesanan::STATUS_DIPROSES), 'ikon' => null],
-            ['label' => 'Dimasak', 'ket' => 'Pesanan diolah sesuai antrean dapur (FIFO)', 'waktu' => null,
-                'done' => $sampai(Pesanan::STATUS_SIAP) || in_array($tiket?->status_masak, [TiketDapur::STATUS_DIMASAK, TiketDapur::STATUS_SELESAI], true), 'ikon' => 'i-dine'],
+            // "Dimasak" baru dicentang setelah dapur menekan Selesai; selama dimasak, langkah ini yang aktif
+            ['label' => 'Dimasak', 'ket' => $tiket?->status_masak === TiketDapur::STATUS_DIMASAK ? 'Pesananmu sedang dimasak' : 'Pesanan diolah sesuai urutan pesanan masuk', 'waktu' => $jam($tiket?->mulai_pada),
+                'done' => $sampai(Pesanan::STATUS_SIAP) || $tiket?->status_masak === TiketDapur::STATUS_SELESAI, 'ikon' => 'i-dine'],
             ['label' => $siapLabel, 'ket' => $p->isDelivery() ? 'Pesanan masuk antrean tugas kurir (FIFO)' : ($p->jenis_layanan === Pesanan::LAYANAN_DINE_IN ? 'Pesanan diantar ke meja' : 'Ambil pesanan di kasir'),
-                'waktu' => $jam($kirim?->waktu_siap), 'done' => $sampai(Pesanan::STATUS_SIAP), 'ikon' => null],
+                'waktu' => $jam($kirim?->waktu_siap ?? $tiket?->selesai_pada), 'done' => $sampai(Pesanan::STATUS_SIAP), 'ikon' => null],
         ];
 
         if ($p->isDelivery()) {
-            $langkah[] = ['label' => 'Dalam Perjalanan', 'ket' => $kirim?->kurir ? 'Kurir '.$kirim->kurir->nama.' menuju alamatmu' : 'Menunggu kurir mengambil pesanan',
-                'waktu' => null, 'done' => $sampai(Pesanan::STATUS_DIANTAR), 'ikon' => 'i-truck'];
             $diterima = $kirim?->status_kirim === Pengiriman::STATUS_DITERIMA;
-            $langkah[] = ['label' => 'Diterima', 'ket' => 'Kurir mengunggah bukti pengiriman', 'waktu' => $diterima ? $jam($kirim->updated_at) : null,
+            $langkah[] = ['label' => 'Dalam Perjalanan', 'ket' => match (true) {
+                $diterima && $kirim->kurir !== null => 'Diantar oleh '.$kirim->kurir->nama,
+                $kirim?->kurir !== null => 'Kurir '.$kirim->kurir->nama.' menuju alamatmu',
+                default => 'Menunggu kurir mengambil pesanan',
+            }, 'waktu' => $jam($kirim?->berangkat_pada), 'done' => $sampai(Pesanan::STATUS_DIANTAR), 'ikon' => 'i-truck'];
+            $langkah[] = ['label' => 'Diterima', 'ket' => 'Kurir mengunggah bukti pengiriman', 'waktu' => $diterima ? $jam($kirim->diterima_pada ?? $kirim->updated_at) : null,
                 'done' => $sampai(Pesanan::STATUS_SELESAI) || $kirim?->status_kirim === Pengiriman::STATUS_DITERIMA, 'ikon' => null];
         } else {
-            $langkah[] = ['label' => 'Selesai', 'ket' => 'Pesanan sudah diterima pelanggan', 'waktu' => null, 'done' => $sampai(Pesanan::STATUS_SELESAI), 'ikon' => null];
+            $langkah[] = ['label' => 'Selesai', 'ket' => 'Pesanan sudah diterima pelanggan', 'waktu' => $jam($p->selesai_pada), 'done' => $sampai(Pesanan::STATUS_SELESAI), 'ikon' => null];
         }
 
         $batal = $p->status === Pesanan::STATUS_DIBATALKAN;

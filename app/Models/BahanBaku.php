@@ -8,11 +8,14 @@ use Illuminate\Database\Eloquent\Attributes\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Table('bahan_baku')]
 #[Fillable(['nama_bahan', 'satuan', 'stok', 'rata_pemakaian', 'lead_time', 'safety_stock', 'rop'])]
 class BahanBaku extends Model
 {
+    use SoftDeletes;
+
     /**
      * Jumlah hari (N) untuk menghitung rata-rata pemakaian.
      */

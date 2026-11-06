@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Pembayaran;
 use App\Models\Pengiriman;
 use App\Models\User;
+use App\Support\AturanAkun;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -62,6 +64,9 @@ class PenggunaController extends Controller
         if ($data['role'] !== $user->role && $this->masihMengantar($user)) {
             return back()->withInput()->withErrors(['role' => "{$user->nama} masih mengantar pesanan. Ubah role setelah pengiriman selesai."]);
         }
+        if ($data['role'] !== $user->role && ($tunai = $this->tunaiBelumDisetor($user)) > 0) {
+            return back()->withInput()->withErrors(['role' => $this->pesanTunai($user, $tunai, 'Ubah role')]);
+        }
 
         if (blank($data['password'] ?? null)) {
             unset($data['password']);
@@ -84,6 +89,10 @@ class PenggunaController extends Controller
             return back()->with('error', "{$user->nama} masih mengantar pesanan. Hapus akun setelah pengiriman selesai.");
         }
 
+        if (($tunai = $this->tunaiBelumDisetor($user)) > 0) {
+            return back()->with('error', $this->pesanTunai($user, $tunai, 'Hapus akun'));
+        }
+
         if ($user->pengeluaran()->exists()) {
             return back()->with('error', "Akun {$user->nama} tidak bisa dihapus karena masih tercatat di data pengeluaran.");
         }
@@ -95,14 +104,16 @@ class PenggunaController extends Controller
 
     private function validated(Request $request, ?User $user = null): array
     {
+        $request->merge(['no_hp' => AturanAkun::rapikanHp($request->input('no_hp'))]);
+
         return $request->validate([
             'nama' => ['required', 'string', 'max:100'],
             'email' => ['required', 'email', 'max:100', Rule::unique('users', 'email')->ignore($user)],
-            'no_hp' => ['required', 'string', 'max:20', 'regex:/^[0-9+\-\s]+$/'],
+            'no_hp' => ['required', 'string', 'max:20', 'regex:'.AturanAkun::REGEX_HP],
             'role' => ['required', Rule::in($request->user()->roleYangBolehDiatur())],
-            'password' => [$user ? 'nullable' : 'required', 'confirmed', Password::min(8)],
+            'password' => [$user ? 'nullable' : 'required', 'confirmed', Password::defaults()],
         ], [
-            'no_hp.regex' => 'Nomor HP hanya boleh berisi angka.',
+            'no_hp.regex' => AturanAkun::PESAN_HP,
             'role.in' => 'Anda tidak berhak memberikan role tersebut. Role owner hanya bisa diberikan oleh owner.',
         ]);
     }
@@ -118,6 +129,20 @@ class PenggunaController extends Controller
     private function pastikanBolehKelola(Request $request, User $user): void
     {
         abort_unless($request->user()->bolehKelola($user), 403, 'Akun owner hanya bisa diubah oleh owner.');
+    }
+
+    /**
+     * Uang tunai COD yang masih dibawa kurir dan belum disetor ke kasir.
+     */
+    private function tunaiBelumDisetor(User $user): float
+    {
+        return (float) Pembayaran::belumDisetor()->where('id_kurir', $user->id)->sum('jumlah');
+    }
+
+    private function pesanTunai(User $user, float $tunai, string $aksi): string
+    {
+        return "{$user->nama} masih membawa uang tunai Rp ".number_format($tunai, 0, ',', '.')
+            ." yang belum disetor. Terima setorannya dulu di menu Setoran Kurir (kasir), lalu {$aksi} lagi.";
     }
 
     private function masihMengantar(User $user): bool

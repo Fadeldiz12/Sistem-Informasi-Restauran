@@ -3,9 +3,10 @@
 @use('App\Models\TiketDapur')
 
 @section('title', 'Antrean Tiket')
+@section('error-sendiri', '1')
 @section('crumb', 'Dapur / Antrean Tiket')
 @section('heading', 'Antrean Tiket Pesanan')
-@section('sub', 'Siapkan pesanan sesuai urutan antrean (FIFO) dan perbarui status masakan')
+@section('sub', 'Siapkan pesanan sesuai urutan masuk dan perbarui status masakan')
 
 @php
   $ringkas = fn ($p) => $p->detail->map(fn ($d) => $d->jumlah.'× '.$d->menu->nama_menu)->join(', ');
@@ -38,7 +39,7 @@
 
 @section('content')
   @if ($kritis->isNotEmpty())
-    <div class="card f" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:14px 20px;border-radius:18px;margin-bottom:18px"><svg class="ic" style="width:22px;height:22px"><use href="#i-alert"/></svg><span style="flex:1;min-width:220px;font:600 14px var(--f-accent)">Notifikasi stok kritis: {{ $kritis->join(', ', ' dan ') }} berada pada atau di bawah ROP. Segera lakukan pemesanan ulang.</span><a class="btn cr sm" href="{{ route('dapur.bahan-baku') }}">Lihat bahan baku</a></div>
+    <div class="card f" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:14px 20px;border-radius:18px;margin-bottom:18px"><svg class="ic" style="width:22px;height:22px"><use href="#i-alert"/></svg><span style="flex:1;min-width:220px;font:600 14px var(--f-accent)">Notifikasi stok kritis: {{ $kritis->join(', ', ' dan ') }} hampir habis (sudah di batas pesan ulang). Segera pesan ke pemasok.</span><a class="btn cr sm" href="{{ route('dapur.bahan-baku') }}">Lihat bahan baku</a></div>
   @endif
   @if ($errors->any())<div class="alert" role="alert">{{ $errors->first() }}</div>@endif
 
@@ -47,26 +48,37 @@
   @else
   <div class="grid split" style="grid-template-columns:minmax(300px,.4fr) minmax(0,1fr);align-items:start">
     <div class="card" style="padding:16px"><div class="card-head" style="margin-bottom:6px"><h2>Antrean Tiket</h2><span class="pill m">{{ $antrean->count() }}</span></div>
-      <p style="font-size:12.5px;opacity:.7;margin-bottom:12px;display:flex;gap:6px;align-items:center"><svg class="ic" style="width:14px;height:14px"><use href="#i-refresh"/></svg>FIFO · urut dari waktu masuk paling awal, tiket baru ditambahkan di akhir</p>
+      <p style="font-size:12.5px;opacity:.7;margin-bottom:12px;display:flex;gap:6px;align-items:center"><svg class="ic" style="width:14px;height:14px"><use href="#i-refresh"/></svg>Urutan masuk · tiket paling lama di atas, tiket baru ditambahkan di akhir</p>
       @foreach ($antrean as $i => $t)
-        <a @class(['tk', 'on' => $tiket->id === $t->id]) href="{{ route('dapur.antrean', ['tiket' => $t->id]) }}"><span class="fifo">#{{ $i + 1 }}</span><div style="flex:1;min-width:0">
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b style="font:700 16px var(--f-title)">{{ $t->kode() }}</b><span @class(['pill st', 'm' => $t->status_masak === TiketDapur::STATUS_DIMASAK, 'b' => $t->status_masak === TiketDapur::STATUS_ANTRE]) style="font-size:10.5px;padding:3px 9px">{{ $t->statusLabel() }}</span></div>
+        <a @class(['tk', 'on' => $tiket->id === $t->id]) href="{{ route('dapur.antrean', ['tiket' => $t->id]) }}#detail"><span class="fifo">#{{ $i + 1 }}</span><div style="flex:1;min-width:0">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b style="font:700 16px var(--f-title)">{{ $t->pesanan->kode() }}</b><span @class(['pill st', 'm' => $t->status_masak === TiketDapur::STATUS_DIMASAK, 'b' => $t->status_masak === TiketDapur::STATUS_ANTRE]) style="font-size:10.5px;padding:3px 9px">{{ $t->statusLabel() }}</span></div>
           <div class="isi">{{ $ringkas($t->pesanan) }}</div>
           <div style="display:flex;gap:10px;font-size:12px;opacity:.75;margin-top:6px;flex-wrap:wrap"><span style="display:flex;gap:4px;align-items:center"><svg class="ic" style="width:12px;height:12px"><use href="#i-clock"/></svg>Masuk {{ $t->waktu_masuk->format('H:i') }}</span><span>· {{ $t->pesanan->layananDetail() }}</span></div></div></a>
       @endforeach
     </div>
 
-    <div class="grid" style="align-content:start">
+    <div class="grid" id="detail" style="align-content:start">
       <div class="card stripes" style="padding:clamp(14px,2vw,26px);box-shadow:none">
         <div class="stamp-out"><div class="stamp" style="padding:clamp(18px,2vw,26px) clamp(18px,2vw,28px)">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap"><div><div class="eyebrow">Detail tiket pesanan</div><div class="no-tk">{{ $tiket->kode() }}</div></div>
-            <div style="display:grid;gap:8px;justify-items:end"><span class="pill m">{{ $tiket->pesanan->layananDetail() }}</span><span class="pill b">FIFO #{{ $antrean->search(fn ($x) => $x->id === $tiket->id) + 1 }}</span></div></div>
-          <div style="font-size:13px;opacity:.75;margin:12px 0 14px">{{ $tiket->pesanan->kode() }} · {{ $tiket->pesanan->namaPemesan() }} · masuk {{ $tiket->waktu_masuk->format('H:i') }} ({{ $tiket->waktu_masuk->diffForHumans() }})</div>
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap"><div><div class="eyebrow">Detail tiket pesanan · {{ $tiket->kode() }}</div><div class="no-tk">{{ $tiket->pesanan->kode() }}</div></div>
+            <div style="display:grid;gap:8px;justify-items:end"><span class="pill m">{{ $tiket->pesanan->layananDetail() }}</span><span class="pill b">Urutan #{{ $antrean->search(fn ($x) => $x->id === $tiket->id) + 1 }}</span></div></div>
+          <div style="font-size:13px;opacity:.75;margin:12px 0 14px">{{ $tiket->pesanan->namaPemesan() }} · masuk {{ $tiket->waktu_masuk->format('H:i') }} ({{ $tiket->waktu_masuk->diffForHumans() }})</div>
           <div style="border-top:1.5px dashed var(--m60);padding-top:8px">
             @foreach ($tiket->pesanan->detail as $d)
               <div class="item-row"><b class="q">{{ $d->jumlah }}×</b><div><b class="n">{{ $d->menu->nama_menu }}</b>@if ($d->catatan)<small>Catatan: {{ $d->catatan }}</small>@endif</div></div>
             @endforeach
-          </div></div></div></div>
+          </div>
+          @if ($kebutuhan)
+            @php $adaKurang = collect($kebutuhan)->contains('kurang', true); $a = fn ($n) => \App\Services\BahanBakuService::angka($n); @endphp
+            <div style="border-top:1.5px dashed var(--m60);margin-top:12px;padding-top:10px;font-size:13px">
+              <div class="eyebrow" style="margin-bottom:6px">Bahan yang akan dipakai</div>
+              @foreach ($kebutuhan as $k)
+                <div style="display:flex;justify-content:space-between;gap:10px;padding:2px 0;{{ $k['kurang'] ? 'font-weight:700' : '' }}"><span>{{ $k['kurang'] ? '⚠ ' : '' }}{{ $k['nama'] }}</span><span>butuh {{ $a($k['butuh']) }} {{ $k['satuan'] }} · sisa {{ $a($k['stok']) }}</span></div>
+              @endforeach
+              @if ($adaKurang)<div class="alert" role="alert" style="margin:10px 0 0">Stok bahan bertanda ⚠ tidak cukup. Masakan tetap bisa dimulai, tetapi stoknya akan habis (0).</div>@endif
+            </div>
+          @endif
+          </div></div></div>
 
       <div class="card"><div class="card-head"><h2>Status Masakan</h2><span class="pill">{{ $tiket->statusLabel() }}</span></div>
         <div class="sp">
@@ -75,10 +87,10 @@
           @endforeach
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:22px">
-          <form method="post" action="{{ route('dapur.tiket.mulai', $tiket) }}">@csrf<button class="btn lg o" type="submit" style="width:100%" @disabled($tiket->status_masak !== TiketDapur::STATUS_ANTRE)><svg class="ic"><use href="#i-flame"/></svg>Mulai Masak</button></form>
-          <form method="post" action="{{ route('dapur.tiket.selesai', $tiket) }}">@csrf<button class="btn lg" type="submit" style="width:100%" @disabled($tiket->status_masak !== TiketDapur::STATUS_DIMASAK)><svg class="ic"><use href="#i-check"/></svg>Selesai · Siap</button></form>
+          <form method="post" action="{{ route('dapur.tiket.mulai', $tiket) }}"  data-konfirmasi-judul="Mulai masak {{ $tiket->pesanan->kode() }}?" data-konfirmasi="Tiket {{ $tiket->kode() }} · {{ $tiket->pesanan->layananDetail() }}. Stok bahan sesuai resep langsung dipotong dan tidak bisa dibatalkan. Pastikan ini tiket yang benar.">@csrf<button @class(['btn lg o', 'aksi-utama' => $tiket->status_masak === TiketDapur::STATUS_ANTRE]) type="submit" style="width:100%" @disabled($tiket->status_masak !== TiketDapur::STATUS_ANTRE)><svg class="ic"><use href="#i-flame"/></svg>Mulai Masak</button></form>
+          <form method="post" action="{{ route('dapur.tiket.selesai', $tiket) }}">@csrf<button @class(['btn lg', 'aksi-utama' => $tiket->status_masak === TiketDapur::STATUS_DIMASAK]) type="submit" style="width:100%" @disabled($tiket->status_masak !== TiketDapur::STATUS_DIMASAK)><svg class="ic"><use href="#i-check"/></svg>Selesai · Siap</button></form>
         </div>
-        <div class="note" style="margin-top:14px"><svg class="ic"><use href="#i-bell"/></svg><span>Saat ditandai Siap: status pesanan menjadi Siap di kasir dan halaman lacak pelanggan{{ $tiket->pesanan->isDelivery() ? '; tugas pengiriman masuk antrean kurir (FIFO).' : '.' }}</span></div></div>
+        <div class="note" style="margin-top:14px"><svg class="ic"><use href="#i-bell"/></svg><span>Saat ditandai Siap: status pesanan menjadi Siap di kasir dan halaman lacak pelanggan{{ $tiket->pesanan->isDelivery() ? '; tugas pengiriman masuk antrean kurir.' : '.' }}</span></div></div>
     </div>
   </div>
   @endif

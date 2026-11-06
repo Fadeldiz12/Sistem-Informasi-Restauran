@@ -23,7 +23,7 @@ class RoleTest extends TestCase
 
     private function isi(User $u, string $role): array
     {
-        return ['nama' => $u->nama, 'email' => $u->email, 'no_hp' => '0812', 'role' => $role];
+        return ['nama' => $u->nama, 'email' => $u->email, 'no_hp' => '081234567890', 'role' => $role];
     }
 
     public function test_admin_mengatur_role_staf_tapi_tidak_owner(): void
@@ -35,7 +35,7 @@ class RoleTest extends TestCase
 
         // admin tidak bisa memberi role owner
         $this->actingAs($this->admin)->put("/admin/pengguna/{$kasir->id}", $this->isi($kasir, 'owner'))->assertSessionHasErrors('role');
-        $this->actingAs($this->admin)->post('/admin/pengguna', ['nama' => 'X', 'email' => 'x@a.test', 'no_hp' => '08', 'role' => 'owner',
+        $this->actingAs($this->admin)->post('/admin/pengguna', ['nama' => 'X', 'email' => 'x@a.test', 'no_hp' => '081234567890', 'role' => 'owner',
             'password' => 'rahasia123', 'password_confirmation' => 'rahasia123'])->assertSessionHasErrors('role');
         $this->assertDatabaseMissing('users', ['email' => 'x@a.test']);
 

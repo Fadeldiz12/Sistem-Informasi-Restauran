@@ -33,9 +33,11 @@
   .catrow a.cat.on { background: var(--m); color: var(--cr); }
   .catrow a.cat.on b { opacity: .85; }
   .navno { display: inline-grid; place-items: center; height: 20px; padding: 0 7px; border-radius: 999px; background: var(--bl); color: var(--m); font: 700 10.5px var(--f-accent); letter-spacing: .04em; }
-  .catrow .kact { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); display: none; gap: 4px; }
+  /* tombol ubah/hapus kategori selalu terlihat (redup), jelas saat diarahkan (QA A4-#15) */
+  .catrow .kact { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); display: flex; gap: 4px; opacity: .45; transition: opacity .15s; }
   .catrow .kact .ab { width: 30px; height: 30px; }
-  .catrow:hover .kact, .catrow:focus-within .kact { display: flex; }
+  .catrow:hover .kact, .catrow:focus-within .kact { opacity: 1; }
+  .catrow a.cat { padding-right: 84px !important; }
   .catrow:hover a.cat .meta, .catrow:focus-within a.cat .meta { visibility: hidden; }
   @media (hover: none) { .catrow .kact { display: flex; } .catrow a.cat .meta { visibility: hidden; } }
   .navlist { display: grid; gap: 6px; margin-top: 4px; }
@@ -63,9 +65,6 @@
   .drop .meta { flex: 1; min-width: 0; }
   .drop .meta b { display: block; font: 600 14px var(--f-title); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   @media (max-width: 520px) { .drop { flex-wrap: wrap; } .drop .btn { width: 100%; } }
-  .switch-row { display: flex; gap: 12px; align-items: center; padding: 12px 14px; border-radius: 14px; background: var(--pp); font: 600 13.5px var(--f-body); }
-  .switch-row > span { flex: 1; }
-  .switch-row small { display: block; font-size: 12px; opacity: .7; font-weight: 500; }
 
   /* resep per porsi */
   .rs-list { display: grid; gap: 8px; }
@@ -88,7 +87,7 @@
                  data-navbar="{{ $k->tampil_navbar ? 1 : 0 }}" data-urutan="{{ $k->urutan_navbar }}">
               <a @class(['cat', 'on' => $kategoriId === $k->id]) href="{{ $filter(['kategori' => $k->id]) }}" title="{{ $k->nama_kategori }}">
                 <span class="nm">{{ $k->nama_kategori }}</span>
-                <span class="meta">@if ($k->tampil_navbar)<i class="navno" title="Tampil di navbar, urutan {{ $k->urutan_navbar }}">NAV {{ $k->urutan_navbar }}</i>@endif<b>{{ $k->menu_count }}</b></span>
+                <span class="meta">@if ($k->tampil_navbar)<i class="navno" title="Tampil di menu kategori pelanggan, urutan {{ $k->urutan_navbar }}">Urutan {{ $k->urutan_navbar }}</i>@endif<b>{{ $k->menu_count }}</b></span>
               </a>
               <span class="kact">
                 <button class="ab js-edit-kat" title="Ubah kategori"><svg class="ic"><use href="#i-edit"/></svg></button>
@@ -103,7 +102,7 @@
       </div>
 
       <div class="card soft">
-        <div class="card-head" style="margin-bottom:8px"><div><h2>Navbar Beranda</h2><p>Urutan menu di navbar pelanggan</p></div><span class="pill b">{{ $navbar->count() }} / {{ Kategori::MAKS_NAVBAR }}</span></div>
+        <div class="card-head" style="margin-bottom:8px"><div><h2>Menu Kategori Pelanggan</h2><p>Kategori yang tampil di atas halaman pelanggan, sesuai urutan</p></div><span class="pill b">{{ $navbar->count() }} / {{ Kategori::MAKS_NAVBAR }}</span></div>
         <div class="navlist">
           <div class="promo"><span>★</span>Promo</div>
           @forelse ($navbar as $n)
@@ -177,7 +176,7 @@
           <option value="{{ $k->id }}" @selected((string) old('id_kategori', $kategoriId) === (string) $k->id)>{{ $k->nama_kategori }}</option>
         @endforeach
       </select></div></div>
-      <div class="field"><label for="mnHarga">Harga</label><div class="in"><span class="suf" style="opacity:1">Rp</span><input name="harga" id="mnHarga" value="{{ old('harga') }}" inputmode="numeric" placeholder="0" required></div></div>
+      <div class="field"><label for="mnHarga">Harga</label><div class="in"><span class="suf" style="opacity:1">Rp</span><input name="harga" id="mnHarga" value="{{ old('harga') }}" inputmode="numeric" placeholder="0" required></div><small id="mnHargaInfo" style="display:block;margin-top:6px;font-size:12px;opacity:.75">Angka bulat, contoh 12.500</small></div>
       <label class="switch-row full" for="mnTersedia"><span>Tersedia untuk dipesan<small>Jika dimatikan, menu ditandai Habis dan disembunyikan dari pelanggan</small></span><span class="toggle" style="flex:none"><input type="checkbox" name="tersedia" value="1" id="mnTersedia" @checked(old('_modal') === 'mMenu' ? old('tersedia') : true)><i></i></span></label>
       <div class="field full"><label style="display:flex;justify-content:space-between;align-items:center;gap:10px">Resep per porsi<button type="button" class="btn o sm" id="rsAdd" @disabled($bahan->isEmpty())><svg class="ic" style="width:15px;height:15px"><use href="#i-plus"/></svg>Bahan</button></label>
         <div class="rs-list" id="rsList"></div>
@@ -198,7 +197,7 @@
   <div class="mb" style="display:grid;gap:16px">
     @include('partials.panel.form-errors', ['modal' => 'mKat'])
     <div class="field"><label for="ktNama">Nama kategori</label><div class="in"><svg class="ic"><use href="#i-grid"/></svg><input type="text" name="nama_kategori" id="ktNama" value="{{ old('nama_kategori') }}" maxlength="100" placeholder="Contoh: Paket Hemat" required></div></div>
-    <label class="switch-row" for="ktNav"><span>Tampilkan di navbar beranda<small id="ktNavInfo">{{ $navbar->count() }} dari {{ Kategori::MAKS_NAVBAR }} tempat terpakai</small></span><span class="toggle" style="flex:none"><input type="checkbox" name="tampil_navbar" value="1" id="ktNav" @checked(old('_modal') === 'mKat' && old('tampil_navbar'))><i></i></span></label>
+    <label class="switch-row" for="ktNav"><span>Tampilkan di menu kategori pelanggan<small id="ktNavInfo">{{ $navbar->count() }} dari {{ Kategori::MAKS_NAVBAR }} tempat terpakai</small></span><span class="toggle" style="flex:none"><input type="checkbox" name="tampil_navbar" value="1" id="ktNav" @checked(old('_modal') === 'mKat' && old('tampil_navbar'))><i></i></span></label>
     <div class="field" id="ktUrutWrap"><label for="ktUrut">Urutan di navbar</label><div class="in"><svg class="ic"><use href="#i-filter"/></svg><select name="urutan_navbar" id="ktUrut">
       @for ($i = 1; $i <= Kategori::MAKS_NAVBAR; $i++)
         @php $pemilik = $navbar->firstWhere('urutan_navbar', $i); @endphp
@@ -285,7 +284,14 @@
       preview(URL.createObjectURL(f), f.name);
     });
     mnHarga.addEventListener('input', function () {
-      var d = mnHarga.value.replace(/\D/g, ''); mnHarga.value = d ? rib(d) : '';
+      var mentah = mnHarga.value, d = mentah.replace(/\D/g, '');
+      mnHarga.value = d ? rib(d) : '';
+      // koma/huruf dibuang: beri tahu supaya "12,5" tidak diam-diam menjadi Rp 125
+      var dibuang = /[^\d.\s]/.test(mentah);
+      mnHargaInfo.textContent = dibuang ? 'Hanya angka bulat yang dipakai. Tersimpan sebagai Rp ' + (d ? rib(d) : '0') + '. Contoh 12.500.'
+        : (d === '' ? 'Angka bulat, contoh 12.500' : (+d === 0 ? 'Harga harus lebih dari Rp 0.' : 'Tersimpan sebagai Rp ' + rib(d)));
+      mnHargaInfo.style.color = dibuang || (d !== '' && +d === 0) ? 'var(--m)' : '';
+      mnHargaInfo.style.fontWeight = dibuang ? '700' : '';
     });
 
     /* status tersedia langsung dari tabel */
@@ -305,7 +311,7 @@
       // navbar penuh: kategori baru / yang belum tampil tidak bisa diaktifkan
       var kunci = navPenuh && !sudahDiNavbar;
       ktNav.disabled = kunci; if (kunci) ktNav.checked = false;
-      ktNavInfo.textContent = kunci ? 'Navbar sudah penuh (' + maks + ' kategori). Sembunyikan salah satu dulu.' : ktNavInfo.dataset.base;
+      ktNavInfo.textContent = kunci ? 'Menu kategori sudah penuh (' + maks + ' kategori). Sembunyikan salah satu dulu.' : ktNavInfo.dataset.base;
       ktUrutWrap.hidden = !ktNav.checked; ktUrut.required = ktNav.checked;
     }
     function firstEmpty() {

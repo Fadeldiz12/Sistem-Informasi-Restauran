@@ -181,7 +181,10 @@
       <div class="s next"><span class="n">2</span><span>Checkout</span></div><div class="line"></div><div class="s next"><span class="n">3</span><span>Pembayaran</span></div></div>
   </div>
 
-  @if (session('error'))<div class="flash" role="alert">{{ session('error') }}</div>@endif
+  @if (session('error'))<div class="flash" role="alert">{{ session('error') }}</div>
+  @elseif ($dibuang)<div class="flash" role="alert">{{ collect($dibuang)->join(', ', ' dan ') }} sedang habis dan sudah dihapus dari keranjang.</div>@endif
+  @unless ($set->sedangBuka())<div class="flash" role="status">Restoran sedang tutup. Menu tetap bisa disimpan di keranjang; pesanan bisa dibuat pukul {{ $set->jamLabel() }}.</div>@endunless
+  @if ($pesananTerakhir)<div class="flash ok" role="status">Pesanan {{ $pesananTerakhir->kode() }} sudah dibuat. <a href="{{ route('pelanggan.tracking', ['pesanan' => $pesananTerakhir->id]) }}" style="text-decoration:underline">Lihat statusnya</a>.</div>@endif
 
   <div class="layout">
     <div>
@@ -197,7 +200,7 @@
                 <label class="notes"><svg class="ic" style="width:15px;height:15px"><use href="#i-edit"/></svg><input class="js-note" value="{{ $it['catatan'] }}" maxlength="255" placeholder="Tambah catatan untuk dapur"></label>
                 <div class="unit">Rp {{ number_format($m->harga, 0, ',', '.') }} / porsi</div></div>
               <div class="right"><b class="line-total">Rp {{ number_format($it['subtotal'], 0, ',', '.') }}</b>
-                <div class="row"><div class="qty"><button class="minus" type="button" aria-label="Kurangi"><svg class="ic"><use href="#i-minus"/></svg></button><b class="q">{{ $it['jumlah'] }}</b><button class="plus" type="button" aria-label="Tambah"><svg class="ic"><use href="#i-plus"/></svg></button></div>
+                <div class="row"><div class="qty"><button class="minus" type="button" aria-label="{{ $it['jumlah'] === 1 ? 'Hapus' : 'Kurangi' }}"><svg class="ic"><use href="#{{ $it['jumlah'] === 1 ? 'i-trash' : 'i-minus' }}"/></svg></button><b class="q">{{ $it['jumlah'] }}</b><button class="plus" type="button" aria-label="Tambah" @if ($it['jumlah'] >= \App\Support\Keranjang::MAKS_JUMLAH) style="opacity:.4" @endif><svg class="ic"><use href="#i-plus"/></svg></button></div>
                 <button class="del" type="button" aria-label="Hapus"><svg class="ic"><use href="#i-trash"/></svg></button></div></div>
             </article>
           @endforeach
@@ -258,24 +261,41 @@
       cartEmpty.hidden = !kosong; clearAll.hidden = kosong;
       if (kosong) toCheckout.setAttribute('aria-disabled', 'true'); else toCheckout.removeAttribute('aria-disabled');
     }
+    var MAKS = {{ \App\Support\Keranjang::MAKS_JUMLAH }};
     function baris(row) {
       var q = +row.querySelector('.q').textContent;
       row.querySelector('.line-total').textContent = rp(q * +row.dataset.price);
+      // di jumlah 1, tombol − berubah menjadi tombol hapus; di batas maksimal tombol + diredupkan
+      var minus = row.querySelector('.minus');
+      minus.querySelector('use').setAttribute('href', q === 1 ? '#i-trash' : '#i-minus');
+      minus.setAttribute('aria-label', q === 1 ? 'Hapus' : 'Kurangi');
+      row.querySelector('.plus').style.opacity = q >= MAKS ? '.4' : '';
+    }
+    /* hapus item, bisa dibatalkan beberapa detik lewat toast */
+    function hapus(row) {
+      var data = { id: +row.dataset.id, jumlah: +row.querySelector('.q').textContent, catatan: row.querySelector('.js-note').value },
+          sebelum = row.nextElementSibling, nama = row.querySelector('h3').textContent;
+      row.classList.add('busy');
+      sendJson(row.dataset.del, 'DELETE').then(function (r) {
+        row.remove(); row.classList.remove('busy'); ringkas(r);
+        pToastAksi(nama + ' dihapus.', 'Batalkan', function () {
+          sendJson(@json(route('pelanggan.keranjang.store')), 'POST', { id_menu: data.id, jumlah: data.jumlah, catatan: data.catatan }).then(function (r2) {
+            list.insertBefore(row, sebelum && sebelum.parentNode === list ? sebelum : null); ringkas(r2); pToast(nama + ' dikembalikan ke keranjang');
+          }).catch(function (err) { pToast(err.message); });
+        });
+      }).catch(function (err) { row.classList.remove('busy'); pToast(err.message); });
     }
     list.addEventListener('click', function (e) {
       var row = e.target.closest('.it'); if (!row) return;
       var q = row.querySelector('.q'), n = +q.textContent;
+      if (e.target.closest('.minus') && n === 1) { hapus(row); return; }
+      if (e.target.closest('.plus') && n >= MAKS) { pToast('Maksimal ' + MAKS + ' porsi per menu.'); return; }
       if (e.target.closest('.plus') || e.target.closest('.minus')) {
-        var baru = e.target.closest('.plus') ? Math.min(n + 1, 50) : Math.max(n - 1, 1);
-        if (baru === n) return;
+        var baru = e.target.closest('.plus') ? n + 1 : n - 1;
         q.textContent = baru; baris(row);
         sendJson(row.dataset.url, 'PATCH', { jumlah: baru }).then(ringkas).catch(function (err) { q.textContent = n; baris(row); pToast(err.message); });
       }
-      if (e.target.closest('.del')) {
-        row.classList.add('busy');
-        sendJson(row.dataset.del, 'DELETE').then(function (r) { row.remove(); ringkas(r); pToast(r.message); })
-          .catch(function (err) { row.classList.remove('busy'); pToast(err.message); });
-      }
+      if (e.target.closest('.del')) hapus(row);
     });
     /* catatan disimpan otomatis setelah berhenti mengetik */
     list.addEventListener('input', function (e) {

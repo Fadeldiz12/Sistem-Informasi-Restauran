@@ -26,7 +26,8 @@ class OtpController extends Controller
         }
 
         return view('auth.otp', [
-            'email' => OtpService::samarkan($sesi['email']),
+            // reset password: tampilkan email lengkap yang diketik pengguna sendiri, supaya salah ketik terlihat
+            'email' => $sesi['tujuan'] === KodeOtp::TUJUAN_RESET ? $sesi['email'] : OtpService::samarkan($sesi['email']),
             'reset' => $sesi['tujuan'] === KodeOtp::TUJUAN_RESET,
             'jeda' => $this->otp->sisaJeda($sesi['email'], $sesi['tujuan']),
             'berlaku' => OtpService::BERLAKU_MENIT,

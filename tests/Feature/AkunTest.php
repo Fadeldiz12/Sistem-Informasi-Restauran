@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Notifications\KodeOtpNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Notifications\AnonymousNotifiable;
+use Illuminate\Notifications\ChannelManager;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
@@ -40,13 +41,13 @@ class AkunTest extends TestCase
 
     private function daftar(string $email = 'sari@gmail.com'): void
     {
-        $this->post('/registrasi', ['nama' => 'Sari Wulandari', 'hp' => '0812', 'email' => $email, 'password' => 'rahasia123',
+        $this->post('/registrasi', ['nama' => 'Sari Wulandari', 'hp' => '081234567890', 'email' => $email, 'password' => 'rahasia123',
             'password_confirmation' => 'rahasia123', 'setuju' => 1])->assertRedirect('/verifikasi-otp');
     }
 
     public function test_halaman_login_tanpa_google_dan_facebook(): void
     {
-        $this->get('/login')->assertOk()->assertSee('Selamat Datang')->assertDontSee('Google')->assertDontSee('Facebook')
+        $this->get('/login')->assertOk()->assertSee('Masuk ke')->assertSee('Daftar &amp; Pesan Sekarang', false)->assertDontSee('Google')->assertDontSee('Facebook')
             ->assertSee(route('password.request'), false)->assertSee('SISTEM MANAJEMEN RESTORAN');
         $this->get('/registrasi')->assertOk()->assertSee('Buat Akun Baru')->assertDontSee('Google');
         $this->get('/auth/google')->assertNotFound();
@@ -71,7 +72,7 @@ class AkunTest extends TestCase
 
     public function test_registrasi_wajib_setuju_syarat(): void
     {
-        $this->post('/registrasi', ['nama' => 'Sari', 'hp' => '0812', 'email' => 'a@gmail.com', 'password' => 'rahasia123', 'password_confirmation' => 'rahasia123'])
+        $this->post('/registrasi', ['nama' => 'Sari', 'hp' => '081234567890', 'email' => 'a@gmail.com', 'password' => 'rahasia123', 'password_confirmation' => 'rahasia123'])
             ->assertSessionHasErrors('setuju');
     }
 
@@ -92,11 +93,10 @@ class AkunTest extends TestCase
         $this->post('/verifikasi-otp', ['kode' => $kode])->assertSessionHasErrors('kode');
         $this->assertGuest();
 
-        // kode baru setelah jeda 60 detik; kode lama tidak berlaku
-        $this->post('/verifikasi-otp/kirim-ulang')->assertSessionHasErrors('kode'); // masih jeda
-        $this->travel(61)->seconds();
+        // percobaan habis: kode baru boleh langsung diminta, lalu jeda 60 detik berlaku lagi
         $this->post('/verifikasi-otp/kirim-ulang')->assertSessionHas('status');
         $baru = $this->kodeTerkirim('sari@gmail.com');
+        $this->post('/verifikasi-otp/kirim-ulang')->assertSessionHasErrors('kode'); // masih jeda
 
         $this->travel(11)->minutes();
         $this->post('/verifikasi-otp', ['kode' => $baru])->assertSessionHasErrors('kode'); // kedaluwarsa
@@ -124,7 +124,7 @@ class AkunTest extends TestCase
     public function test_akun_buatan_admin_langsung_aktif(): void
     {
         $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
-        $this->actingAs($admin)->post('/admin/pengguna', ['nama' => 'Kasir Baru', 'email' => 'kasirbaru@resto.test', 'no_hp' => '0812',
+        $this->actingAs($admin)->post('/admin/pengguna', ['nama' => 'Kasir Baru', 'email' => 'kasirbaru@resto.test', 'no_hp' => '081234567890',
             'role' => 'kasir', 'password' => 'rahasia123', 'password_confirmation' => 'rahasia123'])->assertSessionHasNoErrors();
         $this->assertNotNull(User::firstWhere('email', 'kasirbaru@resto.test')->email_verified_at);
     }
@@ -182,5 +182,108 @@ class AkunTest extends TestCase
         $mail = (new KodeOtpNotification('482913', KodeOtp::TUJUAN_REGISTRASI, 'Sari'))->toMail($user);
         $this->assertStringContainsString('Kode Verifikasi Akun', $mail->subject);
         $this->assertStringContainsString('4 8 2 9 1 3', implode(' ', $mail->introLines));
+    }
+
+    // ---------- QA fase 3: email gagal, batas percobaan, halaman tujuan, ingat saya
+
+    public function test_email_otp_gagal_terkirim_akun_tidak_tersimpan_dan_bisa_daftar_ulang(): void
+    {
+        // server email tidak bisa dihubungi
+        Notification::swap(new ChannelManager(app()));
+        config(['mail.default' => 'smtp', 'mail.mailers.smtp.host' => '127.0.0.1', 'mail.mailers.smtp.port' => 1]);
+
+        $this->post('/registrasi', ['nama' => 'Uji SMTP', 'hp' => '081234567890', 'email' => 'ujismtp@contoh.com', 'password' => 'rahasia123',
+            'password_confirmation' => 'rahasia123', 'setuju' => 1])
+            ->assertRedirect()->assertSessionHasErrors('email');
+        $this->assertStringContainsString('belum terkirim', session('errors')->first('email'));
+        $this->assertNull(User::firstWhere('email', 'ujismtp@contoh.com'));
+        $this->assertSame(0, KodeOtp::count());
+    }
+
+    public function test_email_belum_terverifikasi_boleh_didaftarkan_ulang(): void
+    {
+        User::factory()->belumVerifikasi()->create(['email' => 'lama@gmail.com', 'nama' => 'Data Lama']);
+
+        $this->daftar('Lama@Gmail.com');
+        $this->assertSame(1, User::where('email', 'lama@gmail.com')->count());
+        $this->assertSame('Sari Wulandari', User::firstWhere('email', 'lama@gmail.com')->nama);
+        $this->kodeTerkirim('lama@gmail.com');
+
+        // email terverifikasi tetap ditolak (beda huruf besar pun)
+        User::factory()->create(['email' => 'aktif@gmail.com']);
+        $this->post('/registrasi', ['nama' => 'X', 'hp' => '081234567890', 'email' => 'AKTIF@gmail.com', 'password' => 'rahasia123',
+            'password_confirmation' => 'rahasia123', 'setuju' => 1])->assertSessionHasErrors(['email' => 'Email sudah terdaftar. Silakan masuk.']);
+    }
+
+    public function test_batas_login_dihitung_per_akun_dan_hanya_yang_gagal(): void
+    {
+        $akun = User::factory()->count(6)->create();
+        foreach ($akun as $u) { // 6 staf login benar berurutan dari IP yang sama
+            $this->post('/login', ['email' => $u->email, 'password' => 'password'])->assertRedirect();
+            $this->assertAuthenticatedAs($u);
+            $this->post('/logout');
+        }
+
+        $u = $akun->first();
+        foreach (range(1, 5) as $_) {
+            $this->post('/login', ['email' => strtoupper($u->email), 'password' => 'salah'])->assertSessionHasErrors(['email' => 'Email atau password salah.']);
+        }
+        $this->post('/login', ['email' => $u->email, 'password' => 'password'])->assertSessionHasErrors('email');
+        $this->assertStringContainsString('Coba lagi dalam', session('errors')->first('email'));
+        $this->assertGuest();
+        // akun lain tidak ikut terkunci
+        $this->post('/login', ['email' => $akun->last()->email, 'password' => 'password'])->assertRedirect();
+        $this->assertAuthenticatedAs($akun->last());
+    }
+
+    public function test_batas_percobaan_tetap_di_form_dengan_pesan_indonesia(): void
+    {
+        $this->daftar();
+        foreach (range(1, 10) as $_) {
+            $this->post('/verifikasi-otp', ['kode' => '000000']);
+        }
+        $this->from('/verifikasi-otp')->post('/verifikasi-otp', ['kode' => '000000'])
+            ->assertRedirect('/verifikasi-otp')->assertSessionHasErrors('kode');
+        $this->assertStringContainsString('Terlalu banyak percobaan. Coba lagi dalam', session('errors')->first('kode'));
+    }
+
+    public function test_setelah_login_kembali_ke_halaman_tujuan_sesuai_role(): void
+    {
+        $pelanggan = User::factory()->create(['role' => User::ROLE_PELANGGAN]);
+        $this->get('/tracking')->assertRedirect('/login');
+        $this->get('/login')->assertSee('Silakan masuk dulu untuk membuka halaman itu.');
+        $this->post('/login', ['email' => $pelanggan->email, 'password' => 'password'])->assertRedirect('/tracking');
+        $this->post('/logout');
+
+        // halaman staf yang tidak sesuai role: ke halaman utama role
+        $this->get('/admin/dashboard');
+        $this->post('/login', ['email' => $pelanggan->email, 'password' => 'password'])->assertRedirect('/beranda');
+    }
+
+    public function test_ingat_saya_memasang_cookie_remember(): void
+    {
+        $u = User::factory()->create();
+        $this->get('/login')->assertSee('Ingat saya');
+        $res = $this->post('/login', ['email' => $u->email, 'password' => 'password', 'remember' => 1]);
+        $this->assertNotNull(collect($res->headers->getCookies())->first(fn ($c) => str_starts_with($c->getName(), 'remember_web_')));
+    }
+
+    public function test_halaman_error_berbahasa_indonesia(): void
+    {
+        $this->get('/halaman-tidak-ada')->assertNotFound()->assertSee('Halaman Tidak Ditemukan')->assertSee('Ke halaman masuk');
+        $this->getJson('/keranjang')->assertUnauthorized()->assertJson(['message' => 'Sesi kamu sudah berakhir. Silakan masuk lagi.']);
+    }
+
+    public function test_buka_reset_password_langsung_pesan_netral(): void
+    {
+        $this->get('/reset-password')->assertRedirect('/lupa-password')->assertSessionHas('status')->assertSessionMissing('errors');
+    }
+
+    public function test_halaman_berlogin_tidak_disimpan_cache_browser(): void
+    {
+        $u = User::factory()->create(['role' => User::ROLE_PELANGGAN]);
+        $res = $this->actingAs($u)->get('/beranda')->assertOk();
+        $this->assertStringContainsString('no-store', $res->headers->get('Cache-Control'));
+        $this->assertSame('no-cache', $res->headers->get('Pragma'));
     }
 }
