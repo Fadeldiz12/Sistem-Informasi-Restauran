@@ -15,11 +15,11 @@
       <div class="switch" style="margin-top:14px">@foreach ($aktif as $a)<a @class(['on' => $a->id === $kirim->id]) href="{{ route('kurir.status', ['pengiriman' => $a->id]) }}">{{ $a->pesanan->kode() }}</a>@endforeach</div>
     @endif
     <div class="stamp-out" style="margin-top:14px"><div class="stamp" style="padding:18px 20px"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><b style="font:700 18px var(--f-title)">{{ $p->kode() }} · {{ $p->namaPemesan() }}</b><span class="pill m">Dalam Perjalanan</span></div>
-      <div style="font-size:12.5px;opacity:.75;margin-top:6px">{{ $kirim->alamat }}</div>
+      <div style="font-size:12.5px;opacity:.75;margin-top:6px">{{ $kirim->alamat }}{{ $kirim->patokan ? ' · Patokan: '.$kirim->patokan : '' }}</div>
       <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
         <a class="btn o sm" href="{{ route('kurir.tugas.show', $kirim) }}"><svg class="ic" style="width:15px;height:15px"><use href="#i-receipt"/></svg>Detail</a>
         @if ($p->pelanggan?->no_hp)<a class="btn o sm" href="tel:{{ preg_replace('/[^\d+]/', '', $p->pelanggan->no_hp) }}"><svg class="ic" style="width:15px;height:15px"><use href="#i-phone"/></svg>Telepon</a>@endif
-        <a class="btn o sm" href="https://www.google.com/maps/search/?api=1&query={{ urlencode($kirim->alamat) }}" target="_blank" rel="noopener"><svg class="ic" style="width:15px;height:15px"><use href="#i-nav"/></svg>Maps</a></div></div></div>
+        <a class="btn o sm" href="{{ \App\Models\ZonaPengiriman::urlMaps($kirim->lat !== null ? (float) $kirim->lat : null, $kirim->lng !== null ? (float) $kirim->lng : null, $kirim->alamat) }}" target="_blank" rel="noopener"><svg class="ic" style="width:15px;height:15px"><use href="#i-nav"/></svg>Maps</a></div></div></div>
 
     <form method="post" action="{{ route('kurir.tugas.diterima', $kirim) }}" enctype="multipart/form-data" id="fStatus">@csrf
       <div class="eyebrow" style="margin:20px 0 4px">Sudah sampai? Pilih Diterima lalu unggah bukti</div>

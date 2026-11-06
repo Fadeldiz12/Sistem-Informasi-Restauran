@@ -8,7 +8,10 @@ use App\Models\PengaturanSistem;
 use App\Models\Pesanan;
 use App\Models\User;
 use App\Models\ZonaPengiriman;
+use App\Services\DapurService;
+use App\Services\PesananService;
 use App\Support\Keranjang;
+use App\Support\TimelinePesanan;
 use Database\Seeders\MasterDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -86,7 +89,9 @@ class PesananPelangganTest extends TestCase
 
         $this->actingAs($this->pelanggan)->get('/checkout')->assertOk()->assertSee('Rp 145.000')->assertSee('Rp 14.500')->assertSee('Rp 7.250');
 
-        $res = $this->actingAs($this->pelanggan)->post('/checkout', ['metode' => 'tunai', 'jenis_layanan' => 'delivery', 'alamat' => 'Jl. Sei Batang Hari 27', 'id_zona' => $zonaB->id]);
+        // titik ±4 km dari restoran → Zona B (3-6 km), dihitung server dari peta
+        $res = $this->actingAs($this->pelanggan)->post('/checkout', ['metode' => 'tunai', 'jenis_layanan' => 'delivery', 'alamat' => 'Jl. Sei Batang Hari 27',
+            'lat' => PengaturanSistem::LAT_AWAL + 0.036, 'lng' => PengaturanSistem::LNG_AWAL, 'patokan' => 'pagar hijau']);
 
         $pesanan = Pesanan::firstOrFail();
         $res->assertRedirect("/pesanan/{$pesanan->id}/pembayaran");
@@ -95,7 +100,9 @@ class PesananPelangganTest extends TestCase
         $this->assertSame([Pesanan::STATUS_MENUNGGU, $this->pelanggan->id, null], [$pesanan->status, $pesanan->id_pelanggan, $pesanan->id_kasir]);
         $this->assertSame(2, $pesanan->detail()->count());
         $this->assertSame(2, $pesanan->detail()->where('id_menu', $this->tea->id)->value('jumlah'));
-        $this->assertEquals([6, 'Jl. Sei Batang Hari 27'], [(float) $pesanan->pengiriman->jarak_km, $pesanan->pengiriman->alamat]);
+        $this->assertSame([$zonaB->id, 'Jl. Sei Batang Hari 27', 'pagar hijau'], [$pesanan->pengiriman->id_zona, $pesanan->pengiriman->alamat, $pesanan->pengiriman->patokan]);
+        $this->assertEqualsWithDelta(4.0, (float) $pesanan->pengiriman->jarak_km, 0.05);
+        $this->assertEqualsWithDelta(PengaturanSistem::LAT_AWAL + 0.036, (float) $pesanan->pengiriman->lat, 0.00001);
         $this->assertNull($pesanan->tiketDapur); // tiket baru dibuat setelah dikonfirmasi kasir
 
         $this->actingAs($this->pelanggan)->get("/pesanan/{$pesanan->id}/pembayaran")->assertOk()->assertSee('Pesanan Dibuat!')->assertSee($pesanan->kode());
@@ -108,7 +115,11 @@ class PesananPelangganTest extends TestCase
 
         $this->isiKeranjang();
         $this->actingAs($this->pelanggan)->post('/checkout', ['metode' => 'tunai', 'jenis_layanan' => 'dine_in'])->assertSessionHasErrors('nomor_meja');
-        $this->actingAs($this->pelanggan)->post('/checkout', ['metode' => 'tunai', 'jenis_layanan' => 'delivery'])->assertSessionHasErrors(['alamat', 'id_zona']);
+        $this->actingAs($this->pelanggan)->post('/checkout', ['metode' => 'tunai', 'jenis_layanan' => 'delivery'])->assertSessionHasErrors(['alamat', 'lat']);
+        // titik ±20 km: di luar zona terjauh (10 km) → ditolak
+        $this->actingAs($this->pelanggan)->post('/checkout', ['metode' => 'tunai', 'jenis_layanan' => 'delivery', 'alamat' => 'Jl. Jauh',
+            'lat' => PengaturanSistem::LAT_AWAL + 0.18, 'lng' => PengaturanSistem::LNG_AWAL])->assertSessionHasErrors('lat');
+        $this->assertSame(0, Pesanan::count());
         $this->actingAs($this->pelanggan)->post('/checkout', ['metode' => 'tunai', 'jenis_layanan' => 'antar_jemput'])->assertSessionHasErrors('jenis_layanan');
 
         $this->actingAs($this->pelanggan)->post('/checkout', ['metode' => 'tunai', 'jenis_layanan' => 'dine_in', 'nomor_meja' => '07'])->assertSessionHasNoErrors();
@@ -193,7 +204,7 @@ class PesananPelangganTest extends TestCase
     public function test_tracking_menampilkan_timeline_sesuai_layanan(): void
     {
         $this->isiKeranjang();
-        $this->actingAs($this->pelanggan)->post('/checkout', ['metode' => 'tunai', 'jenis_layanan' => 'delivery', 'alamat' => 'Jl. A', 'id_zona' => ZonaPengiriman::first()->id]);
+        $this->actingAs($this->pelanggan)->post('/checkout', ['metode' => 'tunai', 'jenis_layanan' => 'delivery', 'alamat' => 'Jl. A', 'lat' => PengaturanSistem::LAT_AWAL + 0.018, 'lng' => PengaturanSistem::LNG_AWAL]);
         $p = Pesanan::firstOrFail();
 
         $html = $this->actingAs($this->pelanggan)->get('/tracking')->assertOk()
@@ -238,18 +249,18 @@ class PesananPelangganTest extends TestCase
         $this->actingAs($this->pelanggan)->get('/keranjang')->assertSee("Pesanan {$p->kode()} sudah dibuat.");
     }
 
-    public function test_zona_tidak_terpilih_otomatis(): void
+    public function test_checkout_delivery_memakai_peta(): void
     {
         $this->isiKeranjang();
-        $html = $this->actingAs($this->pelanggan)->get('/checkout')->assertSee(config('resto.alamat'))->getContent();
-        $this->assertDoesNotMatchRegularExpression('/name="id_zona"[^>]*checked/', $html);
+        $this->actingAs($this->pelanggan)->get('/checkout')->assertSee(config('resto.alamat'))
+            ->assertSee('Pakai lokasi saya')->assertSee('id="peta"', false)->assertSee('name="lat"', false);
     }
 
     public function test_metode_bayar_terkunci_setelah_dikonfirmasi_dan_teks_selesai(): void
     {
         $kasir = User::factory()->create(['role' => User::ROLE_KASIR]);
         $p = $this->buatPesanan();
-        app(\App\Services\PesananService::class)->konfirmasi($p->fresh(), $kasir);
+        app(PesananService::class)->konfirmasi($p->fresh(), $kasir);
 
         $this->actingAs($this->pelanggan)->get("/tracking?pesanan={$p->id}")->assertDontSee('Ganti metode')->assertSee('Bayar tunai');
         $this->actingAs($this->pelanggan)->get("/pesanan/{$p->id}/pembayaran")->assertDontSee('Simpan Metode Pembayaran');
@@ -257,12 +268,12 @@ class PesananPelangganTest extends TestCase
 
         // dimasak, siap, lalu diserahkan: jam setiap langkah tercatat dan teks pembayaran sesuai status
         $tiket = $p->fresh()->tiketDapur;
-        app(\App\Services\DapurService::class)->mulaiMasak($tiket);
-        app(\App\Services\DapurService::class)->selesaiMasak($tiket->fresh());
-        app(\App\Services\PesananService::class)->lunasi($p->fresh(), $kasir, 'tunai', 1000000);
-        app(\App\Services\PesananService::class)->selesaikan($p->fresh());
+        app(DapurService::class)->mulaiMasak($tiket);
+        app(DapurService::class)->selesaiMasak($tiket->fresh());
+        app(PesananService::class)->lunasi($p->fresh(), $kasir, 'tunai', 1000000);
+        app(PesananService::class)->selesaikan($p->fresh());
 
-        $langkah = collect(\App\Support\TimelinePesanan::untuk($p->fresh()))->pluck('waktu', 'label');
+        $langkah = collect(TimelinePesanan::untuk($p->fresh()))->pluck('waktu', 'label');
         $this->assertNotNull($langkah['Dimasak']);
         $this->assertNotNull($langkah['Siap Diambil']);
         $this->assertNotNull($langkah['Selesai']);

@@ -51,6 +51,13 @@
       </div>
     </div>
 
+    <div class="card" style="margin-top:18px"><div class="card-head"><div><h2>Titik Restoran di Peta</h2><p>Dipakai menghitung jarak & zona ongkir Delivery secara otomatis</p></div><span class="pill b">{{ config('resto.alamat') }}</span></div>
+      <div id="petaResto" style="height:300px;border-radius:18px;z-index:0"></div>
+      <input type="hidden" name="lat_resto" id="latResto" value="{{ old('lat_resto', (float) ($pengaturan->lat_resto ?? \App\Models\PengaturanSistem::LAT_AWAL)) }}">
+      <input type="hidden" name="lng_resto" id="lngResto" value="{{ old('lng_resto', (float) ($pengaturan->lng_resto ?? \App\Models\PengaturanSistem::LNG_AWAL)) }}">
+      <div class="note" style="margin-top:12px"><svg class="ic"><use href="#i-info"/></svg><span>Geser pin merah ke lokasi restoran yang tepat, lalu tekan Simpan. Lingkaran putus-putus = jangkauan zona terjauh. Titik saat ini: <b id="titikResto"></b></span></div>
+    </div>
+
     <div class="card save-bar">
       <p><svg class="ic"><use href="#i-info"/></svg>Perubahan langsung berlaku pada pesanan baru.</p>
       <a class="btn o" href="{{ route('admin.pengaturan') }}">Batal</a>
@@ -59,7 +66,22 @@
   </form>
 @endsection
 
+@push('styles')<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">@endpush
 @push('scripts')
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script>
+  (function () {
+    if (!window.L) { document.getElementById('petaResto').textContent = 'Peta gagal dimuat (periksa koneksi internet).'; return; }
+    var titik = [+latResto.value, +lngResto.value], maks = {{ (float) \App\Models\ZonaPengiriman::max('radius_km') }};
+    var m = L.map('petaResto').setView(titik, 14);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(m);
+    var pin = L.marker(titik, { draggable: true }).addTo(m), area = maks ? L.circle(titik, { radius: maks * 1000, color: '#97173A', weight: 1, fillOpacity: .05, dashArray: '4 6' }).addTo(m) : null;
+    function set(ll) { latResto.value = ll.lat.toFixed(7); lngResto.value = ll.lng.toFixed(7); titikResto.textContent = latResto.value + ', ' + lngResto.value; if (area) area.setLatLng(ll); }
+    pin.on('dragend', function () { set(pin.getLatLng()); });
+    m.on('click', function (e) { pin.setLatLng(e.latlng); set(e.latlng); });
+    set(pin.getLatLng());
+  })();
+</script>
 <script>
   (function () {
     var s = {{ $contohSubtotal }}, ongkir = {{ (float) $contohOngkir }};

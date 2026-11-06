@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Table('pengiriman')]
-#[Fillable(['id_pesanan', 'id_kurir', 'id_zona', 'alamat', 'jarak_km', 'waktu_siap', 'status_kirim', 'bukti_kirim', 'berangkat_pada', 'diterima_pada'])]
+#[Fillable(['id_pesanan', 'id_kurir', 'id_zona', 'alamat', 'lat', 'lng', 'patokan', 'jarak_km', 'waktu_siap', 'status_kirim', 'bukti_kirim', 'berangkat_pada', 'diterima_pada'])]
 class Pengiriman extends Model
 {
     public const STATUS_MENUNGGU_KURIR = 'menunggu_kurir';

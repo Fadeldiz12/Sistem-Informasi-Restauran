@@ -18,8 +18,11 @@
 
   <div class="card" style="margin-top:14px;padding:16px"><div class="who"><span class="av">{{ $p->pelanggan?->inisial() ?? 'PL' }}</span><div style="flex:1;min-width:0"><b style="font:600 15px var(--f-title)">{{ $p->namaPemesan() }}</b><div style="font-size:12.5px;opacity:.7">{{ $hp ?: 'Nomor HP tidak tersedia' }}</div></div>
       @if ($hp)<a class="icon-btn" style="width:40px;height:40px" href="tel:{{ preg_replace('/[^\d+]/', '', $hp) }}" aria-label="Telepon pelanggan"><svg class="ic" style="width:16px;height:16px"><use href="#i-phone"/></svg></a>@endif</div>
-    <div style="display:flex;gap:8px;font-size:13.5px;margin-top:12px;padding-top:12px;border-top:1.5px dashed var(--m60);line-height:1.45"><svg class="ic" style="width:17px;height:17px"><use href="#i-pin"/></svg><span style="flex:1">{{ $kirim->alamat }}</span></div>
-    <a class="btn o sm" style="width:100%;margin-top:12px" href="https://www.google.com/maps/search/?api=1&query={{ urlencode($kirim->alamat) }}" target="_blank" rel="noopener"><svg class="ic" style="width:15px;height:15px"><use href="#i-nav"/></svg>Buka di Maps</a></div>
+    <div style="display:flex;gap:8px;font-size:13.5px;margin-top:12px;padding-top:12px;border-top:1.5px dashed var(--m60);line-height:1.45"><svg class="ic" style="width:17px;height:17px"><use href="#i-pin"/></svg><span style="flex:1">{{ $kirim->alamat }}@if ($kirim->patokan)<br><b>Patokan:</b> {{ $kirim->patokan }}@endif</span></div>
+    @if ($kirim->lat !== null)
+      <div id="petaKurir" data-lat="{{ $kirim->lat }}" data-lng="{{ $kirim->lng }}" style="height:180px;border-radius:14px;margin-top:12px;z-index:0"></div>
+    @endif
+    <a class="btn o sm" style="width:100%;margin-top:12px" href="{{ \App\Models\ZonaPengiriman::urlMaps($kirim->lat !== null ? (float) $kirim->lat : null, $kirim->lng !== null ? (float) $kirim->lng : null, $kirim->alamat) }}" target="_blank" rel="noopener"><svg class="ic" style="width:15px;height:15px"><use href="#i-nav"/></svg>{{ $kirim->lat !== null ? 'Petunjuk arah ke titik pelanggan' : 'Buka di Maps' }}</a></div>
 
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
     <div class="card b" style="padding:14px"><div class="eyebrow" style="font-size:9.5px">Ongkos kirim</div><div style="font:700 20px var(--f-title);margin-top:2px">{{ $rp($p->ongkir) }}</div><div style="font-size:11.5px;opacity:.75">{{ $kirim->zona?->nama_zona }} · {{ $km }} km · sudah di dalam total</div></div>
@@ -44,3 +47,19 @@
     <div class="note" style="margin-top:16px"><svg class="ic"><use href="#i-lock"/></svg><span>Tugas ini terkunci. Ambil dulu tugas urutan pertama (antrean ke-{{ $urutan }}).</span></div>
   @endif
 @endsection
+
+@if ($kirim->lat !== null)
+@push('styles')<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">@endpush
+@push('scripts')
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script>
+  (function () {
+    var el = document.getElementById('petaKurir'); if (!el || !window.L) return;
+    var titik = [+el.dataset.lat, +el.dataset.lng];
+    var m = L.map(el, { zoomControl: false, attributionControl: false }).setView(titik, 16);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(m);
+    L.marker(titik).addTo(m);
+  })();
+</script>
+@endpush
+@endif

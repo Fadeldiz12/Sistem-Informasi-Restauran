@@ -96,11 +96,14 @@ class PesananService
             $pesanan->detail()->createMany($baris);
 
             if ($zona) {
-                // jarak pengiriman memakai radius zona
+                // jarak sebenarnya dari titik peta; bila tidak ada titik, memakai radius zona
                 $pesanan->pengiriman()->create([
                     'id_zona' => $zona->id,
                     'alamat' => $data['alamat'],
-                    'jarak_km' => $zona->radius_km,
+                    'lat' => $data['lat'] ?? null,
+                    'lng' => $data['lng'] ?? null,
+                    'patokan' => $data['patokan'] ?? null,
+                    'jarak_km' => $data['jarak_km'] ?? $zona->radius_km,
                 ]);
             }
 

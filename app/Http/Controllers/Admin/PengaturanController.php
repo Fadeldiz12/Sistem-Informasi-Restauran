@@ -27,7 +27,10 @@ class PengaturanController extends Controller
             'biaya_layanan' => ['required', 'numeric', 'min:0', 'max:100'],
             'jam_buka' => ['required', 'date_format:H:i'],
             'jam_tutup' => ['required', 'date_format:H:i', 'different:jam_buka'],
+            'lat_resto' => ['required', 'numeric', 'between:-90,90'],
+            'lng_resto' => ['required', 'numeric', 'between:-180,180'],
         ], [
+            'lat_resto.required' => 'Tentukan titik restoran di peta.',
             'jam_tutup.different' => 'Jam tutup tidak boleh sama dengan jam buka.',
         ]);
 
