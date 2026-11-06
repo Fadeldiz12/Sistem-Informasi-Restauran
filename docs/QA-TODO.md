@@ -16,7 +16,7 @@ Satu fase = satu (atau beberapa) commit. Setiap fase selesai → saya lapor & ta
 ## Fase 1 — Uang & integritas data (13 temuan)
 - [x] **A3-#1 (High)** Kasir bisa melunasi pesanan Delivery COD / yang belum dikonfirmasi → uang hilang
 - [x] A3-#13 `=` daftar "Belum Lunas" ikut memuat pesanan Menunggu Konfirmasi (scope `belumLunas` yang sama)
-- [ ] **A4-#1 (High)** Hapus/ubah role kurir yang masih bawa uang COD → setoran hilang
+- [x] **A4-#1 (High)** Hapus/ubah role kurir yang masih bawa uang COD → setoran hilang
 - [ ] **A3-#2 (High)** Hapus bahan baku yang dipakai resep → resep & 31 riwayat mutasi ikut terhapus (cascade)
 - [ ] A3-#11 Ubah satuan bahan (kg→gram) tanpa konversi → stok salah 1000×
 - [ ] A3-#5 Struk: uang diterima tidak disimpan, `?tunai=` bisa dimanipulasi, tidak bisa cetak ulang

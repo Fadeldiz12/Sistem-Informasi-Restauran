@@ -226,6 +226,28 @@ class KurirTest extends TestCase
         $this->actingAs($this->kasir)->post("/kasir/setoran/{$this->kurir->id}", ['ids' => [$bayar->id]])->assertSessionHas('error');
     }
 
+    public function test_kurir_yang_membawa_uang_tunai_tidak_bisa_dihapus_atau_diganti_role(): void
+    {
+        $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+        $a = $this->siapDiantar();
+        $this->actingAs($this->kurir)->post("/kurir/tugas/{$a->pengiriman->id}/terima");
+        $this->actingAs($this->kurir)->post("/kurir/tugas/{$a->pengiriman->id}/diterima", ['bukti' => UploadedFile::fake()->image('b.jpg'), 'uang_diterima' => 1]);
+        $bayar = $a->fresh()->pembayaran;
+
+        $this->actingAs($admin)->delete("/admin/pengguna/{$this->kurir->id}")
+            ->assertSessionHas('error', fn ($m) => str_contains($m, 'belum disetor'));
+        $this->actingAs($admin)->put("/admin/pengguna/{$this->kurir->id}", [
+            'nama' => $this->kurir->nama, 'email' => $this->kurir->email, 'no_hp' => '081234567890', 'role' => User::ROLE_KASIR,
+        ])->assertSessionHasErrors('role');
+        $this->assertSame(User::ROLE_KURIR, $this->kurir->fresh()->role);
+        $this->assertSame($this->kurir->id, $bayar->fresh()->id_kurir);
+
+        // setelah setoran diterima kasir, akun boleh dihapus
+        $this->actingAs($this->kasir)->post("/kasir/setoran/{$this->kurir->id}", ['ids' => [$bayar->id]]);
+        $this->actingAs($admin)->delete("/admin/pengguna/{$this->kurir->id}")->assertSessionHas('status');
+        $this->assertNull($this->kurir->fresh());
+    }
+
     public function test_pembayaran_online_tidak_masuk_setoran(): void
     {
         $p = $this->siapDiantar(metode: 'transfer');
