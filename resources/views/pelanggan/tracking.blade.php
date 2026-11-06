@@ -137,6 +137,15 @@
   .flow b { display: flex; gap: 8px; align-items: center; font: 700 14px var(--f-title); margin-bottom: 4px; }
   @media (max-width: 1100px) { .split2, .flows { grid-template-columns: minmax(0, 1fr); } }
   @media (max-width: 900px) { .split { grid-template-columns: minmax(0, 1fr); } }
+  /* QA A2-#2: di HP detail dulu, riwayat dilipat */
+  .riw > summary { list-style: none; cursor: pointer; }
+  .riw > summary::-webkit-details-marker { display: none; }
+  #detail { scroll-margin-top: 140px; }
+  @media (max-width: 900px) {
+    .split > .riwayat { order: 2; }
+    .split > .detail { order: 1; }
+    .riw > summary::after { content: 'Lihat / sembunyikan'; font: 700 12px var(--f-accent); text-decoration: underline; margin-left: auto; }
+  }
 </style>
 @endpush
 
@@ -178,14 +187,15 @@
     </section>
   @else
   <div class="split">
-    <aside class="card"><div class="card-head" style="margin-bottom:4px"><h2>Pesanan saya</h2><span class="pill b">{{ $daftar->count() }}</span></div>
+    {{-- di HP: detail pesanan tampil lebih dulu, riwayat dilipat di bawahnya (QA A2-#2) --}}
+    <aside class="card riwayat"><details class="riw" open><summary class="card-head" style="margin-bottom:4px"><h2>Pesanan saya</h2><span class="pill b">{{ $daftar->count() }}</span></summary>
       @foreach ($daftar as $p)
-        <a @class(['od', 'on' => $pesanan->id === $p->id]) href="{{ route('pelanggan.tracking', ['pesanan' => $p->id]) }}"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b style="font:700 16px var(--f-title)">{{ $p->kode() }}</b><span class="pill {{ $pillStatus($p) }}">{{ $statusTeks($p) }}</span></div>
+        <a @class(['od', 'on' => $pesanan->id === $p->id]) href="{{ route('pelanggan.tracking', ['pesanan' => $p->id]) }}#detail"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b style="font:700 16px var(--f-title)">{{ $p->kode() }}</b><span class="pill {{ $pillStatus($p) }}">{{ $statusTeks($p) }}</span></div>
           <div style="font-size:13px;opacity:.8;margin-top:6px">{{ $waktu($p->waktu_pesan) }} · {{ $p->layananDetail() }} · {{ $p->detail->sum('jumlah') }} item</div></a>
       @endforeach
-    </aside>
+    </details></aside>
 
-    <div style="display:grid;gap:clamp(16px,1.6vw,24px)">
+    <div class="detail" id="detail" style="display:grid;gap:clamp(16px,1.6vw,24px)">
       <section class="card" style="padding:0;overflow:hidden">
         <div class="stripes" style="padding:22px 24px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap">
           <div class="stamp-out"><div class="stamp" style="padding:18px 24px"><div class="eyebrow">Nomor pesanan</div><div style="font:700 24px var(--f-title);margin-top:4px">{{ $pesanan->kode() }}</div><div style="font-size:12.5px;opacity:.7">{{ $pesanan->layananDetail() }} · {{ $pesanan->pembayaran ? $pesanan->pembayaran->metodeLabel().' ('.$pesanan->bayarLabel().')' : 'Belum bayar' }}</div></div></div>
@@ -199,11 +209,18 @@
             <span style="flex:1;min-width:200px;font-size:13.5px">
               @if (! $pesanan->pembayaran) Pesanan belum dibayar. Pilih Virtual Account, QRIS, atau tunai.
               @elseif ($pesanan->pembayaran->status_bayar === Pembayaran::STATUS_DITOLAK || $pesanan->pembayaran->isKedaluwarsa()) <b>Pembayaran gagal / kedaluwarsa.</b> Pilih metode pembayaran lagi.
-              @elseif ($pesanan->pembayaran->metode === Pembayaran::METODE_TUNAI) Pembayaran tunai {{ $pesanan->isDelivery() ? 'ke kurir saat pesanan tiba' : 'di kasir' }}.
+              @elseif ($pesanan->pembayaran->metode === Pembayaran::METODE_TUNAI) Bayar tunai <b>Rp {{ number_format($pesanan->total, 0, ',', '.') }}</b> {{ $pesanan->isDelivery() ? 'ke kurir saat pesanan tiba' : 'di kasir' }}.
               @else Selesaikan pembayaran <b>{{ $pesanan->pembayaran->metodeLabel() }}</b>. Pesanan langsung masuk dapur setelah lunas. @endif
             </span>
+            {{-- tombol ganti metode hanya selama pesanan belum dikonfirmasi, dan tidak mencolok (QA A2-#17) --}}
             @if (! $pesanan->pembayaran || $pesanan->pembayaran->status_bayar !== Pembayaran::STATUS_LUNAS)
-              <a class="btn sm" href="{{ route('pelanggan.pembayaran', $pesanan) }}">{{ $pesanan->pembayaran?->isOtomatis() && $pesanan->bayarLabel() === 'Menunggu Pembayaran' ? 'Lihat Cara Bayar' : ($pesanan->pembayaran ? 'Ubah Pembayaran' : 'Bayar Sekarang') }}</a>
+              @if ($pesanan->pembayaran?->isOtomatis() && $pesanan->bayarLabel() === 'Menunggu Pembayaran')
+                <a class="btn sm" href="{{ route('pelanggan.pembayaran', $pesanan) }}">Lihat Cara Bayar</a>
+              @elseif (! $pesanan->pembayaran)
+                <a class="btn sm" href="{{ route('pelanggan.pembayaran', $pesanan) }}">Pilih Pembayaran</a>
+              @elseif ($pesanan->status === Pesanan::STATUS_MENUNGGU)
+                <a href="{{ route('pelanggan.pembayaran', $pesanan) }}" style="font:700 13px var(--f-accent);text-decoration:underline">Ganti metode</a>
+              @endif
             @endif
           </div>
         @endif

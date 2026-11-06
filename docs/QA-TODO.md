@@ -59,7 +59,7 @@ Satu fase = satu (atau beberapa) commit. Setiap fase selesai → saya lapor & ta
 
 ## Fase 4 — Pengalaman pelanggan (20 temuan)
 - [x] A2-#12 Navigasi HP: menu jauh di bawah, "Lacak Pesanan" tersembunyi, tidak ada bottom nav
-- [ ] A2-#2 Lacak Pesanan di HP: detail tertimbun di bawah 30 riwayat
+- [x] A2-#2 Lacak Pesanan di HP: detail tertimbun di bawah 30 riwayat
 - [x] A2-#4 Tombol Cari tidak berfungsi
 - [x] A2-#5 Promo/hero statis tidak bisa dipesan, panah slide mati, "Semua promo" `#`
 - [x] A2-#6 Pilihan layanan di beranda tidak terbawa ke checkout; teks Dine In kontradiktif
@@ -70,13 +70,13 @@ Satu fase = satu (atau beberapa) commit. Setiap fase selesai → saya lapor & ta
 - [x] A2-#13 Batas qty 50 tanpa pesan, toast "ditambahkan" palsu, tombol − di qty 1
 - [x] A2-#14 Hapus item keranjang tanpa "Batalkan"
 - [x] A2-#15 Back setelah checkout → "Keranjang masih kosong"
-- [ ] A2-#16 Teks VA/QRIS padahal nonaktif, label tombol tunai, pesan `MIDTRANS_SERVER_KEY kosong`
-- [ ] A2-#17 Tombol "Ubah Pembayaran" mencolok saat pesanan berjalan
+- [x] A2-#16 Teks VA/QRIS padahal nonaktif, label tombol tunai, pesan `MIDTRANS_SERVER_KEY kosong`
+- [x] A2-#17 Tombol "Ubah Pembayaran" mencolok saat pesanan berjalan
 - [x] A2-#19 Chip "Pakai alamat profil" aktif padahal kosong
-- [ ] A2-#20 Teks status salah setelah selesai ("diteruskan ke dapur", "menuju alamatmu")
+- [x] A2-#20 Teks status salah setelah selesai ("diteruskan ke dapur", "menuju alamatmu")
 - [x] A2-#23 Pesan "Restoran tutup" tampil dua kali
 - [x] A2-#24 Kategori di strip atas berbeda dengan chip (Salad hilang)
-- [ ] A2-#25 Jam per langkah timeline kosong
+- [x] A2-#25 Jam per langkah timeline kosong
 - [x] A2-#26 Link footer `#` mati, nomor telepon bukan `tel:`
 
 ## Fase 5 — UX staf: kasir, dapur, kurir, admin, owner (19 temuan)

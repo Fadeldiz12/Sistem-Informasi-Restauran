@@ -319,6 +319,9 @@ class PesananService
         if ($pesanan->isLunas()) {
             throw ValidationException::withMessages(['metode' => 'Pesanan ini sudah lunas.']);
         }
+        if ($pesanan->status !== Pesanan::STATUS_MENUNGGU) {
+            throw ValidationException::withMessages(['metode' => 'Pesanan sudah dikonfirmasi kasir, jadi metode pembayaran tidak bisa diganti lagi.']);
+        }
 
         $lama = $pesanan->pembayaran;
 
@@ -449,7 +452,7 @@ class PesananService
             throw ValidationException::withMessages(['pesanan' => 'Pesanan belum lunas.']);
         }
 
-        $pesanan->update(['status' => Pesanan::STATUS_SELESAI]);
+        $pesanan->update(['status' => Pesanan::STATUS_SELESAI, 'selesai_pada' => now()]);
     }
 
     private function pastikanMenunggu(Pesanan $pesanan): void

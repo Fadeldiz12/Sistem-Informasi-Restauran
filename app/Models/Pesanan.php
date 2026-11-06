@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Table('pesanan')]
-#[Fillable(['id_pelanggan', 'id_kasir', 'jenis_layanan', 'nomor_meja', 'nama_pemesan', 'waktu_pesan', 'subtotal', 'ongkir', 'total', 'status', 'alasan_batal'])]
+#[Fillable(['id_pelanggan', 'id_kasir', 'jenis_layanan', 'nomor_meja', 'nama_pemesan', 'waktu_pesan', 'subtotal', 'ongkir', 'total', 'status', 'alasan_batal', 'selesai_pada'])]
 class Pesanan extends Model
 {
     public const LAYANAN_DINE_IN = 'dine_in';
@@ -36,6 +36,7 @@ class Pesanan extends Model
     protected function casts(): array
     {
         return [
+            'selesai_pada' => 'datetime',
             'waktu_pesan' => 'datetime',
             'subtotal' => 'decimal:2',
             'ongkir' => 'decimal:2',

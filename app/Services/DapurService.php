@@ -27,7 +27,7 @@ class DapurService
                 throw ValidationException::withMessages(['tiket' => 'Tiket ini sudah mulai dimasak.']);
             }
 
-            $tiket->update(['status_masak' => TiketDapur::STATUS_DIMASAK]);
+            $tiket->update(['status_masak' => TiketDapur::STATUS_DIMASAK, 'mulai_pada' => now()]);
 
             return $this->bahan->pakaiUntukPesanan($tiket->pesanan);
         });
@@ -44,7 +44,7 @@ class DapurService
         }
 
         DB::transaction(function () use ($tiket) {
-            $tiket->update(['status_masak' => TiketDapur::STATUS_SELESAI]);
+            $tiket->update(['status_masak' => TiketDapur::STATUS_SELESAI, 'selesai_pada' => now()]);
 
             $pesanan = $tiket->pesanan()->lockForUpdate()->first();
             if ($pesanan->status === Pesanan::STATUS_DIPROSES) {

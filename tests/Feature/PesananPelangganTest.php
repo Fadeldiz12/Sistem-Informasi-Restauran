@@ -198,7 +198,7 @@ class PesananPelangganTest extends TestCase
 
         $html = $this->actingAs($this->pelanggan)->get('/tracking')->assertOk()
             ->assertSeeInOrder(['Pesanan Dibuat', 'Dikonfirmasi', 'Dimasak', 'Siap Diantar', 'Dalam Perjalanan', 'Diterima'])
-            ->assertSee('Ubah Pembayaran')->getContent();
+            ->assertSee('Ganti metode')->getContent();
         $this->assertSame(1, substr_count($html, 'class="st now"'));
 
         $this->isiKeranjang();
@@ -243,5 +243,29 @@ class PesananPelangganTest extends TestCase
         $this->isiKeranjang();
         $html = $this->actingAs($this->pelanggan)->get('/checkout')->assertSee(config('resto.alamat'))->getContent();
         $this->assertDoesNotMatchRegularExpression('/name="id_zona"[^>]*checked/', $html);
+    }
+
+    public function test_metode_bayar_terkunci_setelah_dikonfirmasi_dan_teks_selesai(): void
+    {
+        $kasir = User::factory()->create(['role' => User::ROLE_KASIR]);
+        $p = $this->buatPesanan();
+        app(\App\Services\PesananService::class)->konfirmasi($p->fresh(), $kasir);
+
+        $this->actingAs($this->pelanggan)->get("/tracking?pesanan={$p->id}")->assertDontSee('Ganti metode')->assertSee('Bayar tunai');
+        $this->actingAs($this->pelanggan)->get("/pesanan/{$p->id}/pembayaran")->assertDontSee('Simpan Metode Pembayaran');
+        $this->actingAs($this->pelanggan)->post("/pesanan/{$p->id}/pembayaran", ['metode' => 'tunai'])->assertSessionHasErrors('metode');
+
+        // dimasak, siap, lalu diserahkan: jam setiap langkah tercatat dan teks pembayaran sesuai status
+        $tiket = $p->fresh()->tiketDapur;
+        app(\App\Services\DapurService::class)->mulaiMasak($tiket);
+        app(\App\Services\DapurService::class)->selesaiMasak($tiket->fresh());
+        app(\App\Services\PesananService::class)->lunasi($p->fresh(), $kasir, 'tunai', 1000000);
+        app(\App\Services\PesananService::class)->selesaikan($p->fresh());
+
+        $langkah = collect(\App\Support\TimelinePesanan::untuk($p->fresh()))->pluck('waktu', 'label');
+        $this->assertNotNull($langkah['Dimasak']);
+        $this->assertNotNull($langkah['Siap Diambil']);
+        $this->assertNotNull($langkah['Selesai']);
+        $this->actingAs($this->pelanggan)->get("/pesanan/{$p->id}/pembayaran")->assertSee('Pesanan sudah selesai')->assertDontSee('diteruskan ke dapur');
     }
 }

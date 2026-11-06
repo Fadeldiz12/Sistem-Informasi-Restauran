@@ -139,6 +139,8 @@
   $menungguOtomatis = $bayar?->isOtomatis() && ! $lunas && ! $gagal;
   $tunai = $bayar?->metode === Pembayaran::METODE_TUNAI && ! $lunas;
   $bisaBayar = ! $lunas && ! $batal;
+  // setelah dikonfirmasi kasir, metode bayar tidak bisa diganti (QA A2-#17)
+  $bisaGanti = $bisaBayar && $pesanan->status === Pesanan::STATUS_MENUNGGU;
   $metode = old('metode', $bayar && ! $gagal ? $bayar->metode : ($midtransAktif ? Pembayaran::METODE_TRANSFER : Pembayaran::METODE_TUNAI));
   $bankPilih = old('bank', $bayar?->bank ?? array_key_first($bank));
   $statusLabel = $batal ? 'Pesanan Dibatalkan' : $pesanan->bayarLabel();
@@ -201,7 +203,12 @@
           <div class="state bad"><svg class="ic"><use href="#i-info"/></svg><span>Pesanan ini dibatalkan, jadi tidak perlu dibayar. Silakan buat pesanan baru dari beranda.</span></div>
           <a class="btn" href="{{ route('pelanggan.beranda') }}#menu">Pesan Lagi</a>
         @elseif ($lunas)
-          <div class="state ok"><svg class="ic"><use href="#i-check"/></svg><span>Pembayaran <b>{{ $bayar->metodeLabel() }}</b> berhasil{{ $bayar->waktu_bayar ? ' pada '.$bayar->waktu_bayar->translatedFormat('d M Y H:i') : '' }}. Pesananmu sudah diteruskan ke dapur. Terima kasih!</span></div>
+          <div class="state ok"><svg class="ic"><use href="#i-check"/></svg><span>Pembayaran <b>{{ $bayar->metodeLabel() }}</b> berhasil{{ $bayar->waktu_bayar ? ' pada '.$bayar->waktu_bayar->translatedFormat('d M Y H:i') : '' }}. {{ match ($pesanan->status) {
+            Pesanan::STATUS_SELESAI => 'Pesanan sudah selesai. Terima kasih sudah memesan!',
+            Pesanan::STATUS_DIANTAR => 'Pesananmu sedang diantar kurir.',
+            Pesanan::STATUS_SIAP => $pesanan->isDelivery() ? 'Pesananmu siap dan menunggu kurir.' : 'Pesananmu sudah siap.',
+            default => 'Pesananmu sudah diteruskan ke dapur. Terima kasih!',
+          } }}</span></div>
           <a class="btn" href="{{ route('pelanggan.tracking', ['pesanan' => $pesanan->id]) }}">Lacak Pesanan <svg class="ic"><use href="#i-arr"/></svg></a>
         @else
           @if ($menungguOtomatis)
@@ -240,17 +247,21 @@
             @if ($gagal)
               <div class="state bad"><svg class="ic"><use href="#i-info"/></svg><span>Pembayaran sebelumnya <b>gagal atau kedaluwarsa</b>. Silakan pilih metode pembayaran lagi.</span></div>
             @elseif ($tunai)
-              <div class="state"><svg class="ic"><use href="#i-cash"/></svg><span>Kamu memilih <b>bayar tunai</b>. {{ $pesanan->isDelivery() ? 'Siapkan uang saat pesanan diantar kurir.' : 'Bayar di kasir saat mengambil pesanan.' }} Pesanan menunggu konfirmasi kasir.</span></div>
+              <div class="state"><svg class="ic"><use href="#i-cash"/></svg><span>Kamu memilih <b>bayar tunai {{ $rp($pesanan->total) }}</b>. {{ $pesanan->isDelivery() ? 'Siapkan uang saat pesanan diantar kurir.' : 'Bayar di kasir saat mengambil pesanan.' }} {{ $pesanan->status === Pesanan::STATUS_MENUNGGU ? 'Pesanan menunggu konfirmasi kasir.' : 'Pesanan sudah dikonfirmasi kasir.' }}</span></div>
+              <a class="btn" href="{{ route('pelanggan.tracking', ['pesanan' => $pesanan->id]) }}">Lacak Pesanan <svg class="ic"><use href="#i-arr"/></svg></a>
+              @if ($bisaGanti)<details class="ganti" style="margin-top:18px" @if ($errors->any()) open @endif><summary>Ganti metode pembayaran</summary>@endif
             @endif
           @endif
 
+          @if ($bisaGanti)
           <form method="post" action="{{ route('pelanggan.pembayaran.store', $pesanan) }}" id="fBayar">
             @csrf
-            <div class="card-head" style="margin:14px 0 6px"><div><h2>Pilih metode pembayaran</h2><p style="font-size:13.5px;opacity:.7;margin-top:2px">Virtual Account &amp; QRIS terverifikasi otomatis</p></div></div>
+            <div class="card-head" style="margin:14px 0 6px"><div><h2>Pilih metode pembayaran</h2><p style="font-size:13.5px;opacity:.7;margin-top:2px">{{ $midtransAktif ? 'Virtual Account & QRIS terverifikasi otomatis' : 'Saat ini hanya pembayaran tunai yang tersedia' }}</p></div></div>
             @include('pelanggan.partials.metode-bayar', ['teksTunai' => $pesanan->isDelivery() ? 'Bayar tunai ke kurir saat pesanan tiba' : 'Bayar tunai di kasir'])
-            <button class="btn blk" type="submit" id="kirim" style="margin-top:18px;width:100%">Lanjutkan Pembayaran <svg class="ic"><use href="#i-arr"/></svg></button>
+            <button class="btn blk" type="submit" id="kirim" style="margin-top:18px;width:100%">Simpan Metode Pembayaran <svg class="ic"><use href="#i-arr"/></svg></button>
           </form>
-          @if ($menungguOtomatis)</details>@endif
+          @endif
+          @if ($menungguOtomatis || ($tunai && ! $gagal && $bisaGanti))</details>@endif
         @endif
       </section>
     </div>

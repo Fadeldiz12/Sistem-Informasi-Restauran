@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Table('tiket_dapur')]
-#[Fillable(['id_pesanan', 'waktu_masuk', 'status_masak'])]
+#[Fillable(['id_pesanan', 'waktu_masuk', 'status_masak', 'mulai_pada', 'selesai_pada'])]
 class TiketDapur extends Model
 {
     public const STATUS_ANTRE = 'antre';
@@ -22,6 +22,8 @@ class TiketDapur extends Model
     protected function casts(): array
     {
         return [
+            'mulai_pada' => 'datetime',
+            'selesai_pada' => 'datetime',
             'waktu_masuk' => 'datetime',
         ];
     }
