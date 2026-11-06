@@ -37,8 +37,8 @@
     <div class="card"><div class="card-head"><div><h2>Daftar Zona Pengiriman</h2><p>Ongkir = radius zona × tarif per km</p></div><button class="btn" id="btnAdd"><svg class="ic"><use href="#i-plus"/></svg>Tambah Zona</button></div>
       <div class="tbl-wrap"><table class="tbl-stack"><thead><tr><th>Zona</th><th>Jarak</th><th>Tarif per km</th><th>Ongkir</th><th>Penggunaan</th><th>Aksi</th></tr></thead><tbody>
         @forelse ($baris as $i => $b)
-          <tr data-id="{{ $b['z']->id }}" data-url="{{ route('admin.zona.update', $b['z']) }}" data-nama="{{ $b['z']->nama_zona }}" data-radius="{{ (float) $b['z']->radius_km }}" data-tarif="{{ (int) $b['z']->tarif_per_km }}">
-            <td><div class="who"><span @class(['av', 'm' => $i % 2 === 1]) style="font-size:15px">{{ mb_substr($singkat($b['z']), 0, 2) }}</span><b>{{ $b['z']->nama_zona }}</b></div></td>
+          <tr data-id="{{ $b['z']->id }}" data-url="{{ route('admin.zona.update', $b['z']) }}" data-nama="{{ $b['z']->nama_zona }}" data-wilayah="{{ $b['z']->contoh_wilayah }}" data-radius="{{ (float) $b['z']->radius_km }}" data-tarif="{{ (int) $b['z']->tarif_per_km }}">
+            <td><div class="who"><span @class(['av', 'm' => $i % 2 === 1]) style="font-size:15px">{{ mb_substr($singkat($b['z']), 0, 2) }}</span><div><b>{{ $b['z']->nama_zona }}</b>@if ($b['z']->contoh_wilayah)<div style="font-size:12px;opacity:.7">{{ $b['z']->contoh_wilayah }}</div>@endif</div></div></td>
             <td>{{ $km($b['min']) }} – {{ $km($b['max']) }} km</td>
             <td>{{ $rp($b['z']->tarif_per_km) }} / km</td>
             <td><span @class(['kt', 'm' => $i % 2 === 1])>{{ $rp($b['ongkir']) }}</span></td>
@@ -88,6 +88,7 @@
     @include('partials.panel.form-errors', ['modal' => 'mZona'])
     <div class="fgrid">
       <div class="field full"><label>Nama zona</label><div class="in"><svg class="ic"><use href="#i-map"/></svg><input type="text" name="nama_zona" id="zNama" value="{{ old('nama_zona') }}" maxlength="100" placeholder="Contoh: Zona A" required></div></div>
+      <div class="field full"><label>Contoh wilayah (tampil ke pelanggan)</label><div class="in"><svg class="ic"><use href="#i-pin"/></svg><input type="text" name="contoh_wilayah" id="zWilayah" value="{{ old('contoh_wilayah') }}" maxlength="255" placeholder="Contoh: Medan Petisah, Medan Baru, Medan Polonia"></div></div>
       <div class="field"><label>Radius (jarak maksimum)</label><div class="in"><svg class="ic"><use href="#i-nav"/></svg><input type="number" name="radius_km" id="zRadius" value="{{ old('radius_km') }}" step="0.01" min="0.01" required><span class=suf>km</span></div></div>
       <div class="field"><label>Tarif per km</label><div class="in"><span class="suf" style="opacity:1">Rp</span><input name="tarif_per_km" id="zTarif" value="{{ old('tarif_per_km') }}" inputmode="numeric" placeholder="0" required></div></div>
     </div>
@@ -114,7 +115,7 @@
       form.querySelector('[name=_method]').disabled = !edit;
       form.querySelector('[name=_id]').value = edit ? tr.dataset.id : '';
       zTitle.textContent = edit ? 'Ubah Zona' : 'Tambah Zona';
-      zNama.value = edit ? tr.dataset.nama : ''; zRadius.value = edit ? tr.dataset.radius : ''; zTarif.value = edit ? (tr.dataset.tarif === '0' ? '0' : rib(tr.dataset.tarif)) : '';
+      zNama.value = edit ? tr.dataset.nama : ''; zWilayah.value = edit ? tr.dataset.wilayah : ''; zRadius.value = edit ? tr.dataset.radius : ''; zTarif.value = edit ? (tr.dataset.tarif === '0' ? '0' : rib(tr.dataset.tarif)) : '';
       zGratis.checked = edit && tr.dataset.tarif === '0';
       prev(); openModal('mZona');
     }

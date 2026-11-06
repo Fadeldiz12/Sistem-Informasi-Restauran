@@ -14,8 +14,9 @@
 </style>
 @endonce
 <nav class="wrap catstrip" aria-label="Kategori menu">
-  <a href="{{ route('pelanggan.beranda') }}#promo" data-promo>Promo</a>
-  @foreach ($navKategori as $k)
+  @if ($adaPromo)<a href="{{ route('pelanggan.beranda') }}#promo" data-promo>Promo</a>@endif
+  <a href="{{ route('pelanggan.beranda') }}#menu" data-kat="" @class(['on' => request()->routeIs('pelanggan.beranda') && ! ($aktif ?? null)])>Semua</a>
+  @foreach ($stripKategori as $k)
     <a href="{{ route('pelanggan.beranda', ['kategori' => $k->slug()]) }}#menu" data-kat="{{ $k->slug() }}" @class(['on' => ($aktif ?? null) === $k->slug()])>{{ $k->nama_kategori }}</a>
   @endforeach
 </nav>

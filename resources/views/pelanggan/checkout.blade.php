@@ -173,7 +173,7 @@
 @php
   $persen = fn ($v) => \App\Models\PengaturanSistem::persen($v);
   $rp = fn ($n) => 'Rp '.number_format((float) $n, 0, ',', '.');
-  $layanan = old('jenis_layanan', Pesanan::LAYANAN_DELIVERY);
+  $layanan = old('jenis_layanan', $zona->isEmpty() && $layananPilihan === Pesanan::LAYANAN_DELIVERY ? Pesanan::LAYANAN_TAKE_AWAY : $layananPilihan);
   $metode = old('metode', $midtransAktif ? \App\Models\Pembayaran::METODE_TRANSFER : \App\Models\Pembayaran::METODE_TUNAI);
   $bankPilih = old('bank', array_key_first($bank));
   $zonaDipilih = (int) old('id_zona', $zona->first()?->id);
@@ -269,7 +269,7 @@
 
         <!-- 2. Data pemesan -->
         <section class="card sec">
-          <div class="sec-title"><span class="no">2</span><div><h2>Data pemesan</h2><p>Diambil dari profil akunmu.</p></div></div>
+          <div class="sec-title"><span class="no">2</span><div><h2>Data pemesan</h2><p>Diambil dari profil akunmu · <a href="{{ route('pelanggan.profil') }}" style="font-weight:700;text-decoration:underline">Ubah</a></p></div></div>
           <div class="grid2">
             <div class="field"><label>Nama</label><div class="in ro"><svg class="ic"><use href="#i-user"/></svg><input value="{{ $u->nama }}" readonly></div></div>
             <div class="field"><label>Nomor HP</label><div class="in ro"><svg class="ic"><use href="#i-phone"/></svg><input value="{{ $u->no_hp }}" readonly></div></div>

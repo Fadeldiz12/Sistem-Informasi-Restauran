@@ -15,6 +15,16 @@ use Illuminate\Support\Str;
 class Kategori extends Model
 {
     /**
+     * Menu di kategori bernama "Promo" tampil sebagai promo di beranda (menu paket dengan harga promo).
+     */
+    public const NAMA_PROMO = 'Promo';
+
+    public function isPromo(): bool
+    {
+        return mb_strtolower(trim($this->nama_kategori)) === mb_strtolower(self::NAMA_PROMO);
+    }
+
+    /**
      * Jumlah maksimal kategori di navbar beranda.
      */
     public const MAKS_NAVBAR = 6;

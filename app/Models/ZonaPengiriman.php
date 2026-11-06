@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Table('zona_pengiriman')]
-#[Fillable(['nama_zona', 'radius_km', 'tarif_per_km'])]
+#[Fillable(['nama_zona', 'contoh_wilayah', 'radius_km', 'tarif_per_km'])]
 class ZonaPengiriman extends Model
 {
     protected function casts(): array

@@ -8,7 +8,7 @@
   $u = auth()->user();
   $trigger = $trigger ?? 'user';
   $links = $u->hasRole(\App\Models\User::ROLE_PELANGGAN)
-    ? [['pelanggan.beranda', 'Beranda & Menu'], ['pelanggan.keranjang', 'Keranjang'], ['pelanggan.tracking', 'Lacak Pesanan']]
+    ? [['pelanggan.beranda', 'Beranda & Menu'], ['pelanggan.keranjang', 'Keranjang'], ['pelanggan.tracking', 'Lacak Pesanan'], ['pelanggan.profil', 'Profil saya']]
     : [[$u->homeRoute(), 'Dashboard']];
 @endphp
 @once

@@ -54,6 +54,7 @@ class ZonaController extends Controller
 
         $data = $request->validate([
             'nama_zona' => ['required', 'string', 'max:100', Rule::unique('zona_pengiriman', 'nama_zona')->ignore($zona)],
+            'contoh_wilayah' => ['nullable', 'string', 'max:255'],
             'radius_km' => ['required', 'numeric', 'gt:0', 'max:9999', function (string $attribute, mixed $value, Closure $fail) use ($zona) {
                 $sama = ZonaPengiriman::where('radius_km', round((float) $value, 2))
                     ->when($zona, fn ($q) => $q->whereKeyNot($zona->getKey()))

@@ -36,7 +36,7 @@
   <a class="logo" href="{{ route('pelanggan.beranda') }}"><img class="logo-mk" src="{{ asset('images/logo-192.png') }}" alt=""><span class="logo-tx"><b>RESTO FLOW</b><small>PIZZA &amp; PASTA HOUSE</small></span></a>
   @include('partials.pelanggan.nav')
   <div class="hd-right">
-    <a class="icon-btn" href="{{ route('pelanggan.beranda') }}#menu" aria-label="Lihat menu"><svg class="ic"><use href="#i-search"/></svg></a>
+    <a class="icon-btn" href="{{ route('pelanggan.beranda', ['cari' => 1]) }}#menu" aria-label="Cari menu"><svg class="ic"><use href="#i-search"/></svg></a>
     @include('partials.profile-menu', ['trigger' => 'user'])
     @include('partials.pelanggan.cart-button')
   </div>
@@ -46,6 +46,7 @@
 @yield('content')
 
 @include('partials.pelanggan.footer')
+@include('partials.pelanggan.bottomnav')
 @stack('modals')
 <div class="p-toast" id="pToast" role="status"></div>
 <div id="p-boot" hidden data-toast="{{ session('status') }}"></div>

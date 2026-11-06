@@ -12,6 +12,7 @@ use App\Http\Controllers\MidtransController;
 use App\Http\Controllers\Owner;
 use App\Http\Controllers\Pelanggan;
 use App\Models\User;
+use App\Models\ZonaPengiriman;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -77,6 +78,12 @@ Route::middleware(['auth', 'role:'.User::ROLE_PELANGGAN])->name('pelanggan.')->g
     Route::get('/pesanan/{pesanan}/pembayaran/status', [Pelanggan\PembayaranController::class, 'status'])->name('pembayaran.status');
 
     Route::get('/tracking', Pelanggan\TrackingController::class)->name('tracking');
+
+    Route::get('/profil', [Pelanggan\ProfilController::class, 'edit'])->name('profil');
+    Route::put('/profil', [Pelanggan\ProfilController::class, 'update'])->name('profil.update');
+    Route::put('/profil/password', [Pelanggan\ProfilController::class, 'password'])->middleware('throttle:10,1,ganti-password')->name('profil.password');
+
+    Route::get('/bantuan', fn () => view('pelanggan.bantuan', ['zona' => ZonaPengiriman::orderBy('radius_km')->get()]))->name('bantuan');
 });
 
 // Notifikasi pembayaran dari Midtrans (webhook, tanpa login; diverifikasi lewat signature)

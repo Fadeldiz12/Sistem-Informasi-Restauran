@@ -58,15 +58,15 @@ Satu fase = satu (atau beberapa) commit. Setiap fase selesai → saya lapor & ta
 - [x] A4-#19 Password staf lemah (`11111111`) diterima
 
 ## Fase 4 — Pengalaman pelanggan (20 temuan)
-- [ ] A2-#12 Navigasi HP: menu jauh di bawah, "Lacak Pesanan" tersembunyi, tidak ada bottom nav
+- [x] A2-#12 Navigasi HP: menu jauh di bawah, "Lacak Pesanan" tersembunyi, tidak ada bottom nav
 - [ ] A2-#2 Lacak Pesanan di HP: detail tertimbun di bawah 30 riwayat
-- [ ] A2-#4 Tombol Cari tidak berfungsi
-- [ ] A2-#5 Promo/hero statis tidak bisa dipesan, panah slide mati, "Semua promo" `#`
-- [ ] A2-#6 Pilihan layanan di beranda tidak terbawa ke checkout; teks Dine In kontradiktif
+- [x] A2-#4 Tombol Cari tidak berfungsi
+- [x] A2-#5 Promo/hero statis tidak bisa dipesan, panah slide mati, "Semua promo" `#`
+- [x] A2-#6 Pilihan layanan di beranda tidak terbawa ke checkout; teks Dine In kontradiktif
 - [ ] A2-#7 Zona A terpilih otomatis, tidak ada panduan jarak
 - [ ] A2-#9 Restoran tutup: tidak ada banner, footer jam hardcode
 - [ ] A2-#10 Menu habis hilang diam-diam dari keranjang / beranda
-- [ ] A2-#11 Tidak ada halaman profil pelanggan (ubah nama/HP/alamat)
+- [x] A2-#11 Tidak ada halaman profil pelanggan (ubah nama/HP/alamat)
 - [ ] A2-#13 Batas qty 50 tanpa pesan, toast "ditambahkan" palsu, tombol − di qty 1
 - [ ] A2-#14 Hapus item keranjang tanpa "Batalkan"
 - [ ] A2-#15 Back setelah checkout → "Keranjang masih kosong"
@@ -75,9 +75,9 @@ Satu fase = satu (atau beberapa) commit. Setiap fase selesai → saya lapor & ta
 - [ ] A2-#19 Chip "Pakai alamat profil" aktif padahal kosong
 - [ ] A2-#20 Teks status salah setelah selesai ("diteruskan ke dapur", "menuju alamatmu")
 - [ ] A2-#23 Pesan "Restoran tutup" tampil dua kali
-- [ ] A2-#24 Kategori di strip atas berbeda dengan chip (Salad hilang)
+- [x] A2-#24 Kategori di strip atas berbeda dengan chip (Salad hilang)
 - [ ] A2-#25 Jam per langkah timeline kosong
-- [ ] A2-#26 Link footer `#` mati, nomor telepon bukan `tel:`
+- [x] A2-#26 Link footer `#` mati, nomor telepon bukan `tel:`
 
 ## Fase 5 — UX staf: kasir, dapur, kurir, admin, owner (19 temuan)
 - [ ] A3-#9 Mulai Masak / Terima Setoran tanpa konfirmasi, undo, loading; setoran tanpa jumlah dihitung

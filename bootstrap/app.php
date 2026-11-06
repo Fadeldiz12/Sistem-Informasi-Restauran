@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Pelanggan\CheckoutController;
 use App\Http\Middleware\EnsureUserHasRole;
 use App\Http\Middleware\JanganSimpanHalamanBerlogin;
 use Illuminate\Auth\AuthenticationException;
@@ -20,6 +21,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->validateCsrfTokens(except: ['midtrans/notifikasi']);
 
         $middleware->web(append: [JanganSimpanHalamanBerlogin::class]);
+        // pilihan layanan di beranda disimpan JS sebagai cookie biasa
+        $middleware->encryptCookies(except: [CheckoutController::COOKIE_LAYANAN]);
 
         $middleware->alias([
             'role' => EnsureUserHasRole::class,

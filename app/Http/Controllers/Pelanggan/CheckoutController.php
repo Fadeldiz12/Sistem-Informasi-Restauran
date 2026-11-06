@@ -18,9 +18,14 @@ use Illuminate\View\View;
 
 class CheckoutController extends Controller
 {
+    /**
+     * Cookie (tanpa enkripsi, diisi JS di beranda) berisi jenis layanan yang dipilih di kartu "Pilih layanan".
+     */
+    public const COOKIE_LAYANAN = 'layanan_pilihan';
+
     public function __construct(private Keranjang $keranjang, private PesananService $pesanan, private MidtransService $midtrans) {}
 
-    public function create(): View|RedirectResponse
+    public function create(Request $request): View|RedirectResponse
     {
         $items = $this->keranjang->items();
         if ($items->isEmpty()) {
@@ -39,6 +44,9 @@ class CheckoutController extends Controller
             'zona' => ZonaPengiriman::orderBy('radius_km')->get(),
             'midtransAktif' => $this->midtrans->aktif(),
             'bank' => MidtransService::BANK,
+            // layanan yang dipilih di beranda ikut terpilih di checkout (QA A2-#6)
+            'layananPilihan' => array_key_exists((string) $request->cookie(self::COOKIE_LAYANAN), Pesanan::LABEL_LAYANAN)
+                ? $request->cookie(self::COOKIE_LAYANAN) : Pesanan::LAYANAN_DELIVERY,
         ]);
     }
 

@@ -64,6 +64,16 @@ class Menu extends Model
     /**
      * Hanya menu yang tersedia (yang ditampilkan ke pelanggan).
      */
+    /**
+     * Menu promo yang bisa dipesan: menu tersedia di kategori "Promo".
+     */
+    #[Scope]
+    protected function promo(Builder $query): void
+    {
+        $query->where('tersedia', true)
+            ->whereHas('kategori', fn ($k) => $k->whereRaw('LOWER(TRIM(nama_kategori)) = ?', [mb_strtolower(Kategori::NAMA_PROMO)]));
+    }
+
     #[Scope]
     protected function tersedia(Builder $query): void
     {

@@ -34,7 +34,7 @@
   /* perbarui angka keranjang di header: { jumlah, subtotal } */
   window.setCart = function (r) {
     document.querySelectorAll('[data-cart-total]').forEach(function (el) { el.textContent = rp(r.subtotal); });
-    document.querySelectorAll('[data-cart-count]').forEach(function (el) { el.textContent = r.jumlah; });
+    document.querySelectorAll('[data-cart-count]').forEach(function (el) { el.textContent = r.jumlah; if (el.closest('.bnav')) el.hidden = !r.jumlah; });
   };
   var boot = document.getElementById('p-boot');
   if (boot && boot.dataset.toast) pToast(boot.dataset.toast);

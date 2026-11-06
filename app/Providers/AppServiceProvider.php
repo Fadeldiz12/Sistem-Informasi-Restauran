@@ -46,13 +46,18 @@ class AppServiceProvider extends ServiceProvider
         });
 
         // Angka keranjang di header pelanggan
-        View::composer(['partials.pelanggan.cart-button', 'pelanggan.beranda'], function ($view) {
+        View::composer(['partials.pelanggan.cart-button', 'partials.pelanggan.bottomnav', 'pelanggan.beranda'], function ($view) {
             $view->with('keranjangInfo', app(Keranjang::class)->ringkasan());
         });
 
         // Kategori di navbar pelanggan (dipilih admin, maks 6)
         View::composer(['partials.pelanggan.nav', 'partials.pelanggan.catstrip'], function ($view) {
             $view->with('navKategori', Kategori::navbar()->get());
+            // baris kategori di HP: semua kategori yang punya menu (urutan navbar dulu), sama dengan chip daftar menu
+            $view->with('stripKategori', Kategori::whereHas('menu')->get()
+                ->reject(fn ($k) => $k->isPromo())
+                ->sortBy(fn ($k) => [$k->tampil_navbar ? 0 : 1, $k->urutan_navbar ?? 99, $k->nama_kategori])->values());
+            $view->with('adaPromo', Menu::promo()->exists());
         });
 
         // Angka badge di sidebar dapur
