@@ -9,6 +9,7 @@ use App\Models\Pesanan;
 use App\Models\TiketDapur;
 use App\Models\User;
 use App\Models\ZonaPengiriman;
+use App\Services\BahanBakuService;
 use App\Services\PesananService;
 use Database\Seeders\BahanBakuSeeder;
 use Database\Seeders\MasterDataSeeder;
@@ -130,9 +131,10 @@ class DapurTest extends TestCase
         $this->assertTrue($b->isStokKritis()); // 10 <= 12
 
         // pemakaian lebih dari 30 hari lalu tidak dihitung
-        $this->actingAs($this->dapur)->post('/dapur/mutasi', ['id_bahan' => $b->id, 'jenis' => 'masuk', 'jumlah' => 100, 'tanggal' => today()->subDays(40)->toDateString()]);
+        app(BahanBakuService::class)->catatMutasi($b->fresh(), 'pemakaian', 9, today()->subDays(40)->toDateString());
         $this->assertEquals(2, (float) $b->fresh()->rata_pemakaian);
-        $this->assertFalse($b->fresh()->isStokKritis()); // 110 > 12
+        $this->actingAs($this->dapur)->post('/dapur/mutasi', ['id_bahan' => $b->id, 'jenis' => 'masuk', 'jumlah' => 100, 'tanggal' => today()->toDateString()]);
+        $this->assertFalse($b->fresh()->isStokKritis()); // 101 > 12
 
         // ubah lead time -> ROP ikut berubah
         $this->actingAs($this->dapur)->put("/dapur/bahan-baku/{$b->id}", ['nama_bahan' => 'Tepung', 'satuan' => 'kg', 'lead_time' => 5, 'safety_stock' => 6]);
@@ -150,6 +152,8 @@ class DapurTest extends TestCase
             ->assertSessionHasErrors('jumlah');
         $this->actingAs($this->dapur)->post('/dapur/mutasi', ['id_bahan' => 999, 'jenis' => 'rusak', 'jumlah' => 0, 'tanggal' => today()->addDay()->toDateString()])
             ->assertSessionHasErrors(['id_bahan', 'jenis', 'jumlah', 'tanggal']);
+        $this->actingAs($this->dapur)->post('/dapur/mutasi', ['id_bahan' => $b->id, 'jenis' => 'masuk', 'jumlah' => 1, 'tanggal' => '2001-01-01'])
+            ->assertSessionHasErrors(['tanggal' => 'Tanggal mutasi paling lama 30 hari ke belakang.']);
         $this->assertEquals(3, (float) $b->fresh()->stok);
         $this->assertSame(1, MutasiBahanBaku::count());
     }
@@ -164,9 +168,56 @@ class DapurTest extends TestCase
         $this->actingAs($this->dapur)->get('/dapur/antrean')->assertSee('Notifikasi stok kritis');
 
         $b = BahanBaku::where('nama_bahan', 'Lemon')->first();
+        $riwayat = MutasiBahanBaku::where('id_bahan', $b->id)->count();
         $this->actingAs($this->dapur)->delete("/dapur/bahan-baku/{$b->id}")->assertSessionHas('status');
-        $this->assertModelMissing($b);
-        $this->assertSame(0, MutasiBahanBaku::where('id_bahan', $b->id)->count());
+        $this->assertSoftDeleted($b);
+        $this->assertSame($riwayat, MutasiBahanBaku::where('id_bahan', $b->id)->count()); // riwayat tetap ada
+        $this->actingAs($this->dapur)->get('/dapur/bahan-baku')->assertDontSee('data-name="Lemon"', false);
+    }
+
+    public function test_bahan_yang_dipakai_resep_tidak_bisa_dihapus(): void
+    {
+        $this->seed([BahanBakuSeeder::class, ResepSeeder::class]);
+        $lemon = BahanBaku::firstWhere('nama_bahan', 'Lemon');
+
+        $this->actingAs($this->dapur)->delete("/dapur/bahan-baku/{$lemon->id}")
+            ->assertSessionHas('error', fn ($m) => str_contains($m, 'Lemon Iced Tea'));
+        $this->assertNotSoftDeleted($lemon);
+        $this->assertSame(1, $lemon->resep()->count());
+    }
+
+    public function test_nama_bahan_unik_tanpa_peduli_huruf_besar_dan_satuan_dari_daftar(): void
+    {
+        $isi = ['satuan' => 'kg', 'stok' => 1, 'lead_time' => 1, 'safety_stock' => 0];
+        $this->actingAs($this->dapur)->post('/dapur/bahan-baku', ['nama_bahan' => 'Lemon'] + $isi)->assertSessionHasNoErrors();
+
+        $this->actingAs($this->dapur)->post('/dapur/bahan-baku', ['nama_bahan' => 'lemon'] + $isi)->assertSessionHasErrors('nama_bahan');
+        $this->actingAs($this->dapur)->post('/dapur/bahan-baku', ['nama_bahan' => 'Jeruk', 'satuan' => 'ton<b>'] + $isi)->assertSessionHasErrors('satuan');
+        $this->assertSame(1, BahanBaku::count());
+    }
+
+    public function test_ganti_satuan_kg_ke_gram_mengonversi_stok_resep_dan_riwayat(): void
+    {
+        $this->seed([BahanBakuSeeder::class, ResepSeeder::class]);
+        $selada = BahanBaku::firstWhere('nama_bahan', 'Selada Romaine');
+        $stok = (float) $selada->stok;
+        $ss = (float) $selada->safety_stock;
+        $pemakaian = (float) $selada->mutasi()->sum('jumlah');
+        $isi = ['nama_bahan' => 'Selada Romaine', 'lead_time' => $selada->lead_time, 'safety_stock' => $ss];
+
+        $this->actingAs($this->dapur)->put("/dapur/bahan-baku/{$selada->id}", ['satuan' => 'gram'] + $isi)
+            ->assertSessionHasNoErrors()->assertSessionHas('status', fn ($m) => str_contains($m, 'dikonversi'));
+
+        $selada->refresh();
+        $this->assertSame('gram', $selada->satuan);
+        $this->assertEqualsWithDelta($stok * 1000, (float) $selada->stok, 0.001);
+        $this->assertEqualsWithDelta($ss * 1000, (float) $selada->safety_stock, 0.001);
+        $this->assertEqualsWithDelta($pemakaian * 1000, (float) $selada->mutasi()->sum('jumlah'), 0.01);
+        $this->assertEqualsWithDelta(150, (float) $selada->resep()->whereHas('menu', fn ($q) => $q->where('nama_menu', 'Caesar Salad'))->value('jumlah'), 0.001);
+
+        // satuan yang tidak bisa dikonversi ditolak
+        $this->actingAs($this->dapur)->put("/dapur/bahan-baku/{$selada->id}", ['satuan' => 'pcs'] + $isi)->assertSessionHasErrors('satuan');
+        $this->assertSame('gram', $selada->fresh()->satuan);
     }
 
     // ---------- resep: stok berkurang otomatis saat mulai masak

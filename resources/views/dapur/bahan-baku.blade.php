@@ -8,6 +8,7 @@
 @section('heading', 'Kelola Bahan Baku')
 @section('sub', 'Catat stok masuk dan pemakaian; sistem menghitung ROP dan memberi notifikasi stok kritis')
 @section('delete-title', 'Hapus bahan baku ini?')
+@section('delete-text', 'Bahan diarsipkan: hilang dari daftar, tetapi riwayat stoknya tetap tersimpan. Bahan yang masih dipakai resep tidak bisa dihapus.')
 
 @php
   $a = fn ($n) => BahanBakuService::angka($n);

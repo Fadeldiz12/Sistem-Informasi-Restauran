@@ -40,7 +40,7 @@
   <div class="big-ic" style="background:var(--m);color:var(--cr)"><svg class="ic"><use href="#i-trash"/></svg></div>
   <h3 style="font:700 24px var(--f-title)">@yield('delete-title', 'Hapus data ini?')</h3>
   <div class="pill p" style="margin-top:12px;font-size:13px;padding:7px 14px" id="delName"></div>
-  <p style="opacity:.75;margin:12px 28px 22px">Data akan dihapus dari database dan tidak dapat dikembalikan.</p>
+  <p style="opacity:.75;margin:12px 28px 22px">@yield('delete-text', 'Data akan dihapus permanen dan tidak dapat dikembalikan.')</p>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 28px 28px"><button class="btn o lg" data-close>Tidak</button><button class="btn lg" id="delOk">Ya, Hapus</button></div>
 </div></div>
 <div class="ovl" id="mLogout"><div class="modal sm">

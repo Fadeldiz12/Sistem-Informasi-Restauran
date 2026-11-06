@@ -39,18 +39,78 @@ class BahanBakuService
     }
 
     /**
+     * Pasangan satuan yang bisa dikonversi otomatis: [satuan lama][satuan baru] => faktor pengali.
+     */
+    public const KONVERSI = [
+        'kg' => ['gram' => 1000],
+        'gram' => ['kg' => 0.001],
+        'liter' => ['ml' => 1000],
+        'ml' => ['liter' => 0.001],
+    ];
+
+    /**
      * Ubah data bahan (stok tidak diubah di sini, hanya lewat mutasi). ROP dihitung ulang.
+     * Bila satuan diganti (kg↔gram, liter↔ml), stok, safety stock, takaran resep, dan riwayat mutasi ikut dikonversi.
      */
     public function ubah(BahanBaku $bahan, array $data): BahanBaku
     {
-        $bahan->update([
-            'nama_bahan' => $data['nama_bahan'],
-            'satuan' => $data['satuan'],
-            'lead_time' => $data['lead_time'],
-            'safety_stock' => $data['safety_stock'],
-        ]);
+        return DB::transaction(function () use ($bahan, $data) {
+            $safetyStock = (float) $data['safety_stock'];
 
-        return $this->hitungUlang($bahan);
+            if ($data['satuan'] !== $bahan->satuan) {
+                $faktor = $this->gantiSatuan($bahan, $data['satuan']);
+                // safety stock yang tidak diubah di form masih dalam satuan lama
+                if ($safetyStock === (float) $bahan->getOriginal('safety_stock')) {
+                    $safetyStock = round($safetyStock * $faktor, 2);
+                }
+            }
+
+            $bahan->update([
+                'nama_bahan' => $data['nama_bahan'],
+                'satuan' => $data['satuan'],
+                'lead_time' => $data['lead_time'],
+                'safety_stock' => $safetyStock,
+            ]);
+
+            return $this->hitungUlang($bahan);
+        });
+    }
+
+    /**
+     * Konversi stok, takaran resep, dan riwayat mutasi ke satuan baru. Mengembalikan faktor pengalinya.
+     * Bahan yang belum punya stok, resep, maupun riwayat boleh ganti satuan apa saja (faktor 1).
+     */
+    private function gantiSatuan(BahanBaku $bahan, string $satuanBaru): float
+    {
+        $faktor = self::KONVERSI[$bahan->satuan][$satuanBaru] ?? null;
+        $resep = $bahan->resep()->get();
+        $mutasi = $bahan->mutasi()->get();
+
+        if ($faktor === null) {
+            if ((float) $bahan->stok > 0 || $resep->isNotEmpty() || $mutasi->isNotEmpty()) {
+                throw ValidationException::withMessages([
+                    'satuan' => "Satuan {$bahan->satuan} tidak bisa diganti ke {$satuanBaru} karena bahan ini sudah punya stok, resep, atau riwayat. "
+                        .'Yang bisa dikonversi otomatis hanya kg ↔ gram dan liter ↔ ml.',
+                ]);
+            }
+
+            return 1.0;
+        }
+
+        $nilai = collect([(float) $bahan->stok, (float) $bahan->safety_stock])
+            ->merge($resep->map(fn ($r) => (float) $r->jumlah))
+            ->merge($mutasi->map(fn ($m) => (float) $m->jumlah));
+        if ($nilai->contains(fn ($n) => abs(round($n * $faktor, 2) - $n * $faktor) > 1e-9)) {
+            throw ValidationException::withMessages([
+                'satuan' => "Ada stok, takaran resep, atau riwayat yang terlalu kecil untuk diubah ke {$satuanBaru} (lebih dari 2 angka desimal). Satuan tetap {$bahan->satuan}.",
+            ]);
+        }
+
+        $bahan->stok = round((float) $bahan->stok * $faktor, 2);
+        $resep->each(fn ($r) => $r->update(['jumlah' => round((float) $r->jumlah * $faktor, 2)]));
+        $mutasi->each(fn ($m) => $m->update(['jumlah' => round((float) $m->jumlah * $faktor, 2)]));
+
+        return $faktor;
     }
 
     /**

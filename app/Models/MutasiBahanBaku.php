@@ -25,6 +25,6 @@ class MutasiBahanBaku extends Model
 
     public function bahanBaku(): BelongsTo
     {
-        return $this->belongsTo(BahanBaku::class, 'id_bahan');
+        return $this->belongsTo(BahanBaku::class, 'id_bahan')->withTrashed();
     }
 }

@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class MenuController extends Controller
@@ -133,7 +134,7 @@ class MenuController extends Controller
 
         $request->validate([
             'resep' => ['array', 'max:30'],
-            'resep.*.id_bahan' => ['required', 'integer', 'exists:bahan_baku,id'],
+            'resep.*.id_bahan' => ['required', 'integer', Rule::exists('bahan_baku', 'id')->whereNull('deleted_at')],
             'resep.*.jumlah' => ['required', 'numeric', 'gt:0', 'max:99999'],
         ], [], [
             'resep.*.id_bahan' => 'bahan resep',
