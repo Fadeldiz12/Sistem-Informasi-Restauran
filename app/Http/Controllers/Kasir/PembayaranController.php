@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Kasir;
 use App\Http\Controllers\Controller;
 use App\Models\Pembayaran;
 use App\Models\Pesanan;
+use App\Models\TutupKasir;
 use App\Services\PesananService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -23,7 +24,7 @@ class PembayaranController extends Controller
         $struk = session('struk') ? Pesanan::with(['detail.menu', 'pembayaran.kasir', 'pelanggan', 'pengiriman.zona'])->find(session('struk')) : null;
 
         $lunasHariIni = Pesanan::with(['pembayaran', 'pelanggan'])
-            ->whereHas('pembayaran', fn ($b) => $b->where('status_bayar', Pembayaran::STATUS_LUNAS)->whereDate('waktu_bayar', today()))
+            ->whereHas('pembayaran', fn ($b) => $b->where('status_bayar', Pembayaran::STATUS_LUNAS)->where('waktu_bayar', '>=', TutupKasir::batas()))
             ->get()->sortByDesc(fn ($p) => $p->pembayaran->waktu_bayar)->values();
 
         return view('kasir.pembayaran', [
@@ -58,6 +59,7 @@ class PembayaranController extends Controller
     public function struk(Pesanan $pesanan): View
     {
         abort_unless($pesanan->isLunas(), 404);
+        abort_if($pesanan->pembayaran->waktu_bayar < TutupKasir::batas(), 403, 'Transaksi ini sudah masuk tutup hari (EOD). Struk lama hanya bisa dilihat owner.');
 
         return view('kasir.struk', [
             'pesanan' => $pesanan->load(['detail.menu', 'pembayaran.kasir', 'pelanggan', 'pengiriman.zona']),

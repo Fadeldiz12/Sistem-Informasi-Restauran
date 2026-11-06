@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Kasir;
 use App\Http\Controllers\Controller;
 use App\Models\Pembayaran;
 use App\Models\Setoran;
+use App\Models\TutupKasir;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -20,6 +21,7 @@ class SetoranController extends Controller
 {
     public function index(): View
     {
+        $batas = TutupKasir::batas();
         $belum = Pembayaran::belumDisetor()
             ->with(['kurir', 'pesanan.pelanggan'])
             ->orderBy('waktu_bayar')->get()
@@ -28,9 +30,9 @@ class SetoranController extends Controller
         return view('kasir.setoran', [
             'perKurir' => $belum,
             'totalBelum' => (float) $belum->flatten()->sum('jumlah'),
-            'riwayat' => Pembayaran::whereNotNull('id_kurir')->whereDate('disetor_pada', today())
+            'riwayat' => Pembayaran::whereNotNull('id_kurir')->where('disetor_pada', '>=', $batas)
                 ->with(['kurir', 'kasir', 'pesanan'])->latest('disetor_pada')->get(),
-            'setoranHariIni' => Setoran::with(['kurir', 'kasir'])->whereDate('waktu_setor', today())->latest('waktu_setor')->get(),
+            'setoranHariIni' => Setoran::with(['kurir', 'kasir'])->where('waktu_setor', '>=', $batas)->latest('waktu_setor')->get(),
         ]);
     }
 

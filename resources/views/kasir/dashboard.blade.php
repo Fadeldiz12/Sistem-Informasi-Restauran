@@ -32,7 +32,7 @@
       <div class="t">Dine In {{ $perLayanan[Pesanan::LAYANAN_DINE_IN] ?? 0 }} · Take Away {{ $perLayanan[Pesanan::LAYANAN_TAKE_AWAY] ?? 0 }} · Delivery {{ $perLayanan[Pesanan::LAYANAN_DELIVERY] ?? 0 }}</div></div>
     <div class="card stat b"><div class="top"><span class="eyebrow">Menunggu konfirmasi</span><span class="ico"><svg class="ic"><use href="#i-bell"/></svg></span></div><div class="v">{{ $menunggu }}</div><div class="t">Pesanan online baru</div></div>
     <div class="card stat "><div class="top"><span class="eyebrow">Belum lunas</span><span class="ico"><svg class="ic"><use href="#i-wallet"/></svg></span></div><div class="v">{{ $belumLunas->count() }}</div><div class="t">Tunai {{ $tunai }} · Transfer/QRIS {{ $nonTunai }}</div></div>
-    <div class="card stat p"><div class="top"><span class="eyebrow">Pemasukan hari ini</span><span class="ico"><svg class="ic"><use href="#i-cash"/></svg></span></div><div class="v">{{ $pemasukanLabel }}</div><div class="t">{{ $jumlahLunas }} pembayaran lunas</div></div>
+    <div class="card stat p"><div class="top"><span class="eyebrow">Pemasukan hari ini</span><span class="ico"><svg class="ic"><use href="#i-cash"/></svg></span></div><div class="v">{{ $pemasukanLabel }}</div><div class="t">{{ $jumlahLunas }} pembayaran lunas{{ $batas->isAfter(today()) ? ' · sejak tutup hari '.$batas->format('H:i') : '' }}</div></div>
   </div>
 
   <div class="grid split kasir-atas" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr);margin-top:18px;align-items:start">
