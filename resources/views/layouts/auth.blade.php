@@ -27,27 +27,28 @@
   .stage { position: relative; height: 100vh; min-height: 560px; overflow: hidden; }
 
   /* ---------- sisi kiri: strip foto, merek, piring ---------- */
-  .strip { position: absolute; top: 0; bottom: 0; left: calc(var(--k) * 175); width: calc(var(--k) * 375); z-index: 1;
-           background-color: #8f1437; background-size: cover; background-position: center;
-           background-image: linear-gradient(180deg, rgba(60, 4, 20, .25), rgba(0, 0, 0, 0) 22%, rgba(0, 0, 0, 0) 60%, rgba(30, 2, 10, .78)),
-                             url("https://images.unsplash.com/photo-1513104890138-7c749659a591?w=900&q=70");
-           background-blend-mode: normal, multiply; }
-  .brand { position: absolute; z-index: 3; top: calc(var(--k) * 48); left: calc(var(--k) * 175); width: calc(var(--k) * 375);
+  /* panel kiri: merah polos dengan satu foto utama + dua foto kecil, semua rata tengah di area merah */
+  .strip { display: none; }
+  .brand { position: absolute; z-index: 3; top: calc(var(--k) * 64); left: calc(var(--k) * 90); width: calc(var(--k) * 640);
            text-align: center; color: var(--cr); }
-  .brand b { display: block; font: 800 calc(var(--k) * 40) / 1.1 var(--f-accent); letter-spacing: .2em; padding-left: .2em; white-space: nowrap; }
+  .brand b { display: block; font: 800 calc(var(--k) * 44) / 1.1 var(--f-accent); letter-spacing: .2em; padding-left: .2em; white-space: nowrap; }
   .brand small { display: block; margin-top: calc(var(--k) * 12); font: 600 calc(var(--k) * 15) var(--f-accent); letter-spacing: .3em; padding-left: .3em; }
   .brand i { display: block; width: calc(var(--k) * 60); height: max(2px, calc(var(--k) * 3)); background: var(--cr); opacity: .85; margin: calc(var(--k) * 18) auto 0; }
-  .tagline { position: absolute; z-index: 3; bottom: calc(var(--k) * 42); left: calc(var(--k) * 175); width: calc(var(--k) * 375); text-align: center;
-             color: var(--cr); font: 600 calc(var(--k) * 14.5) var(--f-accent); letter-spacing: .22em; padding-left: .22em; opacity: .9; white-space: nowrap; }
+  .tagline { position: absolute; z-index: 3; bottom: calc(var(--k) * 56); left: calc(var(--k) * 90); width: calc(var(--k) * 640); text-align: center;
+             color: var(--cr); font: 600 calc(var(--k) * 14.5) var(--f-accent); letter-spacing: .22em; padding-left: .22em; opacity: .85; white-space: nowrap; }
+  .layanan-chip { position: absolute; z-index: 3; bottom: calc(var(--k) * 104); left: calc(var(--k) * 90); width: calc(var(--k) * 640);
+                  display: flex; justify-content: center; gap: calc(var(--k) * 12); }
+  .layanan-chip span { padding: calc(var(--k) * 8) calc(var(--k) * 18); border-radius: 999px; box-shadow: inset 0 0 0 1.5px rgba(248, 245, 230, .55);
+                       color: var(--cr); font: 700 calc(var(--k) * 15) var(--f-accent); letter-spacing: .04em; white-space: nowrap; }
 
-  .plate { position: absolute; z-index: 4; border-radius: 50%; background: #eef0ef; display: grid; place-items: center; overflow: hidden;
+  .plate { position: absolute; z-index: 4; border-radius: 50%; background: #6d0e2a; overflow: hidden;
            left: calc(var(--k) * var(--x)); top: calc(50% + var(--k) * (var(--y) - 640)); width: calc(var(--k) * var(--d)); height: calc(var(--k) * var(--d));
-           transform: translate(-50%, -50%); box-shadow: 0 calc(var(--k) * 14) calc(var(--k) * 30) rgba(40, 0, 12, .28); }
-  .plate img { width: var(--isi); height: var(--isi); border-radius: 50%; object-fit: cover; box-shadow: 0 calc(var(--k) * 4) calc(var(--k) * 10) rgba(0, 0, 0, .22); }
-  .p1 { --x: 631; --y: 358; --d: 362; --isi: 64%; border: calc(var(--k) * 16) solid var(--cr); }
-  .p2 { --x: 693; --y: 655; --d: 262; --isi: 88%; overflow: visible;
-        box-shadow: 0 0 0 calc(var(--k) * 12) var(--m), 0 0 0 calc(var(--k) * 15) var(--cr), 0 calc(var(--k) * 18) calc(var(--k) * 30) rgba(40, 0, 12, .3); }
-  .p3 { --x: 538; --y: 931; --d: 226; --isi: 64%; border: calc(var(--k) * 14) solid var(--cr); }
+           transform: translate(-50%, -50%); box-shadow: 0 calc(var(--k) * 18) calc(var(--k) * 40) rgba(40, 0, 12, .35); }
+  .plate img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .p1 { --x: 410; --y: 610; --d: 470; border: calc(var(--k) * 16) solid var(--cr); }
+  .p2 { --x: 640; --y: 820; --d: 230; border: calc(var(--k) * 10) solid var(--m);
+        box-shadow: 0 0 0 calc(var(--k) * 4) var(--cr), 0 calc(var(--k) * 18) calc(var(--k) * 34) rgba(40, 0, 12, .35); }
+  .p3 { --x: 180; --y: 840; --d: 190; border: calc(var(--k) * 10) solid var(--cr); }
 
   /* ---------- sisi kanan: krem dengan tepi diagonal ---------- */
   .cream { position: absolute; inset: 0; z-index: 2; background: var(--cr);
@@ -132,10 +133,10 @@
   @media (max-width: 900px), (max-aspect-ratio: 1/1) {
     body { overflow: auto; }
     .stage { height: auto; min-height: 100vh; display: flex; flex-direction: column; overflow: visible; }
-    .strip { position: relative; left: 0; width: 100%; height: 200px; flex: none; }
+    .strip { display: block; position: relative; left: 0; width: 100%; height: 200px; flex: none; background: linear-gradient(160deg, #a51b43, #7d1131); }
     .brand { top: 42px; left: 0; width: 100%; }
     .brand b { font-size: 30px; } .brand small { font-size: 11.5px; margin-top: 8px; } .brand i { width: 48px; margin-top: 14px; }
-    .tagline, .plate, .doodle, .dd { display: none; }
+    .tagline, .plate, .doodle, .dd, .layanan-chip { display: none; }
     .fwrap { width: 100%; }
     .cream { display: none; }
     .right { position: relative; inset: auto; flex: 1; z-index: 5; margin-top: -34px; padding: 62px 22px 44px; overflow: visible;
@@ -151,7 +152,8 @@
 <main class="stage">
   <div class="strip" aria-hidden="true"></div>
   <div class="brand"><b>{{ strtoupper(config('resto.nama')) }}</b><small>PIZZA &amp; PASTA HOUSE</small><i></i></div>
-  <div class="tagline" aria-hidden="true">SISTEM MANAJEMEN RESTORAN</div>
+  <div class="layanan-chip" aria-hidden="true"><span>Delivery</span><span>Take Away</span><span>Dine In</span></div>
+  <div class="tagline" aria-hidden="true">PESAN · LACAK · NIKMATI</div>
 
   <div class="plate p1" aria-hidden="true"><img src="https://images.unsplash.com/photo-1595854341625-f33ee10dbf94?w=500&q=75" alt=""></div>
   <div class="plate p2" aria-hidden="true"><img src="https://images.unsplash.com/photo-1593560708920-61dd98c46a4e?w=500&q=75" alt=""></div>
@@ -164,8 +166,6 @@
   <svg class="doodle lt" style="--x:76;--y:318;--w:22" viewBox="0 0 22 30"><path d="M14 2L4 13l12 4L6 28"/></svg>
   <svg class="doodle lt" style="--x:108;--y:312;--w:20" viewBox="0 0 20 14"><path d="M2 2l8 9 8-4"/></svg>
   <svg class="doodle lt" style="--x:52;--y:636;--w:38" viewBox="0 0 38 64"><path d="M22 2C6 14 0 36 10 60 30 50 38 26 22 2Z"/><path d="M10 60C14 40 18 22 22 2"/></svg>
-  <svg class="doodle lt" style="--x:84;--y:932;--w:66" viewBox="0 0 66 66"><circle cx="33" cy="37" r="27"/><path d="M33 10c-3-4-9-6-14-4M33 10c4-4 10-5 14-2M33 10V3"/></svg>
-  <svg class="doodle pk" style="--x:618;--y:990;--w:66" viewBox="0 0 66 76"><path d="M4 4L62 70H8Z"/><circle cx="18" cy="38" r="5"/><circle cx="26" cy="58" r="4"/></svg>
 
   <section class="right">
     <div class="fwrap">
