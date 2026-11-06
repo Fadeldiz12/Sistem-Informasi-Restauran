@@ -106,7 +106,7 @@
     var num = function (s) { return Number(String(s || '').replace(/\./g, '').replace(',', '.')) || 0; };
     function prev() {
       zPrev.textContent = rp(num(zRadius.value) * num(zTarif.value));
-      zGratisWrap.style.display = zTarif.value !== '' && num(zTarif.value) === 0 ? '' : 'none';
+      zGratisWrap.style.display = zTarif.value !== '' && num(zTarif.value) === 0 ? 'flex' : 'none';
     }
     function mode(edit, tr) {
       var e = form.querySelector('.ferr'); if (e) e.remove();

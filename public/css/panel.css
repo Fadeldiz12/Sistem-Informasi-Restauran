@@ -264,3 +264,8 @@
     .tbl-stack td[colspan] { flex: 1 1 100%; }
     .tbl-stack .hide-md { display: none; }
   }
+
+/* baris sakelar dengan label + keterangan (dipakai di beberapa form) */
+.switch-row { display: flex; gap: 12px; align-items: center; padding: 12px 14px; border-radius: 14px; background: var(--pp); font: 600 13.5px var(--f-body); }
+.switch-row > span { flex: 1; }
+.switch-row small { display: block; font-size: 12px; opacity: .7; font-weight: 500; }

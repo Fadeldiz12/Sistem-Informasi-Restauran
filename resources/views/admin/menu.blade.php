@@ -63,9 +63,6 @@
   .drop .meta { flex: 1; min-width: 0; }
   .drop .meta b { display: block; font: 600 14px var(--f-title); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   @media (max-width: 520px) { .drop { flex-wrap: wrap; } .drop .btn { width: 100%; } }
-  .switch-row { display: flex; gap: 12px; align-items: center; padding: 12px 14px; border-radius: 14px; background: var(--pp); font: 600 13.5px var(--f-body); }
-  .switch-row > span { flex: 1; }
-  .switch-row small { display: block; font-size: 12px; opacity: .7; font-weight: 500; }
 
   /* resep per porsi */
   .rs-list { display: grid; gap: 8px; }
