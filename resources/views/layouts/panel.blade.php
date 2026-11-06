@@ -60,5 +60,7 @@
 <script src="{{ asset('js/panel.js') }}?v={{ filemtime(public_path('js/panel.js')) }}"></script>
 @stack('scripts')
 @include('partials.logout')
+{{-- halaman dari cache Back/Forward dimuat ulang supaya sesi yang sudah keluar tidak menampilkan data --}}
+<script>window.addEventListener('pageshow', function (e) { if (e.persisted) location.reload(); });</script>
 </body>
 </html>

@@ -13,8 +13,15 @@
       method: method,
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
       body: data ? JSON.stringify(data) : undefined
+    }).catch(function () {
+      // fetch gagal = tidak ada koneksi (pesan bawaan browser "Failed to fetch" tidak dipahami awam)
+      throw new Error('Koneksi internet terputus. Periksa sinyal lalu coba lagi.');
     }).then(function (r) {
       return r.json().catch(function () { return {}; }).then(function (j) {
+        if (r.status === 401 || r.status === 419) {
+          setTimeout(function () { location.href = j.login || '/login'; }, 1800);
+          throw new Error('Sesi kamu sudah berakhir. Mengarahkan ke halaman masuk…');
+        }
         if (!r.ok) {
           var msg = j.message || 'Terjadi kesalahan, coba lagi.';
           if (j.errors) { var k = Object.keys(j.errors)[0]; if (k) msg = j.errors[k][0]; }

@@ -6,7 +6,11 @@
     <form class="form" action="{{ route('otp.verifikasi') }}" method="post" id="fOtp">
       @csrf
       <h1>{{ $reset ? 'Masukkan Kode OTP' : 'Verifikasi Email' }}</h1>
-      <p class="lead">Kami mengirim kode 6 digit ke <b>{{ $email }}</b>. Kode berlaku {{ $berlaku }} menit.</p>
+      @if ($reset)
+        <p class="lead">Jika <b>{{ $email }}</b> terdaftar, kode 6 digit akan masuk ke email itu dalam 1 menit. Kode berlaku {{ $berlaku }} menit.</p>
+      @else
+        <p class="lead">Kami mengirim kode 6 digit ke <b>{{ $email }}</b>. Kode berlaku {{ $berlaku }} menit.</p>
+      @endif
       <div class="gap"></div>
       @include('partials.auth.status')
       @if (session('otp_dev'))
@@ -18,6 +22,7 @@
           <input type="text" inputmode="numeric" maxlength="1" pattern="[0-9]" autocomplete="{{ $i === 0 ? 'one-time-code' : 'off' }}" aria-label="Digit {{ $i + 1 }}" @if ($i === 0) autofocus @endif>
         @endfor
       </div>
+      <p class="hint" id="otpKurang" role="alert" style="display:none;font-weight:700">Masukkan 6 digit kode OTP.</p>
       <p class="hint">Tidak ada di kotak masuk? Periksa folder spam.</p>
       <div class="gap s"></div>
       <button class="btn" type="submit" id="btnOtp">{{ $reset ? 'Lanjutkan' : 'Verifikasi' }}</button>
@@ -25,7 +30,7 @@
     <form class="form" action="{{ route('otp.ulang') }}" method="post" style="margin-top:0">
       @csrf
       <p class="foot">Belum menerima kode? <button type="submit" id="ulang" data-jeda="{{ $jeda }}">Kirim ulang</button></p>
-      <p class="foot" style="margin-top:10px"><a href="{{ $reset ? route('password.request') : route('registrasi') }}">{{ $reset ? 'Ganti email' : 'Salah email? Daftar ulang' }}</a></p>
+      <p class="foot" style="margin-top:10px">@if ($reset)Tidak menerima kode? Pastikan email benar · <a href="{{ route('password.request') }}"><b>Ganti email</b></a>@else<a href="{{ route('registrasi') }}">Salah email? Daftar ulang</a>@endif</p>
     </form>
 @endsection
 
@@ -51,7 +56,13 @@
       k.addEventListener('paste', function (e) { e.preventDefault(); isi(i, (e.clipboardData || window.clipboardData).getData('text')); });
       k.addEventListener('focus', function () { k.select(); });
     });
-    form.addEventListener('submit', function (e) { sinkron(); if (kode.value.length !== 6) { e.preventDefault(); var k = kotak.find(function (x) { return !x.value; }); if (k) k.focus(); } });
+    var kurang = document.getElementById('otpKurang');
+    form.addEventListener('submit', function (e) {
+      sinkron();
+      var belum = kode.value.length !== 6;
+      kurang.style.display = belum ? '' : 'none';
+      if (belum) { e.preventDefault(); var k = kotak.find(function (x) { return !x.value; }); if (k) k.focus(); }
+    });
 
     // hitung mundur kirim ulang
     var ulang = document.getElementById('ulang'), sisa = +ulang.dataset.jeda;

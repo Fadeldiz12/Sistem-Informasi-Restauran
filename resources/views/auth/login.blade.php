@@ -15,7 +15,10 @@
         </label>
         @include('partials.auth.password', ['name' => 'password', 'placeholder' => 'Password'])
       </div>
-      <a class="forgot" href="{{ route('password.request') }}">Lupa password?</a>
+      <div class="login-opsi">
+        <label class="agree" style="margin-top:0"><input type="checkbox" name="remember" value="1" @checked(old('remember'))> Ingat saya</label>
+        <a class="forgot" style="margin-top:0" href="{{ route('password.request') }}">Lupa password?</a>
+      </div>
       <div class="gap s"></div>
       <button class="btn" type="submit">Masuk</button>
       <p class="foot">Belum punya akun? <a href="{{ route('registrasi') }}">Daftar</a></p>

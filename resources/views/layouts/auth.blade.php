@@ -102,6 +102,7 @@
   .foot button:disabled { opacity: .5; cursor: default; text-decoration: none; }
   .agree { display: flex; gap: 10px; align-items: center; font: 400 clamp(13.5px, calc(var(--k) * 16), 16px) var(--f-body); cursor: pointer; margin-top: clamp(12px, calc(var(--k) * 22), 24px); }
   .agree input { width: 20px; height: 20px; accent-color: var(--m); flex: none; }
+  .login-opsi { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: clamp(12px, calc(var(--k) * 24), 26px); }
 
   .alert { margin-bottom: 16px; padding: 12px 18px; border-radius: 16px; background: var(--m); color: var(--cr); font: 600 13.5px/1.45 var(--f-body); }
   .alert ul { padding-left: 18px; }
@@ -182,7 +183,8 @@
     });
   });
   // cegah kirim ganda
-  document.querySelectorAll('form').forEach(function (f) { f.addEventListener('submit', function () { var b = f.querySelector('.btn'); if (b) setTimeout(function () { b.disabled = true; }, 0); }); });
+  // (dinilai setelah script halaman: bila submit dibatalkan, misal kode OTP belum lengkap, tombol tetap aktif)
+  document.querySelectorAll('form').forEach(function (f) { f.addEventListener('submit', function (e) { var b = f.querySelector('.btn'); if (b) setTimeout(function () { if (!e.defaultPrevented) b.disabled = true; }, 0); }); });
 </script>
 @stack('scripts')
 </body>

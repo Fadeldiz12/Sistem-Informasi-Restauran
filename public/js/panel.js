@@ -84,8 +84,14 @@
       method: method,
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
       body: JSON.stringify(data || {})
+    }).catch(function () {
+      throw new Error('Koneksi internet terputus. Periksa jaringan lalu coba lagi.');
     }).then(function (r) {
       return r.json().catch(function () { return {}; }).then(function (j) {
+        if (r.status === 401 || r.status === 419) {
+          setTimeout(function () { location.href = j.login || '/login'; }, 1800);
+          throw new Error('Sesi sudah berakhir. Mengarahkan ke halaman masuk…');
+        }
         if (!r.ok) throw new Error(j.message || 'Terjadi kesalahan, coba lagi.');
         return j;
       });

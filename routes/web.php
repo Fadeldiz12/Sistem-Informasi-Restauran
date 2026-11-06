@@ -30,7 +30,7 @@ Route::get('/', function (Request $request) {
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1,login')->name('login.submit');
+    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:30,1,login')->name('login.submit');
     Route::get('/registrasi', [AuthController::class, 'showRegister'])->name('registrasi');
     Route::post('/registrasi', [AuthController::class, 'register'])->middleware('throttle:5,1,registrasi')->name('registrasi.submit');
 

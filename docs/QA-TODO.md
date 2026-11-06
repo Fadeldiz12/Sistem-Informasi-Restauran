@@ -38,21 +38,21 @@ Satu fase = satu (atau beberapa) commit. Setiap fase selesai → saya lapor & ta
 - [x] A4-#9 Jam operasional lewat tengah malam (16:00–02:00) tidak bisa diatur
 
 ## Fase 3 — Akun, login & keamanan (21 temuan)
-- [ ] **A1-#21 (High)** Email OTP gagal terkirim → halaman debug 500, akun "yatim" tak bisa daftar ulang
-- [ ] **A1-#3 (High)** `=` A4-#5 Halaman 429 bawaan Inggris, tanpa waktu tunggu, isian hilang
-- [ ] A1-#4 Throttle login per IP untuk semua akun (login benar pun diblok)
-- [ ] A1-#5 Tombol VERIFIKASI OTP macet saat kode < 6 digit
-- [ ] A1-#6 `=` A2-#22 Tombol Back setelah logout menampilkan data (perlu `Cache-Control: no-store`)
-- [ ] A1-#20 Mode debug & banner OTP (checklist deploy)
-- [ ] A1-#8 `=` A2-#8 Halaman error 404/419/500/503 Indonesia + toast "Failed to fetch"/"Unauthenticated."
-- [ ] A1-#14 Setelah login tidak kembali ke halaman tujuan, tanpa pesan "masuk dulu"
-- [ ] A1-#19 Tidak ada "Ingat saya"
+- [x] **A1-#21 (High)** Email OTP gagal terkirim → halaman debug 500, akun "yatim" tak bisa daftar ulang
+- [x] **A1-#3 (High)** `=` A4-#5 Halaman 429 bawaan Inggris, tanpa waktu tunggu, isian hilang
+- [x] A1-#4 Throttle login per IP untuk semua akun (login benar pun diblok)
+- [x] A1-#5 Tombol VERIFIKASI OTP macet saat kode < 6 digit
+- [x] A1-#6 `=` A2-#22 Tombol Back setelah logout menampilkan data (perlu `Cache-Control: no-store`)
+- [x] A1-#20 Mode debug & banner OTP (checklist deploy)
+- [x] A1-#8 `=` A2-#8 Halaman error 404/419/500/503 Indonesia + toast "Failed to fetch"/"Unauthenticated."
+- [x] A1-#14 Setelah login tidak kembali ke halaman tujuan, tanpa pesan "masuk dulu"
+- [x] A1-#19 Tidak ada "Ingat saya"
 - [ ] A1-#11 Validasi Nomor HP (`- - -` diterima) & nama
 - [ ] A1-#9 Checkbox S&K tercentang otomatis, S&K tak bisa dibaca
 - [ ] A1-#10 Registrasi: petunjuk password, error per kolom, "(opsional)"
-- [ ] A1-#12 Lupa password untuk email tak terdaftar → pesan menyesatkan
-- [ ] A1-#13 Pesan OTP kedaluwarsa (nama tombol beda, tombol terkunci)
-- [ ] A1-#15 Buka `/reset-password` langsung → pesan "sesi habis"
+- [x] A1-#12 Lupa password untuk email tak terdaftar → pesan menyesatkan
+- [x] A1-#13 Pesan OTP kedaluwarsa (nama tombol beda, tombol terkunci)
+- [x] A1-#15 Buka `/reset-password` langsung → pesan "sesi habis"
 - [ ] A4-#2 Keterangan hak akses tidak berubah saat pilih role
 - [ ] A4-#8 Turunkan role owner tanpa konfirmasi
 - [ ] A4-#19 Password staf lemah (`11111111`) diterima
@@ -106,3 +106,11 @@ Satu fase = satu (atau beberapa) commit. Setiap fase selesai → saya lapor & ta
 
 ---
 Rekap: F1 13 · F2 9 · F3 21 · F4 20 · F5 19 · F6 9 = **91**
+
+---
+
+## Checklist sebelum aplikasi dipasang di hosting (A1-#20)
+- [ ] `.env`: `APP_ENV=production` dan `APP_DEBUG=false` (halaman error teknis tidak tampil ke pengguna; yang tampil halaman `errors/500` berbahasa Indonesia).
+- [ ] `MAIL_MAILER=smtp` dengan akun email yang aktif; coba daftar akun baru sekali untuk memastikan email OTP terkirim.
+- [ ] `php artisan migrate --force`, lalu `php artisan config:cache route:cache view:cache`.
+- [ ] Batas upload PHP (`upload_max_filesize`, `post_max_size`) minimal 5 MB untuk foto bukti pengiriman.
