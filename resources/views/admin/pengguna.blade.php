@@ -90,7 +90,7 @@
         <p class="note" id="uAkses" style="margin-top:10px"><svg class="ic"><use href="#i-info"/></svg><span>{{ User::AKSES_ROLE[old('role', User::ROLE_KASIR)] ?? '' }}</span></p>
         @unless (in_array(User::ROLE_OWNER, $roleBoleh, true))<p style="font-size:12px;opacity:.7;margin-top:6px">Role owner hanya bisa diberikan oleh owner.</p>@endunless
         </div>
-      <div class="field"><label>Password</label><div class="in"><svg class="ic"><use href="#i-lock"/></svg><input type="password" name="password" id="uPass" minlength="8" placeholder="Minimal 8 karakter" @required(! $editId)></div></div>
+      <div class="field"><label>Password</label><div class="in"><svg class="ic"><use href="#i-lock"/></svg><input type="password" name="password" id="uPass" minlength="8" placeholder="Min. 8 karakter, huruf + angka" @required(! $editId)></div></div>
       <div class="field"><label>Konfirmasi password</label><div class="in"><svg class="ic"><use href="#i-lock"/></svg><input type="password" name="password_confirmation" placeholder="Ulangi password"></div></div>
     </div>
     <p id="uPassNote" style="font-size:12.5px;opacity:.7;margin-top:12px" @if (! $editId) hidden @endif>Kosongkan password jika tidak ingin mengubahnya.</p>
@@ -119,8 +119,22 @@
       uPass.required = !edit; uPassNote.hidden = !edit;
       form.querySelectorAll('[type=password]').forEach(function (p) { p.value = ''; });
       setRole(edit ? tr.dataset.role : 'kasir');
+      form.dataset.roleAwal = edit ? tr.dataset.role : '';
       openModal('mUser');
     }
+    // tombol role: keterangan hak akses ikut berubah (QA A4-#2)
+    document.getElementById('uRole').addEventListener('click', function (e) { var b = e.target.closest('button'); if (b) setRole(b.dataset.value); });
+
+    // menurunkan owner/admin harus dikonfirmasi (QA A4-#8)
+    var LABEL = @json(User::LABEL_ROLE);
+    form.addEventListener('submit', function (e) {
+      var awal = form.dataset.roleAwal, baru = document.getElementById('uRoleInput').value;
+      if ((awal === 'owner' || awal === 'admin') && baru !== awal
+        && !confirm(uName.value + ' akan berubah dari ' + LABEL[awal] + ' menjadi ' + LABEL[baru] + ' dan langsung kehilangan akses ' + LABEL[awal]
+          + ' (laporan, pengaturan, data pengguna). Lanjutkan?')) {
+        e.preventDefault();
+      }
+    });
     document.getElementById('btnAdd').addEventListener('click', function () { mode(false); });
     document.addEventListener('click', function (e) {
       var b = e.target.closest('.js-edit'); if (b) mode(true, b.closest('tr'));

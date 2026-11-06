@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Pembayaran;
 use App\Models\Pengiriman;
 use App\Models\User;
+use App\Support\AturanAkun;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -103,14 +104,16 @@ class PenggunaController extends Controller
 
     private function validated(Request $request, ?User $user = null): array
     {
+        $request->merge(['no_hp' => AturanAkun::rapikanHp($request->input('no_hp'))]);
+
         return $request->validate([
             'nama' => ['required', 'string', 'max:100'],
             'email' => ['required', 'email', 'max:100', Rule::unique('users', 'email')->ignore($user)],
-            'no_hp' => ['required', 'string', 'max:20', 'regex:/^[0-9+\-\s]+$/'],
+            'no_hp' => ['required', 'string', 'max:20', 'regex:'.AturanAkun::REGEX_HP],
             'role' => ['required', Rule::in($request->user()->roleYangBolehDiatur())],
-            'password' => [$user ? 'nullable' : 'required', 'confirmed', Password::min(8)],
+            'password' => [$user ? 'nullable' : 'required', 'confirmed', Password::defaults()],
         ], [
-            'no_hp.regex' => 'Nomor HP hanya boleh berisi angka.',
+            'no_hp.regex' => AturanAkun::PESAN_HP,
             'role.in' => 'Anda tidak berhak memberikan role tersebut. Role owner hanya bisa diberikan oleh owner.',
         ]);
     }

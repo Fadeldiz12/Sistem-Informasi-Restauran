@@ -41,7 +41,7 @@ class AkunTest extends TestCase
 
     private function daftar(string $email = 'sari@gmail.com'): void
     {
-        $this->post('/registrasi', ['nama' => 'Sari Wulandari', 'hp' => '0812', 'email' => $email, 'password' => 'rahasia123',
+        $this->post('/registrasi', ['nama' => 'Sari Wulandari', 'hp' => '081234567890', 'email' => $email, 'password' => 'rahasia123',
             'password_confirmation' => 'rahasia123', 'setuju' => 1])->assertRedirect('/verifikasi-otp');
     }
 
@@ -72,7 +72,7 @@ class AkunTest extends TestCase
 
     public function test_registrasi_wajib_setuju_syarat(): void
     {
-        $this->post('/registrasi', ['nama' => 'Sari', 'hp' => '0812', 'email' => 'a@gmail.com', 'password' => 'rahasia123', 'password_confirmation' => 'rahasia123'])
+        $this->post('/registrasi', ['nama' => 'Sari', 'hp' => '081234567890', 'email' => 'a@gmail.com', 'password' => 'rahasia123', 'password_confirmation' => 'rahasia123'])
             ->assertSessionHasErrors('setuju');
     }
 
@@ -124,7 +124,7 @@ class AkunTest extends TestCase
     public function test_akun_buatan_admin_langsung_aktif(): void
     {
         $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
-        $this->actingAs($admin)->post('/admin/pengguna', ['nama' => 'Kasir Baru', 'email' => 'kasirbaru@resto.test', 'no_hp' => '0812',
+        $this->actingAs($admin)->post('/admin/pengguna', ['nama' => 'Kasir Baru', 'email' => 'kasirbaru@resto.test', 'no_hp' => '081234567890',
             'role' => 'kasir', 'password' => 'rahasia123', 'password_confirmation' => 'rahasia123'])->assertSessionHasNoErrors();
         $this->assertNotNull(User::firstWhere('email', 'kasirbaru@resto.test')->email_verified_at);
     }

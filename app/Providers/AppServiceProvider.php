@@ -15,6 +15,7 @@ use App\Support\Keranjang;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Validation\Rules\Password;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -35,6 +36,9 @@ class AppServiceProvider extends ServiceProvider
         // walaupun APP_LOCALE di .env lama masih "en".
         app()->setLocale('id');
         Carbon::setLocale('id');
+
+        // Semua password (pelanggan & staf): minimal 8 karakter, berisi huruf dan angka
+        Password::defaults(fn () => Password::min(8)->letters()->numbers());
 
         // Jam operasional di sidebar semua panel staf
         View::composer('partials.panel.hours', function ($view) {

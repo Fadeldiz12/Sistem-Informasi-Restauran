@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\KodeOtp;
 use App\Models\User;
 use App\Services\OtpService;
+use App\Support\AturanAkun;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -96,14 +97,14 @@ class AuthController extends Controller
      */
     public function register(Request $request): RedirectResponse
     {
-        $request->merge(['email' => Str::lower(trim((string) $request->input('email')))]);
+        $request->merge(['email' => Str::lower(trim((string) $request->input('email'))), 'hp' => AturanAkun::rapikanHp($request->input('hp'))]);
         $data = $request->validate([
-            'nama' => ['required', 'string', 'max:100'],
-            'hp' => ['required', 'string', 'max:20', 'regex:/^[0-9+\-\s]+$/'],
+            'nama' => ['required', 'string', 'max:100', 'regex:'.AturanAkun::REGEX_NAMA],
+            'hp' => ['required', 'string', 'max:20', 'regex:'.AturanAkun::REGEX_HP],
             // email yang terdaftar tapi belum diverifikasi boleh didaftarkan ulang (mis. email OTP sebelumnya gagal terkirim)
             'email' => ['required', 'email', 'max:100', Rule::unique('users', 'email')->whereNotNull('email_verified_at')],
             'alamat' => ['nullable', 'string', 'max:1000'],
-            'password' => ['required', 'confirmed', Password::min(8)],
+            'password' => ['required', 'confirmed', Password::defaults()],
             'setuju' => ['accepted'],
         ], [
             'setuju.accepted' => 'Setujui syarat & ketentuan terlebih dahulu.',
@@ -111,7 +112,8 @@ class AuthController extends Controller
             'nama.max' => 'Nama maksimal 100 karakter.',
             'hp.required' => 'Nomor HP wajib diisi.',
             'hp.max' => 'Nomor HP maksimal 20 karakter.',
-            'hp.regex' => 'Nomor HP hanya boleh berisi angka.',
+            'hp.regex' => AturanAkun::PESAN_HP,
+            'nama.regex' => AturanAkun::PESAN_NAMA,
             'email.required' => 'Email wajib diisi.',
             'email.email' => 'Format email tidak valid.',
             'email.max' => 'Email maksimal 100 karakter.',
@@ -119,6 +121,8 @@ class AuthController extends Controller
             'password.required' => 'Password wajib diisi.',
             'password.confirmed' => 'Konfirmasi password tidak sama.',
             'password.min' => 'Password minimal 8 karakter.',
+        ], [
+            'password' => 'Password',
         ]);
 
         // Akun dan kode OTP dibuat dalam satu transaksi: bila email gagal terkirim, akun tidak tersimpan

@@ -117,6 +117,7 @@
   .otp input:focus { background: var(--cr); border-color: var(--m); box-shadow: 0 0 0 4px rgba(178, 194, 210, .7); }
   .otp input.isi { background: var(--cr); border-color: rgba(151, 23, 58, .4); }
   .hint { text-align: center; font-size: 13px; opacity: .75; margin-top: 12px; }
+  .field:has([aria-invalid="true"]) { box-shadow: inset 0 0 0 2px var(--m); }
 
   /* laptop kecil: geser form sedikit menjauhi tepi merah */
   @media (max-width: 1150px) { .right { padding-left: 6vw; padding-right: 1.5vw; } .form.wide { width: 470px; } .form.wide .field { padding: 0 16px; gap: 10px; } }

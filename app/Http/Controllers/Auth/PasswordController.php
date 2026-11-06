@@ -56,7 +56,7 @@ class PasswordController extends Controller
         }
 
         $data = $request->validate([
-            'password' => ['required', 'confirmed', AturanPassword::min(8)],
+            'password' => ['required', 'confirmed', AturanPassword::defaults()],
         ], [
             'password.required' => 'Password baru wajib diisi.',
             'password.confirmed' => 'Konfirmasi password tidak sama.',

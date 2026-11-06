@@ -68,7 +68,7 @@ class AdminTest extends TestCase
 
         // ubah tanpa password: password lama tetap
         $this->actingAs($this->admin)->put("/admin/pengguna/{$lia->id}", [
-            'nama' => 'Lia H.', 'email' => 'lia@simresto.test', 'no_hp' => '0857', 'role' => 'dapur', 'password' => '',
+            'nama' => 'Lia H.', 'email' => 'lia@simresto.test', 'no_hp' => '085712003478', 'role' => 'dapur', 'password' => '',
         ])->assertSessionHasNoErrors();
         $lia->refresh();
         $this->assertSame(['Lia H.', 'dapur', $hash], [$lia->nama, $lia->role, $lia->password]);
@@ -84,9 +84,18 @@ class AdminTest extends TestCase
         ])->assertRedirect('/admin/pengguna')->assertSessionHasErrors(['nama', 'email', 'no_hp', 'role', 'password']);
 
         $this->actingAs($this->admin)->followingRedirects()->from('/admin/pengguna')
-            ->post('/admin/pengguna', ['_modal' => 'mUser', 'nama' => 'X', 'email' => $this->admin->email, 'no_hp' => '08', 'role' => 'kasir', 'password' => 'rahasia123', 'password_confirmation' => 'rahasia123'])
+            ->post('/admin/pengguna', ['_modal' => 'mUser', 'nama' => 'X', 'email' => $this->admin->email, 'no_hp' => '081234567890', 'role' => 'kasir', 'password' => 'rahasia123', 'password_confirmation' => 'rahasia123'])
             ->assertSee('data-reopen="mUser"', false)
             ->assertSee('Email sudah digunakan.');
+    }
+
+    public function test_password_staf_wajib_huruf_dan_angka(): void
+    {
+        $isi = ['nama' => 'Kasir Baru', 'email' => 'kb@simresto.test', 'no_hp' => '081234567890', 'role' => 'kasir'];
+        $this->actingAs($this->admin)->post('/admin/pengguna', $isi + ['password' => '11111111', 'password_confirmation' => '11111111'])
+            ->assertSessionHasErrors('password');
+        $this->actingAs($this->admin)->post('/admin/pengguna', $isi + ['password' => 'kasir2026', 'password_confirmation' => 'kasir2026'])
+            ->assertSessionHasNoErrors();
     }
 
     public function test_admin_tidak_bisa_hapus_atau_ganti_peran_diri_sendiri(): void
@@ -95,7 +104,7 @@ class AdminTest extends TestCase
         $this->assertModelExists($this->admin);
 
         $this->actingAs($this->admin)->put("/admin/pengguna/{$this->admin->id}", [
-            'nama' => 'Dewi', 'email' => $this->admin->email, 'no_hp' => '08', 'role' => 'kasir',
+            'nama' => 'Dewi', 'email' => $this->admin->email, 'no_hp' => '081234567890', 'role' => 'kasir',
         ])->assertSessionHasErrors('role');
         $this->assertSame('admin', $this->admin->fresh()->role);
     }

@@ -47,15 +47,15 @@ Satu fase = satu (atau beberapa) commit. Setiap fase selesai → saya lapor & ta
 - [x] A1-#8 `=` A2-#8 Halaman error 404/419/500/503 Indonesia + toast "Failed to fetch"/"Unauthenticated."
 - [x] A1-#14 Setelah login tidak kembali ke halaman tujuan, tanpa pesan "masuk dulu"
 - [x] A1-#19 Tidak ada "Ingat saya"
-- [ ] A1-#11 Validasi Nomor HP (`- - -` diterima) & nama
-- [ ] A1-#9 Checkbox S&K tercentang otomatis, S&K tak bisa dibaca
-- [ ] A1-#10 Registrasi: petunjuk password, error per kolom, "(opsional)"
+- [x] A1-#11 Validasi Nomor HP (`- - -` diterima) & nama
+- [x] A1-#9 Checkbox S&K tercentang otomatis, S&K tak bisa dibaca
+- [x] A1-#10 Registrasi: petunjuk password, error per kolom, "(opsional)"
 - [x] A1-#12 Lupa password untuk email tak terdaftar → pesan menyesatkan
 - [x] A1-#13 Pesan OTP kedaluwarsa (nama tombol beda, tombol terkunci)
 - [x] A1-#15 Buka `/reset-password` langsung → pesan "sesi habis"
-- [ ] A4-#2 Keterangan hak akses tidak berubah saat pilih role
-- [ ] A4-#8 Turunkan role owner tanpa konfirmasi
-- [ ] A4-#19 Password staf lemah (`11111111`) diterima
+- [x] A4-#2 Keterangan hak akses tidak berubah saat pilih role
+- [x] A4-#8 Turunkan role owner tanpa konfirmasi
+- [x] A4-#19 Password staf lemah (`11111111`) diterima
 
 ## Fase 4 — Pengalaman pelanggan (20 temuan)
 - [ ] A2-#12 Navigasi HP: menu jauh di bawah, "Lacak Pesanan" tersembunyi, tidak ada bottom nav

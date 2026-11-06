@@ -28,6 +28,9 @@ Route::get('/', function (Request $request) {
         : redirect()->route('login');
 });
 
+// Syarat & ketentuan (bisa dibaca tanpa login, ditautkan dari registrasi)
+Route::view('/syarat-ketentuan', 'syarat')->name('syarat');
+
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:30,1,login')->name('login.submit');
