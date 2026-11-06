@@ -104,6 +104,11 @@ class KasirTest extends TestCase
     public function test_pesanan_online_tunai_dibayar_di_kasir(): void
     {
         $p = $this->pesananOnline();
+        $this->actingAs($this->kasir)->get('/kasir/pembayaran')->assertDontSee($p->kode()); // belum dikonfirmasi
+        $this->actingAs($this->kasir)->post("/kasir/pembayaran/{$p->id}/lunas", ['metode' => 'tunai', 'uang_diterima' => '200000'])->assertSessionHasErrors('pesanan');
+        $this->assertFalse($p->fresh()->isLunas());
+
+        $this->actingAs($this->kasir)->post("/kasir/online/{$p->id}/terima");
         $this->actingAs($this->kasir)->get("/kasir/pembayaran?pesanan={$p->id}")->assertSee($p->kode())->assertSee('Sari Wulandari');
 
         $this->actingAs($this->kasir)->post("/kasir/pembayaran/{$p->id}/lunas", ['metode' => 'tunai', 'uang_diterima' => '200000'])->assertSessionHasNoErrors();
@@ -114,6 +119,17 @@ class KasirTest extends TestCase
 
         // pelanggan tidak bisa mengubah pembayaran yang sudah lunas
         $this->actingAs($this->pelanggan)->post("/pesanan/{$p->id}/pembayaran", ['metode' => 'tunai'])->assertSessionHasErrors('metode');
+    }
+
+    public function test_pesanan_delivery_tunai_tidak_bisa_dilunasi_kasir(): void
+    {
+        $p = $this->pesananOnline('delivery');
+        $this->actingAs($this->kasir)->post("/kasir/online/{$p->id}/terima");
+
+        $this->actingAs($this->kasir)->get('/kasir/pembayaran')->assertDontSee(route('kasir.pembayaran', ['pesanan' => $p->id]));
+        $this->actingAs($this->kasir)->post("/kasir/pembayaran/{$p->id}/lunas", ['metode' => 'tunai', 'uang_diterima' => '500000'])
+            ->assertSessionHasErrors(['pesanan' => 'Pesanan Delivery dibayar ke kurir saat diantar, tidak dilunasi di kasir.']);
+        $this->assertFalse($p->fresh()->isLunas());
     }
 
     public function test_pembayaran_tunai_dan_kembalian_di_struk(): void

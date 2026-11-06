@@ -62,7 +62,7 @@
             <td style="text-align:right">
               @if ($p->status === Pesanan::STATUS_SIAP && ! $p->isDelivery() && $p->isLunas())
                 <form method="post" action="{{ route('kasir.selesai', $p) }}">@csrf<button class="btn sm" type="submit"><svg class="ic" style="width:15px;height:15px"><use href="#i-check"/></svg>Selesai</button></form>
-              @elseif (! $p->isLunas() && $p->status !== Pesanan::STATUS_MENUNGGU && ! $p->pembayaran?->isOtomatis())
+              @elseif (! $p->isLunas() && ! $p->isDelivery() && $p->status !== Pesanan::STATUS_MENUNGGU && ! $p->pembayaran?->isOtomatis())
                 <a class="btn o sm" href="{{ route('kasir.pembayaran', ['pesanan' => $p->id]) }}">Bayar</a>
               @elseif ($p->status === Pesanan::STATUS_MENUNGGU && $p->pembayaran?->metode === Pembayaran::METODE_TUNAI)
                 <a class="btn o sm" href="{{ route('kasir.online', ['pesanan' => $p->id]) }}">Konfirmasi</a>

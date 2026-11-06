@@ -14,8 +14,8 @@ Satu fase = satu (atau beberapa) commit. Setiap fase selesai → saya lapor & ta
 - [x] Test dijalankan di SQLite **dan** MariaDB 10.11 (laporan diuji di MySQL) — keduanya lulus
 
 ## Fase 1 — Uang & integritas data (13 temuan)
-- [ ] **A3-#1 (High)** Kasir bisa melunasi pesanan Delivery COD / yang belum dikonfirmasi → uang hilang
-- [ ] A3-#13 `=` daftar "Belum Lunas" ikut memuat pesanan Menunggu Konfirmasi (scope `belumLunas` yang sama)
+- [x] **A3-#1 (High)** Kasir bisa melunasi pesanan Delivery COD / yang belum dikonfirmasi → uang hilang
+- [x] A3-#13 `=` daftar "Belum Lunas" ikut memuat pesanan Menunggu Konfirmasi (scope `belumLunas` yang sama)
 - [ ] **A4-#1 (High)** Hapus/ubah role kurir yang masih bawa uang COD → setoran hilang
 - [ ] **A3-#2 (High)** Hapus bahan baku yang dipakai resep → resep & 31 riwayat mutasi ikut terhapus (cascade)
 - [ ] A3-#11 Ubah satuan bahan (kg→gram) tanpa konversi → stok salah 1000×

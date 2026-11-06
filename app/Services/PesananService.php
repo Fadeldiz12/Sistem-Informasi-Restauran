@@ -260,6 +260,12 @@ class PesananService
         if ($pesanan->isLunas()) {
             throw ValidationException::withMessages(['pesanan' => 'Pesanan ini sudah lunas.']);
         }
+        if ($pesanan->isDelivery()) {
+            throw ValidationException::withMessages(['pesanan' => 'Pesanan Delivery dibayar ke kurir saat diantar, tidak dilunasi di kasir.']);
+        }
+        if ($pesanan->status === Pesanan::STATUS_MENUNGGU) {
+            throw ValidationException::withMessages(['pesanan' => 'Konfirmasi pesanan ini dulu di menu Pesanan Online sebelum dibayar.']);
+        }
         if ($metode === Pembayaran::METODE_TUNAI && ($uangDiterima ?? 0) < (float) $pesanan->total) {
             throw ValidationException::withMessages(['uang_diterima' => 'Uang diterima kurang dari total tagihan.']);
         }

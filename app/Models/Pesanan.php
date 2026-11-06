@@ -182,15 +182,18 @@ class Pesanan extends Model
     /**
      * Pesanan yang diproses kasir di menu Pembayaran:
      * pesanan di tempat yang belum lunas, atau pesanan online yang dibayar tunai.
-     * (VA & QRIS lunas otomatis lewat Midtrans, tidak perlu kasir.)
+     * Tidak termasuk: VA & QRIS (lunas otomatis lewat Midtrans), Delivery (tunai dibayar ke kurir),
+     * dan pesanan online yang belum dikonfirmasi kasir.
      */
     #[Scope]
     protected function belumLunas(Builder $query): void
     {
-        $query->where('status', '!=', self::STATUS_DIBATALKAN)->where(fn ($w) => $w
-            ->where(fn ($a) => $a->whereNull('id_pelanggan')
-                ->whereDoesntHave('pembayaran', fn ($b) => $b->where('status_bayar', Pembayaran::STATUS_LUNAS)))
-            ->orWhereHas('pembayaran', fn ($b) => $b->where('metode', Pembayaran::METODE_TUNAI)->where('status_bayar', Pembayaran::STATUS_MENUNGGU)));
+        $query->whereNotIn('status', [self::STATUS_DIBATALKAN, self::STATUS_MENUNGGU])
+            ->where('jenis_layanan', '!=', self::LAYANAN_DELIVERY)
+            ->where(fn ($w) => $w
+                ->where(fn ($a) => $a->whereNull('id_pelanggan')
+                    ->whereDoesntHave('pembayaran', fn ($b) => $b->where('status_bayar', Pembayaran::STATUS_LUNAS)))
+                ->orWhereHas('pembayaran', fn ($b) => $b->where('metode', Pembayaran::METODE_TUNAI)->where('status_bayar', Pembayaran::STATUS_MENUNGGU)));
     }
 
     /**
