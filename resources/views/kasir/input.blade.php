@@ -138,7 +138,7 @@
   @if ($baru->tiketDapur)
     <div class="note" style="margin:16px 28px 0;text-align:left"><svg class="ic"><use href="#i-receipt"/></svg><span>Tiket masuk antrean dapur pukul {{ $baru->tiketDapur->waktu_masuk->format('H:i') }} (urutan ke-{{ $urutanAntrean }} di antrean dapur).</span></div>
   @endif
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:22px 28px 28px"><button class="btn o lg" data-close>Pesanan baru</button>@if ($baruCod)<a class="btn lg" href="{{ route('kasir.dashboard') }}#berjalan">Ke Dashboard</a>@else<a class="btn lg" href="{{ route('kasir.pembayaran', ['pesanan' => $baru->id]) }}">Ke Pembayaran</a>@endif</div></div></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:22px 28px 28px"><button class="btn o lg" data-close>Pesanan baru</button>@if ($baruCod)<a class="btn lg" href="{{ route('kasir.dashboard') }}#berjalan">Ke Dashboard</a>@else<a class="btn lg" href="{{ route('kasir.pembayaran', ['pesanan' => $baru]) }}">Ke Pembayaran</a>@endif</div></div></div>
 @endif
 @endpush
 

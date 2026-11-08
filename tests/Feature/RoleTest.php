@@ -30,18 +30,18 @@ class RoleTest extends TestCase
     {
         $kasir = User::factory()->create(['role' => User::ROLE_KASIR]);
 
-        $this->actingAs($this->admin)->put("/admin/pengguna/{$kasir->id}", $this->isi($kasir, 'dapur'))->assertSessionHasNoErrors();
+        $this->actingAs($this->admin)->put("/admin/pengguna/{$kasir->getRouteKey()}", $this->isi($kasir, 'dapur'))->assertSessionHasNoErrors();
         $this->assertSame('dapur', $kasir->fresh()->role);
 
         // admin tidak bisa memberi role owner
-        $this->actingAs($this->admin)->put("/admin/pengguna/{$kasir->id}", $this->isi($kasir, 'owner'))->assertSessionHasErrors('role');
+        $this->actingAs($this->admin)->put("/admin/pengguna/{$kasir->getRouteKey()}", $this->isi($kasir, 'owner'))->assertSessionHasErrors('role');
         $this->actingAs($this->admin)->post('/admin/pengguna', ['nama' => 'X', 'email' => 'x@a.test', 'no_hp' => '081234567890', 'role' => 'owner',
             'password' => 'rahasia123', 'password_confirmation' => 'rahasia123'])->assertSessionHasErrors('role');
         $this->assertDatabaseMissing('users', ['email' => 'x@a.test']);
 
         // admin tidak bisa mengubah atau menghapus akun owner
-        $this->actingAs($this->admin)->put("/admin/pengguna/{$this->owner->id}", $this->isi($this->owner, 'kasir'))->assertForbidden();
-        $this->actingAs($this->admin)->delete("/admin/pengguna/{$this->owner->id}")->assertForbidden();
+        $this->actingAs($this->admin)->put("/admin/pengguna/{$this->owner->getRouteKey()}", $this->isi($this->owner, 'kasir'))->assertForbidden();
+        $this->actingAs($this->admin)->delete("/admin/pengguna/{$this->owner->getRouteKey()}")->assertForbidden();
         $this->assertSame('owner', $this->owner->fresh()->role);
 
         $this->actingAs($this->admin)->get('/admin/pengguna')->assertOk()
@@ -55,14 +55,14 @@ class RoleTest extends TestCase
 
         $this->actingAs($this->owner)->get('/owner/pengguna')->assertOk()->assertSee('Pengguna &amp; Role', false)->assertSee('data-value="owner"', false);
 
-        $this->actingAs($this->owner)->from('/owner/pengguna?role=admin')->put("/owner/pengguna/{$admin2->id}", $this->isi($admin2, 'owner'))->assertSessionHasNoErrors()->assertRedirect('/owner/pengguna?role=admin');
+        $this->actingAs($this->owner)->from('/owner/pengguna?role=admin')->put("/owner/pengguna/{$admin2->getRouteKey()}", $this->isi($admin2, 'owner'))->assertSessionHasNoErrors()->assertRedirect('/owner/pengguna?role=admin');
         $this->assertSame('owner', $admin2->fresh()->role);
 
-        $this->actingAs($this->owner)->put("/owner/pengguna/{$admin2->id}", $this->isi($admin2, 'admin'))->assertSessionHasNoErrors();
+        $this->actingAs($this->owner)->put("/owner/pengguna/{$admin2->getRouteKey()}", $this->isi($admin2, 'admin'))->assertSessionHasNoErrors();
         $this->assertSame('admin', $admin2->fresh()->role);
 
         // tidak bisa menurunkan role sendiri → selalu ada minimal satu owner
-        $this->actingAs($this->owner)->put("/owner/pengguna/{$this->owner->id}", $this->isi($this->owner, 'admin'))->assertSessionHasErrors('role');
+        $this->actingAs($this->owner)->put("/owner/pengguna/{$this->owner->getRouteKey()}", $this->isi($this->owner, 'admin'))->assertSessionHasErrors('role');
         $this->assertSame('owner', $this->owner->fresh()->role);
 
         // role lain tidak bisa membuka halaman pengguna

@@ -32,7 +32,7 @@
         @foreach ($daftar as $b)
           <div class="setor-row"><b>{{ $b->pesanan->kode() }}</b><span style="opacity:.75;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ $b->pesanan->namaPemesan() }} · {{ $b->waktu_bayar->translatedFormat('d M, H:i') }}</span><span class="r">{{ $rp($b->jumlah) }}</span></div>
         @endforeach
-        <form method="post" action="{{ route('kasir.setoran.terima', $idKurir) }}" class="setor-total">@csrf
+        <form method="post" action="{{ route('kasir.setoran.terima', \App\Support\KodeUrl::enkripsi((int) $idKurir, \App\Models\User::class)) }}" class="setor-total">@csrf
           @foreach ($daftar as $b)<input type="hidden" name="ids[]" value="{{ $b->id }}">@endforeach
           <div><div class="eyebrow">Seharusnya</div><b style="font:700 22px var(--f-title)">{{ $rp($daftar->sum('jumlah')) }}</b></div>
           <div class="field" style="flex:1;min-width:180px"><label>Uang yang dihitung</label><div class="in"><span class="suf" style="opacity:1">Rp</span><input name="uang_dihitung" class="js-uang" data-harus="{{ (int) $daftar->sum('jumlah') }}" inputmode="numeric" placeholder="Hitung lalu isi" required value="{{ old('uang_dihitung') }}"></div>

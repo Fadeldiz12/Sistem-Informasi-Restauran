@@ -50,7 +50,7 @@
     <div class="card" style="padding:16px"><div class="card-head" style="margin-bottom:6px"><h2>Antrean Tiket</h2><span class="pill m">{{ $antrean->count() }}</span></div>
       <p style="font-size:12.5px;opacity:.7;margin-bottom:12px;display:flex;gap:6px;align-items:center"><svg class="ic" style="width:14px;height:14px"><use href="#i-refresh"/></svg>Urutan masuk · tiket paling lama di atas, tiket baru ditambahkan di akhir</p>
       @foreach ($antrean as $i => $t)
-        <a @class(['tk', 'on' => $tiket->id === $t->id]) href="{{ route('dapur.antrean', ['tiket' => $t->id]) }}#detail"><span class="fifo">#{{ $i + 1 }}</span><div style="flex:1;min-width:0">
+        <a @class(['tk', 'on' => $tiket->id === $t->id]) href="{{ route('dapur.antrean', ['tiket' => $t]) }}#detail"><span class="fifo">#{{ $i + 1 }}</span><div style="flex:1;min-width:0">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b style="font:700 16px var(--f-title)">{{ $t->pesanan->kode() }}</b><span @class(['pill st', 'm' => $t->status_masak === TiketDapur::STATUS_DIMASAK, 'b' => $t->status_masak === TiketDapur::STATUS_ANTRE]) style="font-size:10.5px;padding:3px 9px">{{ $t->statusLabel() }}</span></div>
           <div class="isi">{{ $ringkas($t->pesanan) }}</div>
           <div style="display:flex;gap:10px;font-size:12px;opacity:.75;margin-top:6px;flex-wrap:wrap"><span style="display:flex;gap:4px;align-items:center"><svg class="ic" style="width:12px;height:12px"><use href="#i-clock"/></svg>Masuk {{ $t->waktu_masuk->format('H:i') }}</span><span>· {{ $t->pesanan->layananDetail() }}</span></div></div></a>

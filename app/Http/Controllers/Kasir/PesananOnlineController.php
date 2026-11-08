@@ -17,7 +17,7 @@ class PesananOnlineController extends Controller
     public function index(Request $request): View
     {
         $antrean = Pesanan::menungguKonfirmasi()->with(['pelanggan', 'pembayaran', 'pengiriman.zona'])->get();
-        $dipilih = $antrean->firstWhere('id', $request->integer('pesanan')) ?? $antrean->first();
+        $dipilih = $antrean->firstWhere('id', Pesanan::idDariKode($request->query('pesanan'))) ?? $antrean->first();
 
         return view('kasir.online', [
             'antrean' => $antrean,

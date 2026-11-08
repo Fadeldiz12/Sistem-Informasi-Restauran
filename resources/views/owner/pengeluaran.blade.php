@@ -44,7 +44,7 @@
     </div>
     <div class="tbl-wrap"><table class="tbl-stack"><thead><tr><th>Tanggal</th><th>Kategori</th><th>Nominal</th><th>Keterangan</th><th>Aksi</th></tr></thead><tbody id="tbOut">
       @forelse ($pengeluaran as $p)
-        <tr data-id="{{ $p->id }}" data-url="{{ route('owner.pengeluaran.update', $p) }}" data-tanggal="{{ $p->tanggal->toDateString() }}" data-kategori="{{ $p->kategori }}" data-nominal="{{ (int) $p->nominal }}" data-ket="{{ $p->keterangan }}">
+        <tr data-id="{{ $p->getRouteKey() }}" data-url="{{ route('owner.pengeluaran.update', $p) }}" data-tanggal="{{ $p->tanggal->toDateString() }}" data-kategori="{{ $p->kategori }}" data-nominal="{{ (int) $p->nominal }}" data-ket="{{ $p->keterangan }}">
           <td><b>{{ $p->tanggal->format('d/m/Y') }}</b></td>
           <td><span @class(['pill', 'b' => $p->kategori === 'Bahan baku'])>{{ $p->kategori }}</span></td>
           <td><b>{{ $rp($p->nominal) }}</b></td>

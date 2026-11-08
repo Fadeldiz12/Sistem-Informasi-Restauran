@@ -56,7 +56,7 @@
     <div class="tbl-wrap"><table class="tbl-stack"><thead><tr><th>Bahan baku</th><th>Stok</th><th>Pemakaian · kirim · cadangan</th><th>Batas pesan ulang</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="tbB">
       @forelse ($bahan as $b)
         @php $k = $b->isStokKritis(); $persen = min(100, round((float) $b->stok / max((float) $b->rop * 2, 0.01) * 100)); @endphp
-        <tr data-f="{{ $k ? 'kritis' : 'aman' }}" @class(['kritis' => $k]) data-id="{{ $b->id }}" data-url="{{ route('dapur.bahan-baku.update', $b) }}" data-nama="{{ $b->nama_bahan }}" data-satuan="{{ $b->satuan }}"
+        <tr data-f="{{ $k ? 'kritis' : 'aman' }}" @class(['kritis' => $k]) data-id="{{ $b->getRouteKey() }}" data-url="{{ route('dapur.bahan-baku.update', $b) }}" data-nama="{{ $b->nama_bahan }}" data-satuan="{{ $b->satuan }}"
             data-stok="{{ (float) $b->stok }}" data-d="{{ (float) $b->rata_pemakaian }}" data-l="{{ $b->lead_time }}" data-ss="{{ (float) $b->safety_stock }}">
           <td><b>{{ $b->nama_bahan }}</b><div style="font-size:12px;opacity:.6">{{ $b->satuan }}</div></td>
           <td><div class="stok-cell"><b>{{ $a($b->stok) }}</b><div class="bar dark ropbar" style="width:90px"><i style="width:{{ $persen }}%"></i></div></div></td>

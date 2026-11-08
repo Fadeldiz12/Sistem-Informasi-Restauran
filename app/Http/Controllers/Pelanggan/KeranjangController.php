@@ -63,8 +63,9 @@ class KeranjangController extends Controller
         return $id ? $request->user()->pesanan()->whereKey($id)->where('waktu_pesan', '>=', now()->subHour())->first() : null;
     }
 
-    public function update(Request $request, int $menu): JsonResponse
+    public function update(Request $request, string $menu): JsonResponse
     {
+        $menu = $this->idMenu($menu);
         $data = $request->validate([
             'jumlah' => ['nullable', 'integer', 'min:1', 'max:'.Keranjang::MAKS_JUMLAH],
             'catatan' => ['nullable', 'string', 'max:255'],
@@ -75,11 +76,20 @@ class KeranjangController extends Controller
         return $this->balas($request, 'Keranjang diperbarui');
     }
 
-    public function destroy(Request $request, int $menu): JsonResponse|RedirectResponse
+    public function destroy(Request $request, string $menu): JsonResponse|RedirectResponse
     {
+        $menu = $this->idMenu($menu);
         $this->keranjang->hapus($menu);
 
         return $this->balas($request, 'Menu dihapus dari keranjang');
+    }
+
+    /**
+     * ID menu dari kode di URL (menu yang sudah dihapus admin tetap bisa dibuang dari keranjang).
+     */
+    private function idMenu(string $kode): int
+    {
+        return Menu::idDariKode($kode) ?? abort(404);
     }
 
     public function clear(Request $request): JsonResponse|RedirectResponse

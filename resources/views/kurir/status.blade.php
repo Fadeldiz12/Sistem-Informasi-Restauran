@@ -12,7 +12,7 @@
   @else
     @php $p = $kirim->pesanan; @endphp
     @if ($aktif->count() > 1)
-      <div class="switch" style="margin-top:14px">@foreach ($aktif as $a)<a @class(['on' => $a->id === $kirim->id]) href="{{ route('kurir.status', ['pengiriman' => $a->id]) }}">{{ $a->pesanan->kode() }}</a>@endforeach</div>
+      <div class="switch" style="margin-top:14px">@foreach ($aktif as $a)<a @class(['on' => $a->id === $kirim->id]) href="{{ route('kurir.status', ['pengiriman' => $a]) }}">{{ $a->pesanan->kode() }}</a>@endforeach</div>
     @endif
     <div class="stamp-out" style="margin-top:14px"><div class="stamp" style="padding:18px 20px"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><b style="font:700 18px var(--f-title)">{{ $p->kode() }} · {{ $p->namaPemesan() }}</b><span class="pill m">Dalam Perjalanan</span></div>
       <div style="font-size:12.5px;opacity:.75;margin-top:6px">{{ $kirim->alamat }}{{ $kirim->patokan ? ' · Patokan: '.$kirim->patokan : '' }}</div>

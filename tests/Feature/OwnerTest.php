@@ -138,7 +138,7 @@ class OwnerTest extends TestCase
         $this->actingAs($this->owner)->get('/owner/pengeluaran?q=tabung')->assertSee('Isi ulang 6 tabung');
         $this->actingAs($this->owner)->get('/owner/pengeluaran?kategori=Gaji')->assertDontSee('<td class="ket">Isi ulang 6 tabung', false);
 
-        $this->actingAs($this->owner)->put("/owner/pengeluaran/{$p->id}", [
+        $this->actingAs($this->owner)->put("/owner/pengeluaran/{$p->getRouteKey()}", [
             'tanggal' => '2026-11-04', 'kategori' => 'Utilitas', 'nominal' => '1.200.000', 'keterangan' => 'Listrik',
         ])->assertSessionHasNoErrors();
         $this->assertSame('Utilitas', $p->fresh()->kategori);
@@ -149,7 +149,7 @@ class OwnerTest extends TestCase
         $this->actingAs($this->owner)->post('/owner/pengeluaran', ['tanggal' => '2026-11-04', 'kategori' => 'Liburan', 'nominal' => '1000'])->assertSessionHasErrors('kategori');
         $this->actingAs($this->owner)->post('/owner/pengeluaran', ['tanggal' => '2026-11-04', 'kategori' => 'Gas', 'nominal' => '0'])->assertSessionHasErrors('nominal');
 
-        $this->actingAs($this->owner)->delete("/owner/pengeluaran/{$p->id}")->assertSessionHasNoErrors();
+        $this->actingAs($this->owner)->delete("/owner/pengeluaran/{$p->getRouteKey()}")->assertSessionHasNoErrors();
         $this->assertSame(0, Pengeluaran::count());
     }
 

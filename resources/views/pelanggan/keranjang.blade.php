@@ -184,7 +184,7 @@
   @if (session('error'))<div class="flash" role="alert">{{ session('error') }}</div>
   @elseif ($dibuang)<div class="flash" role="alert">{{ collect($dibuang)->join(', ', ' dan ') }} sedang habis dan sudah dihapus dari keranjang.</div>@endif
   @unless ($set->sedangBuka())<div class="flash" role="status">Restoran sedang tutup. Menu tetap bisa disimpan di keranjang; pesanan bisa dibuat pukul {{ $set->jamLabel() }}.</div>@endunless
-  @if ($pesananTerakhir)<div class="flash ok" role="status">Pesanan {{ $pesananTerakhir->kode() }} sudah dibuat. <a href="{{ route('pelanggan.tracking', ['pesanan' => $pesananTerakhir->id]) }}" style="text-decoration:underline">Lihat statusnya</a>.</div>@endif
+  @if ($pesananTerakhir)<div class="flash ok" role="status">Pesanan {{ $pesananTerakhir->kode() }} sudah dibuat. <a href="{{ route('pelanggan.tracking', ['pesanan' => $pesananTerakhir]) }}" style="text-decoration:underline">Lihat statusnya</a>.</div>@endif
 
   <div class="layout">
     <div>
@@ -194,7 +194,7 @@
         <div class="items" id="cartItems">
           @foreach ($items as $it)
             @php $m = $it['menu']; @endphp
-            <article class="it" data-id="{{ $m->id }}" data-price="{{ (int) $m->harga }}" data-url="{{ route('pelanggan.keranjang.update', $m->id) }}" data-del="{{ route('pelanggan.keranjang.destroy', $m->id) }}">
+            <article class="it" data-id="{{ $m->id }}" data-price="{{ (int) $m->harga }}" data-url="{{ route('pelanggan.keranjang.update', $m) }}" data-del="{{ route('pelanggan.keranjang.destroy', $m) }}">
               <div class="ph">@if ($m->fotoUrl())<img src="{{ $m->fotoUrl() }}" alt="{{ $m->nama_menu }}">@else<span class="ph-none"><svg class="ic"><use href="#i-dine"/></svg></span>@endif</div>
               <div><div class="cat">{{ $m->kategori->nama_kategori }}</div><h3>{{ $m->nama_menu }}</h3>
                 <label class="notes"><svg class="ic" style="width:15px;height:15px"><use href="#i-edit"/></svg><input class="js-note" value="{{ $it['catatan'] }}" maxlength="255" placeholder="Tambah catatan untuk dapur"></label>

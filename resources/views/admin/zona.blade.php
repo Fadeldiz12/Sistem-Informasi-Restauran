@@ -37,7 +37,7 @@
     <div class="card"><div class="card-head"><div><h2>Daftar Zona Pengiriman</h2><p>Ongkir = radius zona × tarif per km</p></div><button class="btn" id="btnAdd"><svg class="ic"><use href="#i-plus"/></svg>Tambah Zona</button></div>
       <div class="tbl-wrap"><table class="tbl-stack"><thead><tr><th>Zona</th><th>Jarak</th><th>Tarif per km</th><th>Ongkir</th><th>Penggunaan</th><th>Aksi</th></tr></thead><tbody>
         @forelse ($baris as $i => $b)
-          <tr data-id="{{ $b['z']->id }}" data-url="{{ route('admin.zona.update', $b['z']) }}" data-nama="{{ $b['z']->nama_zona }}" data-wilayah="{{ $b['z']->contoh_wilayah }}" data-radius="{{ (float) $b['z']->radius_km }}" data-tarif="{{ (int) $b['z']->tarif_per_km }}">
+          <tr data-id="{{ $b['z']->getRouteKey() }}" data-url="{{ route('admin.zona.update', $b['z']) }}" data-nama="{{ $b['z']->nama_zona }}" data-wilayah="{{ $b['z']->contoh_wilayah }}" data-radius="{{ (float) $b['z']->radius_km }}" data-tarif="{{ (int) $b['z']->tarif_per_km }}">
             <td><div class="who"><span @class(['av', 'm' => $i % 2 === 1]) style="font-size:15px">{{ mb_substr($singkat($b['z']), 0, 2) }}</span><div><b>{{ $b['z']->nama_zona }}</b>@if ($b['z']->contoh_wilayah)<div style="font-size:12px;opacity:.7">{{ $b['z']->contoh_wilayah }}</div>@endif</div></div></td>
             <td>{{ $km($b['min']) }} – {{ $km($b['max']) }} km</td>
             <td>{{ $rp($b['z']->tarif_per_km) }} / km</td>

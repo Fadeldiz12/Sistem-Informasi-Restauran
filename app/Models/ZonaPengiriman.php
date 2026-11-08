@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\IdTerenkripsiDiUrl;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Table;
 use Illuminate\Database\Eloquent\Model;
@@ -12,6 +13,8 @@ use Illuminate\Validation\ValidationException;
 #[Fillable(['nama_zona', 'contoh_wilayah', 'radius_km', 'tarif_per_km'])]
 class ZonaPengiriman extends Model
 {
+    use IdTerenkripsiDiUrl;
+
     protected function casts(): array
     {
         return [

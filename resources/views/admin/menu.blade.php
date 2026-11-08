@@ -83,9 +83,9 @@
         <div class="catlist">
           <div class="catrow"><a @class(['cat', 'on' => ! $kategoriId]) href="{{ $filter(['kategori' => null]) }}"><span class="nm">Semua kategori</span><span class="meta"><b>{{ $totalMenu }}</b></span></a></div>
           @foreach ($kategori as $k)
-            <div class="catrow" data-id="{{ $k->id }}" data-url="{{ route('admin.kategori.update', $k) }}" data-nama="{{ $k->nama_kategori }}"
+            <div class="catrow" data-id="{{ $k->getRouteKey() }}" data-url="{{ route('admin.kategori.update', $k) }}" data-nama="{{ $k->nama_kategori }}"
                  data-navbar="{{ $k->tampil_navbar ? 1 : 0 }}" data-urutan="{{ $k->urutan_navbar }}">
-              <a @class(['cat', 'on' => $kategoriId === $k->id]) href="{{ $filter(['kategori' => $k->id]) }}" title="{{ $k->nama_kategori }}">
+              <a @class(['cat', 'on' => $kategoriId === $k->id]) href="{{ $filter(['kategori' => $k]) }}" title="{{ $k->nama_kategori }}">
                 <span class="nm">{{ $k->nama_kategori }}</span>
                 <span class="meta">@if ($k->tampil_navbar)<i class="navno" title="Tampil di menu kategori pelanggan, urutan {{ $k->urutan_navbar }}">Urutan {{ $k->urutan_navbar }}</i>@endif<b>{{ $k->menu_count }}</b></span>
               </a>
@@ -133,7 +133,7 @@
       </div>
       <div class="tbl-wrap"><table class="tbl-stack"><thead><tr><th>Menu</th><th>Kategori</th><th>Harga</th><th>Ketersediaan</th><th>Aksi</th></tr></thead><tbody id="tbMenu">
         @forelse ($menu as $m)
-          <tr data-id="{{ $m->id }}" data-url="{{ route('admin.menu.update', $m) }}" data-nama="{{ $m->nama_menu }}" data-kategori="{{ $m->id_kategori }}"
+          <tr data-id="{{ $m->getRouteKey() }}" data-url="{{ route('admin.menu.update', $m) }}" data-nama="{{ $m->nama_menu }}" data-kategori="{{ $m->id_kategori }}"
               data-harga="{{ (int) $m->harga }}" data-tersedia="{{ $m->tersedia ? 1 : 0 }}" data-foto="{{ $m->fotoUrl() }}"
               data-resep="{{ $m->resep->map(fn ($r) => ['id_bahan' => $r->id_bahan, 'jumlah' => $angka($r->jumlah)])->values()->toJson() }}">
             <td><div class="who">

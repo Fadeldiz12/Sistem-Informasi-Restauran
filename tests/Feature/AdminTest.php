@@ -67,13 +67,13 @@ class AdminTest extends TestCase
         $hash = $lia->password;
 
         // ubah tanpa password: password lama tetap
-        $this->actingAs($this->admin)->put("/admin/pengguna/{$lia->id}", [
+        $this->actingAs($this->admin)->put("/admin/pengguna/{$lia->getRouteKey()}", [
             'nama' => 'Lia H.', 'email' => 'lia@simresto.test', 'no_hp' => '085712003478', 'role' => 'dapur', 'password' => '',
         ])->assertSessionHasNoErrors();
         $lia->refresh();
         $this->assertSame(['Lia H.', 'dapur', $hash], [$lia->nama, $lia->role, $lia->password]);
 
-        $this->actingAs($this->admin)->delete("/admin/pengguna/{$lia->id}")->assertSessionHas('status');
+        $this->actingAs($this->admin)->delete("/admin/pengguna/{$lia->getRouteKey()}")->assertSessionHas('status');
         $this->assertModelMissing($lia);
     }
 
@@ -100,10 +100,10 @@ class AdminTest extends TestCase
 
     public function test_admin_tidak_bisa_hapus_atau_ganti_peran_diri_sendiri(): void
     {
-        $this->actingAs($this->admin)->delete("/admin/pengguna/{$this->admin->id}")->assertSessionHas('error');
+        $this->actingAs($this->admin)->delete("/admin/pengguna/{$this->admin->getRouteKey()}")->assertSessionHas('error');
         $this->assertModelExists($this->admin);
 
-        $this->actingAs($this->admin)->put("/admin/pengguna/{$this->admin->id}", [
+        $this->actingAs($this->admin)->put("/admin/pengguna/{$this->admin->getRouteKey()}", [
             'nama' => 'Dewi', 'email' => $this->admin->email, 'no_hp' => '081234567890', 'role' => 'kasir',
         ])->assertSessionHasErrors('role');
         $this->assertSame('admin', $this->admin->fresh()->role);
@@ -115,7 +115,7 @@ class AdminTest extends TestCase
         Pengeluaran::create(['id_owner' => $owner->id, 'kategori' => 'Listrik', 'nominal' => 100000, 'tanggal' => today()]);
 
         $ownerLain = User::factory()->create(['role' => User::ROLE_OWNER]);
-        $this->actingAs($ownerLain)->delete("/owner/pengguna/{$owner->id}")->assertSessionHas('error');
+        $this->actingAs($ownerLain)->delete("/owner/pengguna/{$owner->getRouteKey()}")->assertSessionHas('error');
         $this->assertModelExists($owner);
     }
 
@@ -137,14 +137,14 @@ class AdminTest extends TestCase
 
         $this->actingAs($this->admin)->post('/admin/kategori', ['nama_kategori' => 'Paket Hemat'])->assertSessionHasErrors('nama_kategori');
 
-        $this->actingAs($this->admin)->put("/admin/kategori/{$kat->id}", ['nama_kategori' => 'Paket Keluarga']);
+        $this->actingAs($this->admin)->put("/admin/kategori/{$kat->getRouteKey()}", ['nama_kategori' => 'Paket Keluarga']);
         $this->assertSame('Paket Keluarga', $kat->fresh()->nama_kategori);
 
         $pizza = Kategori::where('nama_kategori', 'Pizza')->first();
-        $this->actingAs($this->admin)->delete("/admin/kategori/{$pizza->id}")->assertSessionHas('error');
+        $this->actingAs($this->admin)->delete("/admin/kategori/{$pizza->getRouteKey()}")->assertSessionHas('error');
         $this->assertModelExists($pizza);
 
-        $this->actingAs($this->admin)->delete("/admin/kategori/{$kat->id}")->assertSessionHas('status');
+        $this->actingAs($this->admin)->delete("/admin/kategori/{$kat->getRouteKey()}")->assertSessionHas('status');
         $this->assertModelMissing($kat);
     }
 
@@ -154,7 +154,7 @@ class AdminTest extends TestCase
         $this->assertSame(6, Kategori::where('tampil_navbar', true)->count());
         $salad = Kategori::where('nama_kategori', 'Salad')->first();
 
-        $this->actingAs($this->admin)->put("/admin/kategori/{$salad->id}", ['nama_kategori' => 'Salad', 'tampil_navbar' => '1', 'urutan_navbar' => 2])
+        $this->actingAs($this->admin)->put("/admin/kategori/{$salad->getRouteKey()}", ['nama_kategori' => 'Salad', 'tampil_navbar' => '1', 'urutan_navbar' => 2])
             ->assertSessionHasErrors('tampil_navbar');
         $this->assertFalse($salad->fresh()->tampil_navbar);
 
@@ -163,11 +163,11 @@ class AdminTest extends TestCase
 
         // sembunyikan Dessert, lalu Salad bisa masuk
         $dessert = Kategori::where('nama_kategori', 'Dessert')->first();
-        $this->actingAs($this->admin)->put("/admin/kategori/{$dessert->id}", ['nama_kategori' => 'Dessert'])->assertSessionHasNoErrors();
+        $this->actingAs($this->admin)->put("/admin/kategori/{$dessert->getRouteKey()}", ['nama_kategori' => 'Dessert'])->assertSessionHasNoErrors();
         $this->assertFalse($dessert->fresh()->tampil_navbar);
         $this->assertNull($dessert->fresh()->urutan_navbar);
 
-        $this->actingAs($this->admin)->put("/admin/kategori/{$salad->id}", ['nama_kategori' => 'Salad', 'tampil_navbar' => '1', 'urutan_navbar' => 6])
+        $this->actingAs($this->admin)->put("/admin/kategori/{$salad->getRouteKey()}", ['nama_kategori' => 'Salad', 'tampil_navbar' => '1', 'urutan_navbar' => 6])
             ->assertSessionHasNoErrors();
         $this->assertSame([true, 6], [$salad->fresh()->tampil_navbar, $salad->fresh()->urutan_navbar]);
     }
@@ -177,14 +177,14 @@ class AdminTest extends TestCase
         $pizza = Kategori::where('nama_kategori', 'Pizza')->first();   // urutan 1
         $burger = Kategori::where('nama_kategori', 'Burger')->first(); // urutan 3
 
-        $this->actingAs($this->admin)->put("/admin/kategori/{$burger->id}", ['nama_kategori' => 'Burger', 'tampil_navbar' => '1', 'urutan_navbar' => 1])
+        $this->actingAs($this->admin)->put("/admin/kategori/{$burger->getRouteKey()}", ['nama_kategori' => 'Burger', 'tampil_navbar' => '1', 'urutan_navbar' => 1])
             ->assertSessionHasNoErrors();
 
         $this->assertSame(1, $burger->fresh()->urutan_navbar);
         $this->assertSame(3, $pizza->fresh()->urutan_navbar);
         $this->assertSame(['Burger', 'Pasta', 'Pizza', 'Camilan', 'Minuman', 'Dessert'], Kategori::navbar()->pluck('nama_kategori')->all());
 
-        $this->actingAs($this->admin)->put("/admin/kategori/{$burger->id}", ['nama_kategori' => 'Burger', 'tampil_navbar' => '1'])
+        $this->actingAs($this->admin)->put("/admin/kategori/{$burger->getRouteKey()}", ['nama_kategori' => 'Burger', 'tampil_navbar' => '1'])
             ->assertSessionHasErrors('urutan_navbar');
     }
 
@@ -205,7 +205,7 @@ class AdminTest extends TestCase
         $fotoLama = $menu->foto;
 
         // ganti foto + jadi habis (checkbox tidak dikirim)
-        $this->actingAs($this->admin)->put("/admin/menu/{$menu->id}", [
+        $this->actingAs($this->admin)->put("/admin/menu/{$menu->getRouteKey()}", [
             'nama_menu' => 'Pizza Tuna Pedas', 'id_kategori' => $kat->id, 'harga' => '97000',
             'foto' => UploadedFile::fake()->image('baru.png'),
         ])->assertSessionHasNoErrors();
@@ -215,7 +215,7 @@ class AdminTest extends TestCase
         Storage::disk('public')->assertMissing($fotoLama);
         Storage::disk('public')->assertExists($menu->foto);
 
-        $this->actingAs($this->admin)->delete("/admin/menu/{$menu->id}");
+        $this->actingAs($this->admin)->delete("/admin/menu/{$menu->getRouteKey()}");
         Storage::disk('public')->assertMissing($menu->foto);
         $this->assertModelMissing($menu);
     }
@@ -242,7 +242,7 @@ class AdminTest extends TestCase
 
         // mengubah menu tanpa mengganti namanya tetap boleh
         $pizza = Menu::firstWhere('nama_menu', 'Pizza Margherita');
-        $this->actingAs($this->admin)->put("/admin/menu/{$pizza->id}", ['nama_menu' => 'Pizza Margherita', 'id_kategori' => $kategori, 'harga' => '95.000', 'tersedia' => 1])
+        $this->actingAs($this->admin)->put("/admin/menu/{$pizza->getRouteKey()}", ['nama_menu' => 'Pizza Margherita', 'id_kategori' => $kategori, 'harga' => '95.000', 'tersedia' => 1])
             ->assertSessionHasNoErrors();
     }
 
@@ -250,7 +250,7 @@ class AdminTest extends TestCase
     {
         $menu = Menu::where('nama_menu', 'Pizza Margherita')->first();
 
-        $this->actingAs($this->admin)->patchJson("/admin/menu/{$menu->id}/tersedia", ['tersedia' => false])
+        $this->actingAs($this->admin)->patchJson("/admin/menu/{$menu->getRouteKey()}/tersedia", ['tersedia' => false])
             ->assertOk()->assertJson(['tersedia' => false, 'message' => 'Menu ditandai Habis']);
         $this->assertFalse($menu->fresh()->tersedia);
 
@@ -264,7 +264,7 @@ class AdminTest extends TestCase
         $pesanan = Pesanan::create(['jenis_layanan' => 'take_away', 'waktu_pesan' => now(), 'subtotal' => 1, 'total' => 1]);
         $pesanan->detail()->create(['id_menu' => $menu->id, 'jumlah' => 1, 'subtotal' => 1]);
 
-        $this->actingAs($this->admin)->delete("/admin/menu/{$menu->id}")->assertSessionHas('error');
+        $this->actingAs($this->admin)->delete("/admin/menu/{$menu->getRouteKey()}")->assertSessionHas('error');
         $this->assertModelExists($menu);
     }
 
@@ -280,7 +280,7 @@ class AdminTest extends TestCase
         $this->actingAs($this->admin)->post('/admin/zona', ['nama_zona' => 'Zona D', 'radius_km' => 0, 'tarif_per_km' => -1])
             ->assertSessionHasErrors(['nama_zona', 'radius_km', 'tarif_per_km']);
 
-        $this->actingAs($this->admin)->put("/admin/zona/{$zona->id}", ['nama_zona' => 'Zona D', 'radius_km' => 12, 'tarif_per_km' => 2000]);
+        $this->actingAs($this->admin)->put("/admin/zona/{$zona->getRouteKey()}", ['nama_zona' => 'Zona D', 'radius_km' => 12, 'tarif_per_km' => 2000]);
         $this->assertEquals(24000, $zona->fresh()->ongkir());
 
         // radius sama dengan zona lain ditolak
@@ -295,7 +295,7 @@ class AdminTest extends TestCase
             ->assertSessionHasNoErrors();
         $this->assertEquals(0, ZonaPengiriman::firstWhere('nama_zona', 'Zona Gratis')->ongkir());
 
-        $this->actingAs($this->admin)->delete("/admin/zona/{$zona->id}")->assertSessionHas('status');
+        $this->actingAs($this->admin)->delete("/admin/zona/{$zona->getRouteKey()}")->assertSessionHas('status');
         $this->assertModelMissing($zona);
     }
 
@@ -305,7 +305,7 @@ class AdminTest extends TestCase
         $pesanan = Pesanan::create(['jenis_layanan' => 'delivery', 'waktu_pesan' => now(), 'subtotal' => 1, 'total' => 1]);
         $pesanan->pengiriman()->create(['id_zona' => $zona->id, 'alamat' => 'Jl. A', 'jarak_km' => 3]);
 
-        $this->actingAs($this->admin)->delete("/admin/zona/{$zona->id}")->assertSessionHas('error');
+        $this->actingAs($this->admin)->delete("/admin/zona/{$zona->getRouteKey()}")->assertSessionHas('error');
         $this->assertModelExists($zona);
     }
 

@@ -53,11 +53,11 @@ class PesananPelangganTest extends TestCase
             ->assertOk()->assertJson(['jumlah' => 1, 'subtotal' => 109000, 'menu' => 1]);
         $this->actingAs($this->pelanggan)->postJson('/keranjang', ['id_menu' => $this->pizza->id])->assertJson(['jumlah' => 2]);
 
-        $this->actingAs($this->pelanggan)->patchJson("/keranjang/{$this->pizza->id}", ['jumlah' => 5, 'catatan' => 'potong 12'])
+        $this->actingAs($this->pelanggan)->patchJson("/keranjang/{$this->pizza->getRouteKey()}", ['jumlah' => 5, 'catatan' => 'potong 12'])
             ->assertOk()->assertJson(['jumlah' => 5, 'subtotal' => 545000]);
         $this->actingAs($this->pelanggan)->get('/keranjang')->assertOk()->assertSee('value="potong 12"', false)->assertSee('Rp 545.000');
 
-        $this->actingAs($this->pelanggan)->deleteJson("/keranjang/{$this->pizza->id}")->assertJson(['jumlah' => 0, 'menu' => 0]);
+        $this->actingAs($this->pelanggan)->deleteJson("/keranjang/{$this->pizza->getRouteKey()}")->assertJson(['jumlah' => 0, 'menu' => 0]);
 
         $this->isiKeranjang();
         $this->actingAs($this->pelanggan)->deleteJson('/keranjang')->assertJson(['menu' => 0]);
@@ -94,7 +94,7 @@ class PesananPelangganTest extends TestCase
             'lat' => PengaturanSistem::LAT_AWAL + 0.036, 'lng' => PengaturanSistem::LNG_AWAL, 'patokan' => 'pagar hijau']);
 
         $pesanan = Pesanan::firstOrFail();
-        $res->assertRedirect("/pesanan/{$pesanan->id}/pembayaran");
+        $res->assertRedirect("/pesanan/{$pesanan->getRouteKey()}/pembayaran");
         // 145.000 + pajak 14.500 + layanan 7.250 + ongkir 15.000
         $this->assertEquals([145000, 15000, 181750], [(float) $pesanan->subtotal, (float) $pesanan->ongkir, (float) $pesanan->total]);
         $this->assertSame([Pesanan::STATUS_MENUNGGU, $this->pelanggan->id, null], [$pesanan->status, $pesanan->id_pelanggan, $pesanan->id_kasir]);
@@ -105,7 +105,7 @@ class PesananPelangganTest extends TestCase
         $this->assertEqualsWithDelta(PengaturanSistem::LAT_AWAL + 0.036, (float) $pesanan->pengiriman->lat, 0.00001);
         $this->assertNull($pesanan->tiketDapur); // tiket baru dibuat setelah dikonfirmasi kasir
 
-        $this->actingAs($this->pelanggan)->get("/pesanan/{$pesanan->id}/pembayaran")->assertOk()->assertSee('Pesanan Dibuat!')->assertSee($pesanan->kode());
+        $this->actingAs($this->pelanggan)->get("/pesanan/{$pesanan->getRouteKey()}/pembayaran")->assertOk()->assertSee('Pesanan Dibuat!')->assertSee($pesanan->kode());
         $this->actingAs($this->pelanggan)->get('/keranjang')->assertSee('Keranjang masih kosong');
     }
 
@@ -157,16 +157,16 @@ class PesananPelangganTest extends TestCase
     {
         $p = $this->buatPesanan();
 
-        $this->actingAs($this->pelanggan)->post("/pesanan/{$p->id}/pembayaran", ['metode' => 'tunai'])->assertSessionHasNoErrors();
+        $this->actingAs($this->pelanggan)->post("/pesanan/{$p->getRouteKey()}/pembayaran", ['metode' => 'tunai'])->assertSessionHasNoErrors();
         $bayar = $p->fresh()->pembayaran;
         $this->assertSame(['tunai', Pembayaran::STATUS_MENUNGGU, null], [$bayar->metode, $bayar->status_bayar, $bayar->kode_transaksi]);
         $this->assertEquals($p->total, $bayar->jumlah);
-        $this->actingAs($this->pelanggan)->get("/pesanan/{$p->id}/pembayaran")->assertSee('bayar tunai');
+        $this->actingAs($this->pelanggan)->get("/pesanan/{$p->getRouteKey()}/pembayaran")->assertSee('bayar tunai');
 
         $lain = User::factory()->create(['role' => User::ROLE_PELANGGAN]);
-        $this->actingAs($lain)->get("/pesanan/{$p->id}/pembayaran")->assertNotFound();
-        $this->actingAs($lain)->post("/pesanan/{$p->id}/pembayaran", ['metode' => 'tunai'])->assertNotFound();
-        $this->actingAs($lain)->getJson("/pesanan/{$p->id}/pembayaran/status")->assertNotFound();
+        $this->actingAs($lain)->get("/pesanan/{$p->getRouteKey()}/pembayaran")->assertNotFound();
+        $this->actingAs($lain)->post("/pesanan/{$p->getRouteKey()}/pembayaran", ['metode' => 'tunai'])->assertNotFound();
+        $this->actingAs($lain)->getJson("/pesanan/{$p->getRouteKey()}/pembayaran/status")->assertNotFound();
         $this->actingAs($lain)->get('/tracking')->assertDontSee($p->kode());
     }
 
@@ -175,8 +175,8 @@ class PesananPelangganTest extends TestCase
         config(['services.midtrans.server_key' => null]);
         $p = $this->buatPesanan();
 
-        $this->actingAs($this->pelanggan)->get("/pesanan/{$p->id}/pembayaran")->assertSee('belum diaktifkan');
-        $this->actingAs($this->pelanggan)->post("/pesanan/{$p->id}/pembayaran", ['metode' => 'transfer', 'bank' => 'bca'])
+        $this->actingAs($this->pelanggan)->get("/pesanan/{$p->getRouteKey()}/pembayaran")->assertSee('belum diaktifkan');
+        $this->actingAs($this->pelanggan)->post("/pesanan/{$p->getRouteKey()}/pembayaran", ['metode' => 'transfer', 'bank' => 'bca'])
             ->assertSessionHasErrors('metode');
         $this->assertSame('tunai', $p->fresh()->pembayaran->metode);
     }
@@ -215,7 +215,7 @@ class PesananPelangganTest extends TestCase
         $this->isiKeranjang();
         $this->actingAs($this->pelanggan)->post('/checkout', ['metode' => 'tunai', 'jenis_layanan' => 'take_away']);
         $q = Pesanan::latest('id')->first();
-        $this->actingAs($this->pelanggan)->get("/tracking?pesanan={$q->id}")
+        $this->actingAs($this->pelanggan)->get("/tracking?pesanan={$q->getRouteKey()}")
             ->assertSeeInOrder(['Pesanan Dibuat', 'Dikonfirmasi', 'Dimasak', 'Siap Diambil', 'Selesai'])
             ->assertDontSee('Dalam Perjalanan</b>', false);
     }
@@ -245,7 +245,7 @@ class PesananPelangganTest extends TestCase
         $this->actingAs($this->pelanggan)->post('/checkout', ['metode' => 'tunai', 'jenis_layanan' => 'take_away']);
         $p = Pesanan::firstOrFail();
 
-        $this->actingAs($this->pelanggan)->get('/checkout')->assertRedirect("/pesanan/{$p->id}/pembayaran")->assertSessionHas('status');
+        $this->actingAs($this->pelanggan)->get('/checkout')->assertRedirect("/pesanan/{$p->getRouteKey()}/pembayaran")->assertSessionHas('status');
         $this->actingAs($this->pelanggan)->get('/keranjang')->assertSee("Pesanan {$p->kode()} sudah dibuat.");
     }
 
@@ -262,9 +262,9 @@ class PesananPelangganTest extends TestCase
         $p = $this->buatPesanan();
         app(PesananService::class)->konfirmasi($p->fresh(), $kasir);
 
-        $this->actingAs($this->pelanggan)->get("/tracking?pesanan={$p->id}")->assertDontSee('Ganti metode')->assertSee('Bayar tunai');
-        $this->actingAs($this->pelanggan)->get("/pesanan/{$p->id}/pembayaran")->assertDontSee('Simpan Metode Pembayaran');
-        $this->actingAs($this->pelanggan)->post("/pesanan/{$p->id}/pembayaran", ['metode' => 'tunai'])->assertSessionHasErrors('metode');
+        $this->actingAs($this->pelanggan)->get("/tracking?pesanan={$p->getRouteKey()}")->assertDontSee('Ganti metode')->assertSee('Bayar tunai');
+        $this->actingAs($this->pelanggan)->get("/pesanan/{$p->getRouteKey()}/pembayaran")->assertDontSee('Simpan Metode Pembayaran');
+        $this->actingAs($this->pelanggan)->post("/pesanan/{$p->getRouteKey()}/pembayaran", ['metode' => 'tunai'])->assertSessionHasErrors('metode');
 
         // dimasak, siap, lalu diserahkan: jam setiap langkah tercatat dan teks pembayaran sesuai status
         $tiket = $p->fresh()->tiketDapur;
@@ -277,6 +277,6 @@ class PesananPelangganTest extends TestCase
         $this->assertNotNull($langkah['Dimasak']);
         $this->assertNotNull($langkah['Siap Diambil']);
         $this->assertNotNull($langkah['Selesai']);
-        $this->actingAs($this->pelanggan)->get("/pesanan/{$p->id}/pembayaran")->assertSee('Pesanan sudah selesai')->assertDontSee('diteruskan ke dapur');
+        $this->actingAs($this->pelanggan)->get("/pesanan/{$p->getRouteKey()}/pembayaran")->assertSee('Pesanan sudah selesai')->assertDontSee('diteruskan ke dapur');
     }
 }

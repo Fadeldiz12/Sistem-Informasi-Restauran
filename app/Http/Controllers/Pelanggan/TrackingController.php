@@ -17,7 +17,7 @@ class TrackingController extends Controller
             ->latest('waktu_pesan')->latest('id')
             ->limit(30)->get();
 
-        $aktif = $daftar->firstWhere('id', $request->integer('pesanan'))
+        $aktif = $daftar->firstWhere('id', Pesanan::idDariKode($request->query('pesanan')))
             ?? $daftar->first(fn ($p) => ! in_array($p->status, [Pesanan::STATUS_SELESAI, Pesanan::STATUS_DIBATALKAN], true))
             ?? $daftar->first();
 

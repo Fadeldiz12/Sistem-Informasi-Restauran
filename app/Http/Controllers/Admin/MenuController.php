@@ -20,7 +20,7 @@ class MenuController extends Controller
 {
     public function index(Request $request): View
     {
-        $kategoriId = $request->integer('kategori') ?: null;
+        $kategoriId = Kategori::idDariKode($request->query('kategori'));
         $status = in_array($request->query('status'), ['tersedia', 'habis'], true) ? $request->query('status') : null;
         $q = trim((string) $request->query('q'));
 
