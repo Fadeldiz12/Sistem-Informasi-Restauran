@@ -188,14 +188,16 @@ class Pesanan extends Model
     /**
      * Pesanan yang diproses kasir di menu Pembayaran:
      * pesanan di tempat yang belum lunas, atau pesanan online yang dibayar tunai.
-     * Tidak termasuk: VA & QRIS (lunas otomatis lewat Midtrans), Delivery (tunai dibayar ke kurir),
-     * dan pesanan online yang belum dikonfirmasi kasir.
+     * Tidak termasuk: VA & QRIS (lunas otomatis lewat Midtrans), Delivery yang tunainya dibayar ke kurir,
+     * dan pesanan online yang belum dikonfirmasi kasir. Delivery yang diinput kasir dengan "bayar di kasir"
+     * (belum punya data pembayaran) ikut dilunasi di sini.
      */
     #[Scope]
     protected function belumLunas(Builder $query): void
     {
         $query->whereNotIn('status', [self::STATUS_DIBATALKAN, self::STATUS_MENUNGGU])
-            ->where('jenis_layanan', '!=', self::LAYANAN_DELIVERY)
+            ->where(fn ($l) => $l->where('jenis_layanan', '!=', self::LAYANAN_DELIVERY)
+                ->orWhere(fn ($d) => $d->whereNull('id_pelanggan')->whereDoesntHave('pembayaran')))
             ->where(fn ($w) => $w
                 ->where(fn ($a) => $a->whereNull('id_pelanggan')
                     ->whereDoesntHave('pembayaran', fn ($b) => $b->where('status_bayar', Pembayaran::STATUS_LUNAS)))
@@ -217,5 +219,14 @@ class Pesanan extends Model
     public function isDelivery(): bool
     {
         return $this->jenis_layanan === self::LAYANAN_DELIVERY;
+    }
+
+    /**
+     * Delivery yang diinput kasir dan dibayar di kasir (bukan COD ke kurir): belum ada data pembayaran, atau sudah lunas tanpa kurir.
+     */
+    public function isDeliveryBayarDiKasir(): bool
+    {
+        return $this->isDelivery() && ! $this->isOnline()
+            && ($this->pembayaran === null || ($this->pembayaran->id_kurir === null && $this->pembayaran->status_bayar === Pembayaran::STATUS_LUNAS));
     }
 }

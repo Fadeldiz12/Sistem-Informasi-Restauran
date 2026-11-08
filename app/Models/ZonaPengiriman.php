@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Table;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Validation\ValidationException;
 
 #[Table('zona_pengiriman')]
 #[Fillable(['nama_zona', 'contoh_wilayah', 'radius_km', 'tarif_per_km'])]
@@ -47,6 +48,25 @@ class ZonaPengiriman extends Model
     public static function untukJarak(float $km): ?self
     {
         return static::where('radius_km', '>=', $km)->orderBy('radius_km')->first();
+    }
+
+    /**
+     * Zona & jarak untuk titik pengantaran di peta. Titik di luar jangkauan ditolak dengan pesan untuk kolom lat.
+     *
+     * @return array{id_zona: int, jarak_km: float}
+     */
+    public static function dariTitik(float $lat, float $lng): array
+    {
+        $jarak = PengaturanSistem::aktif()->jarakKm($lat, $lng);
+        $zona = static::untukJarak($jarak);
+        if (! $zona) {
+            $km = fn (float $n): string => rtrim(rtrim(number_format($n, 1, ',', '.'), '0'), ',');
+            throw ValidationException::withMessages([
+                'lat' => 'Titik pengantaran '.$km($jarak).' km dari restoran, di luar jangkauan Delivery (maksimal '.$km((float) static::max('radius_km')).' km). Silakan pilih Take Away.',
+            ]);
+        }
+
+        return ['id_zona' => $zona->id, 'jarak_km' => $jarak];
     }
 
     /**

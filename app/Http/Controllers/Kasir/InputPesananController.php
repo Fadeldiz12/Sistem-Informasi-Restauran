@@ -8,7 +8,9 @@ use App\Models\Menu;
 use App\Models\PengaturanSistem;
 use App\Models\Pesanan;
 use App\Models\TiketDapur;
+use App\Models\ZonaPengiriman;
 use App\Services\PesananService;
+use App\Support\AturanAkun;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -28,7 +30,7 @@ class InputPesananController extends Controller
      */
     public function edit(Pesanan $pesanan): View|RedirectResponse
     {
-        $pesanan->load(['tiketDapur', 'pembayaran']);
+        $pesanan->load(['tiketDapur', 'pembayaran', 'pengiriman']);
         if ($alasan = $this->pesanan->alasanTidakBisaDiubah($pesanan, $pesanan->tiketDapur)) {
             return to_route('kasir.dashboard')->with('error', $alasan);
         }
@@ -70,6 +72,7 @@ class InputPesananController extends Controller
             'menu' => Menu::with('kategori')->orderBy('nama_menu')->get(),
             'kategori' => Kategori::whereHas('menu')->orderBy('nama_kategori')->get(),
             'pengaturan' => PengaturanSistem::aktif(),
+            'adaZona' => ZonaPengiriman::exists(),
             'jumlahMeja' => config('resto.jumlah_meja'),
             // meja yang masih dipakai pesanan Dine In yang belum selesai
             'mejaTerpakai' => Pesanan::where('jenis_layanan', Pesanan::LAYANAN_DINE_IN)->whereNotNull('nomor_meja')
@@ -90,12 +93,31 @@ class InputPesananController extends Controller
         return to_route('kasir.input')->with('pesanan_tersimpan', $pesanan->id);
     }
 
+    /**
+     * Isian pesanan kasir. Delivery: penerima, titik di peta (zona & ongkir dari jarak), dan cara bayar.
+     *
+     * @return array<string, mixed>
+     */
     private function validated(Request $request): array
     {
-        return $request->validate([
-            'jenis_layanan' => ['required', Rule::in([Pesanan::LAYANAN_DINE_IN, Pesanan::LAYANAN_TAKE_AWAY])],
+        $delivery = 'required_if:jenis_layanan,'.Pesanan::LAYANAN_DELIVERY;
+        $request->merge(['no_hp_penerima' => AturanAkun::rapikanHp($request->input('no_hp_penerima')) ?: null]);
+        if ($request->input('jenis_layanan') !== Pesanan::LAYANAN_DELIVERY) {
+            // isian Delivery yang tersisa saat kasir pindah ke Dine In / Take Away diabaikan
+            $request->merge(array_fill_keys(['nama_penerima', 'no_hp_penerima', 'alamat', 'lat', 'lng', 'patokan', 'bayar'], null));
+        }
+
+        $data = $request->validate([
+            'jenis_layanan' => ['required', Rule::in([Pesanan::LAYANAN_DINE_IN, Pesanan::LAYANAN_TAKE_AWAY, Pesanan::LAYANAN_DELIVERY])],
             'nomor_meja' => ['required_if:jenis_layanan,'.Pesanan::LAYANAN_DINE_IN, 'nullable', 'string', 'max:10'],
             'nama_pemesan' => ['nullable', 'string', 'max:100'],
+            'nama_penerima' => [$delivery, 'nullable', 'string', 'max:100'],
+            'no_hp_penerima' => [$delivery, 'nullable', 'string', 'max:20', 'regex:'.AturanAkun::REGEX_HP],
+            'alamat' => [$delivery, 'nullable', 'string', 'max:500'],
+            'lat' => [$delivery, 'nullable', 'numeric', 'between:-90,90'],
+            'lng' => [$delivery, 'nullable', 'numeric', 'between:-180,180'],
+            'patokan' => ['nullable', 'string', 'max:255'],
+            'bayar' => [$delivery, 'nullable', Rule::in([PesananService::BAYAR_DI_KASIR, PesananService::BAYAR_KE_KURIR])],
             'items' => ['required', 'array', 'min:1'],
             'items.*.id_menu' => ['required', 'integer', 'distinct', 'exists:menu,id'],
             'items.*.jumlah' => ['required', 'integer', 'min:1', 'max:99'],
@@ -108,10 +130,24 @@ class InputPesananController extends Controller
             'items.*.jumlah.integer' => 'Jumlah porsi harus angka bulat.',
             'items.*.id_menu.exists' => 'Salah satu menu sudah tidak tersedia. Muat ulang halaman lalu pilih lagi.',
             'items.*.id_menu.distinct' => 'Menu yang sama dipilih dua kali.',
+            'nama_penerima.required_if' => 'Isi nama penerima pesanan.',
+            'no_hp_penerima.required_if' => 'Isi nomor HP penerima supaya kurir bisa menghubungi.',
+            'no_hp_penerima.regex' => AturanAkun::PESAN_HP,
+            'alamat.required_if' => 'Isi alamat pengantaran.',
+            'lat.required_if' => 'Tentukan titik pengantaran di peta (cari alamat atau geser pin).',
+            'lng.required_if' => 'Tentukan titik pengantaran di peta (cari alamat atau geser pin).',
+            'bayar.required_if' => 'Pilih cara bayar: di kasir sekarang atau tunai ke kurir.',
         ], [
             'items.*.jumlah' => 'jumlah porsi',
             'items.*.id_menu' => 'menu',
             'items.*.catatan' => 'catatan',
         ]);
+
+        if ($data['jenis_layanan'] === Pesanan::LAYANAN_DELIVERY) {
+            $data['nama_pemesan'] = $data['nama_penerima'];
+            $data += ZonaPengiriman::dariTitik((float) $data['lat'], (float) $data['lng']);
+        }
+
+        return $data;
     }
 }

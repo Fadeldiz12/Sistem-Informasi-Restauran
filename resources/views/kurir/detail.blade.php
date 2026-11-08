@@ -5,7 +5,7 @@
 @php
   $rp = fn ($n) => 'Rp '.number_format((float) $n, 0, ',', '.');
   $p = $kirim->pesanan;
-  $hp = $p->pelanggan?->no_hp;
+  $hp = $kirim->no_hp_penerima ?: $p->pelanggan?->no_hp;
   $km = rtrim(rtrim(number_format((float) $kirim->jarak_km, 2, ',', '.'), '0'), ',');
   $siap = $urutan !== false;
 @endphp

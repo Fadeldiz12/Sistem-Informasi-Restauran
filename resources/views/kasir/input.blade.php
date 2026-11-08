@@ -7,11 +7,13 @@
 @section('error-sendiri', '1')
 @section('crumb', 'Kasir / Input Pesanan')
 @section('heading', $edit ? 'Ubah Pesanan '.$edit->kode() : 'Input Pesanan di Tempat')
-@section('sub', 'Pesanan pembeli langsung, tiket otomatis masuk antrean dapur')
+@section('sub', 'Pesanan pembeli langsung (makan di sini, dibawa pulang, atau diantar), tiket otomatis masuk antrean dapur')
 
 @php
   $layanan = old('jenis_layanan', $edit?->jenis_layanan ?? Pesanan::LAYANAN_DINE_IN);
   $mejaLama = old('nomor_meja', $edit?->nomor_meja);
+  $kirim = $edit?->pengiriman;
+  $bayarLama = old('bayar', $edit?->pembayaran?->status_bayar === \App\Models\Pembayaran::STATUS_MENUNGGU ? \App\Services\PesananService::BAYAR_KE_KURIR : \App\Services\PesananService::BAYAR_DI_KASIR);
   $oldItems = collect(old('items', $edit
       ? $edit->detail->map(fn ($d) => ['id_menu' => $d->id_menu, 'jumlah' => $d->jumlah, 'catatan' => $d->catatan])->all()
       : []))->values();
@@ -38,6 +40,15 @@
   .oi .act { display: flex; gap: 6px; align-items: center; justify-content: flex-end; }
   .svc-p { display: none; } .svc-p.on { display: block; }
   .ord-empty { padding: 18px 4px; font-size: 13px; opacity: .6; text-align: center; }
+  #fOrder.antar { position: static !important; }
+  .bayar-opt { display: grid; gap: 8px; margin-top: 8px; }
+  .bayar-opt button { display: flex; gap: 10px; align-items: flex-start; text-align: left; padding: 11px 14px; border-radius: 14px; box-shadow: inset 0 0 0 1.3px var(--m15); font: 500 12.5px/1.4 var(--f-body); }
+  .bayar-opt button b { display: block; font: 600 13.5px var(--f-title); }
+  .bayar-opt button .rad { width: 16px; height: 16px; flex: none; margin-top: 2px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--m); }
+  .bayar-opt button.on { box-shadow: inset 0 0 0 2px var(--m); background: var(--pp); }
+  .bayar-opt button.on .rad { box-shadow: inset 0 0 0 5px var(--m); }
+  #svc button[disabled] { opacity: .5; cursor: not-allowed; }
+  #svc button { white-space: nowrap; padding-left: 6px; padding-right: 6px; font-size: 12.5px; }
   @media (max-width: 1280px) { .tables { grid-template-columns: repeat(6, 1fr); } }
   .jump { display: none; }
   @media (max-width: 760px) {
@@ -75,11 +86,13 @@
       @if ($edit) @method('PUT') @endif
       <input type="hidden" name="jenis_layanan" id="jenis" value="{{ $layanan }}">
       <input type="hidden" name="nomor_meja" id="meja" value="{{ $mejaLama }}">
+      <input type="hidden" name="bayar" id="bayar" value="{{ $bayarLama }}">
       <div id="itemInputs"></div>
       <div style="background:var(--m);color:var(--cr);padding:18px 20px"><div style="display:flex;justify-content:space-between;align-items:center"><h2 style="font:600 19px var(--f-title)">{{ $edit ? 'Ubah '.$edit->kode() : 'Pesanan Baru' }}</h2><span class="pill b">di tempat</span></div>
         <div class="seg" id="svc" style="margin-top:12px">
           <button type="button" data-s="{{ Pesanan::LAYANAN_DINE_IN }}" style="flex:1;box-shadow:inset 0 0 0 1.4px var(--cr)"><svg class="ic" style="width:15px;height:15px"><use href="#i-dine"/></svg> Dine In</button>
-          <button type="button" data-s="{{ Pesanan::LAYANAN_TAKE_AWAY }}" style="flex:1;box-shadow:inset 0 0 0 1.4px var(--cr)"><svg class="ic" style="width:15px;height:15px"><use href="#i-bag"/></svg> Take Away</button></div></div>
+          <button type="button" data-s="{{ Pesanan::LAYANAN_TAKE_AWAY }}" style="flex:1;box-shadow:inset 0 0 0 1.4px var(--cr)"><svg class="ic" style="width:15px;height:15px"><use href="#i-bag"/></svg> Take Away</button>
+          <button type="button" data-s="{{ Pesanan::LAYANAN_DELIVERY }}" style="flex:1;box-shadow:inset 0 0 0 1.4px var(--cr)" @disabled(! $adaZona) @unless ($adaZona) title="Zona pengiriman belum diatur admin" @endunless><svg class="ic" style="width:15px;height:15px"><use href="#i-truck"/></svg> Delivery</button></div></div>
       <div style="padding:16px 20px">
         <div class="svc-p" data-p="{{ Pesanan::LAYANAN_DINE_IN }}"><div class="field"><label>Nomor meja</label><div class="tables">
           @for ($i = 1; $i <= $jumlahMeja; $i++)
@@ -88,9 +101,21 @@
           @endfor
         </div></div></div>
         <div class="svc-p" data-p="{{ Pesanan::LAYANAN_TAKE_AWAY }}"><div class="field"><label for="nama">Nama pelanggan (opsional)</label><div class="in"><svg class="ic"><use href="#i-user"/></svg><input type="text" id="nama" name="nama_pemesan" value="{{ old('nama_pemesan', $edit?->nama_pemesan) }}" maxlength="100" placeholder="Untuk dipanggil saat pesanan siap"></div></div></div>
+        <div class="svc-p" data-p="{{ Pesanan::LAYANAN_DELIVERY }}">
+          @if ($errors->hasAny(['nama_penerima', 'no_hp_penerima', 'bayar']))<div class="peta-galat" role="alert" style="margin:0 0 12px">{{ $errors->first('nama_penerima') ?: ($errors->first('no_hp_penerima') ?: $errors->first('bayar')) }}</div>@endif
+          <div class="field"><label for="namaPenerima">Nama penerima</label><div class="in"><svg class="ic"><use href="#i-user"/></svg><input type="text" id="namaPenerima" name="nama_penerima" value="{{ old('nama_penerima', $kirim?->nama_penerima ?? $edit?->nama_pemesan) }}" maxlength="100" placeholder="Orang yang menerima pesanan"></div></div>
+          <div class="field" style="margin-top:12px"><label for="hpPenerima">Nomor HP penerima</label><div class="in"><svg class="ic"><use href="#i-phone"/></svg><input type="tel" id="hpPenerima" name="no_hp_penerima" value="{{ old('no_hp_penerima', $kirim?->no_hp_penerima) }}" maxlength="20" inputmode="tel" placeholder="Untuk dihubungi kurir, mis. 081234567890"></div></div>
+          <div style="margin-top:14px">@include('partials.peta-antar', ['petaAlamat' => old('alamat', $kirim?->alamat), 'petaPatokan' => old('patokan', $kirim?->patokan), 'petaLat' => old('lat', $kirim?->lat), 'petaLng' => old('lng', $kirim?->lng)])</div>
+          <div class="eyebrow" style="margin-top:16px">Pembayaran</div>
+          <div class="bayar-opt" id="bayarOpt">
+            <button type="button" data-b="{{ \App\Services\PesananService::BAYAR_DI_KASIR }}"><span class="rad"></span><span><b>Bayar sekarang di kasir</b>Tunai, QRIS, atau transfer. Kurir baru bisa mengambil pesanan setelah lunas.</span></button>
+            <button type="button" data-b="{{ \App\Services\PesananService::BAYAR_KE_KURIR }}"><span class="rad"></span><span><b>Bayar tunai ke kurir (COD)</b>Penerima membayar saat pesanan tiba. Uangnya disetor kurir ke kasir.</span></button>
+          </div>
+        </div>
         <div class="eyebrow" style="margin-top:16px">Menu, jumlah &amp; catatan</div><div id="ol"></div>
         <div style="display:grid;gap:4px;margin-top:14px;font-size:13.5px"><div style="display:flex;justify-content:space-between"><span>Subtotal</span><span id="sub">Rp 0</span></div>
-          <div style="display:flex;justify-content:space-between"><span>Pajak {{ PengaturanSistem::persen($pengaturan->pajak) }}% + layanan {{ PengaturanSistem::persen($pengaturan->biaya_layanan) }}%</span><span id="tx">Rp 0</span></div></div>
+          <div style="display:flex;justify-content:space-between"><span>Pajak {{ PengaturanSistem::persen($pengaturan->pajak) }}% + layanan {{ PengaturanSistem::persen($pengaturan->biaya_layanan) }}%</span><span id="tx">Rp 0</span></div>
+          <div style="display:none;justify-content:space-between" id="ongRow"><span>Ongkir <span id="ongZona">· tentukan titik</span></span><span id="ong">-</span></div></div>
         <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:10px;padding-top:10px;border-top:1.5px dashed var(--m60)"><span class="eyebrow">Total tagihan</span><b id="tot" style="font:700 26px var(--f-title)">Rp 0</b></div>
         <button class="btn lg" type="submit" id="btnSave" style="width:100%;margin-top:14px" disabled><svg class="ic"><use href="#i-receipt"/></svg>{{ $edit ? 'Simpan Perubahan' : 'Simpan Pesanan' }}</button>
         @if ($edit)<a class="btn o lg" href="{{ route('kasir.dashboard') }}" style="width:100%;margin-top:8px">Batal ubah</a>@endif
@@ -106,10 +131,14 @@
   <div class="big-ic" style="background:var(--m);color:var(--cr)"><svg class="ic"><use href="#i-check"/></svg></div><h3 style="font:700 24px var(--f-title)">Pesanan tersimpan</h3>
   <div style="font:700 20px var(--f-title);margin:12px 0 6px">{{ $baru->kode() }} · {{ $baru->nomor_meja ? 'Meja '.$baru->nomor_meja : ($baru->nama_pemesan ?: $baru->layananLabel()) }}</div>
   <div style="font-size:14px;opacity:.75">Total tagihan Rp {{ number_format($baru->total, 0, ',', '.') }}</div>
+  @php $baruCod = $baru->isDelivery() && $baru->pembayaran !== null; @endphp
+  @if ($baru->isDelivery())
+    <div class="note" style="margin:16px 28px 0;text-align:left"><svg class="ic"><use href="#i-truck"/></svg><span>{{ $baruCod ? 'Diantar ke '.$baru->namaPemesan().'. Penerima membayar tunai ke kurir saat pesanan tiba.' : 'Diantar ke '.$baru->namaPemesan().'. Lunasi sekarang di Pembayaran supaya kurir bisa mengambil pesanan.' }}</span></div>
+  @endif
   @if ($baru->tiketDapur)
     <div class="note" style="margin:16px 28px 0;text-align:left"><svg class="ic"><use href="#i-receipt"/></svg><span>Tiket masuk antrean dapur pukul {{ $baru->tiketDapur->waktu_masuk->format('H:i') }} (urutan ke-{{ $urutanAntrean }} di antrean dapur).</span></div>
   @endif
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:22px 28px 28px"><button class="btn o lg" data-close>Pesanan baru</button><a class="btn lg" href="{{ route('kasir.pembayaran', ['pesanan' => $baru->id]) }}">Ke Pembayaran</a></div></div></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:22px 28px 28px"><button class="btn o lg" data-close>Pesanan baru</button>@if ($baruCod)<a class="btn lg" href="{{ route('kasir.dashboard') }}#berjalan">Ke Dashboard</a>@else<a class="btn lg" href="{{ route('kasir.pembayaran', ['pesanan' => $baru->id]) }}">Ke Pembayaran</a>@endif</div></div></div>
 @endif
 @endpush
 
@@ -118,6 +147,7 @@
   (function () {
     var pajak = {{ (float) $pengaturan->pajak }}, layanan = {{ (float) $pengaturan->biaya_layanan }};
     var order = []; // [{id, n, p, q, c}]
+    var siap = false; // true setelah isian awal / draf dipulihkan
     var awal = @json($oldItems);
     function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
     function draw() {
@@ -132,13 +162,15 @@
         inp += '<input type="hidden" name="items[' + i + '][id_menu]" value="' + o.id + '"><input type="hidden" name="items[' + i + '][jumlah]" value="' + o.q + '"><input type="hidden" name="items[' + i + '][catatan]" value="' + esc(o.c || '') + '">';
       });
       var t = Math.round(s * pajak / 100) + Math.round(s * layanan / 100);
+      var antar = jenis.value === 'delivery', z = antar && window.PetaAntar ? PetaAntar.zona() : null, ongkir = z ? z.ongkir : 0;
+      ongRow.style.display = antar ? 'flex' : 'none'; ongZona.textContent = z ? '· ' + z.nama : '· tentukan titik'; ong.textContent = z ? rp(ongkir) : '-';
       ol.innerHTML = h || '<div class="ord-empty">Pilih menu untuk menambahkannya ke pesanan.</div>';
       simpanDraf();
       itemInputs.innerHTML = inp;
-      sub.textContent = rp(s); tx.textContent = rp(t); tot.textContent = rp(s + t);
+      sub.textContent = rp(s); tx.textContent = rp(t); tot.textContent = rp(s + t + ongkir);
       btnSave.disabled = !order.length;
       var n = order.reduce(function (a, o) { return a + o.q; }, 0);
-      jump.hidden = !n; jumpN.textContent = 'Pesanan · ' + n + ' item'; jumpT.textContent = rp(s + t);
+      jump.hidden = !n; jumpN.textContent = 'Pesanan · ' + n + ' item'; jumpT.textContent = rp(s + t + ongkir);
     }
     function tambah(b) {
       if (b.classList.contains('out')) { toast('Menu tidak tersedia, pilih menu lain'); return; }
@@ -188,7 +220,15 @@
       jenis.value = s;
       svc.querySelectorAll('button').forEach(function (x) { var on = x.dataset.s === s; x.style.background = on ? 'var(--cr)' : 'transparent'; x.style.color = on ? 'var(--m)' : 'var(--cr)'; });
       document.querySelectorAll('.svc-p').forEach(function (p) { p.classList.toggle('on', p.dataset.p === s); });
+      // form Delivery lebih panjang dari layar: tidak menempel (sticky) supaya tombol Simpan terjangkau
+      fOrder.classList.toggle('antar', s === 'delivery');
+      if (s === 'delivery' && window.PetaAntar) PetaAntar.siapkan();
+      if (siap) draw();
     }
+    document.addEventListener('peta:zona', function () { if (siap) draw(); });
+    function setBayar(v) { bayar.value = v; bayarOpt.querySelectorAll('button').forEach(function (b) { b.classList.toggle('on', b.dataset.b === v); }); }
+    bayarOpt.addEventListener('click', function (e) { var b = e.target.closest('button'); if (b) { setBayar(b.dataset.b); simpanDraf(); } });
+    setBayar(bayar.value || 'kasir');
     svc.addEventListener('click', function (e) { var b = e.target.closest('button'); if (b) setLayanan(b.dataset.s); });
     document.querySelector('.tables').addEventListener('click', function (e) {
       var b = e.target.closest('button'); if (!b) return;
@@ -198,6 +238,11 @@
     });
     fOrder.addEventListener('submit', function (e) {
       if (jenis.value === 'dine_in' && !meja.value) { e.preventDefault(); toast('Pilih nomor meja dulu'); return; }
+      if (jenis.value === 'delivery') {
+        var kurang = !namaPenerima.value.trim() ? 'Isi nama penerima' : !hpPenerima.value.trim() ? 'Isi nomor HP penerima'
+          : !lat.value ? 'Tentukan titik pengantaran di peta' : !PetaAntar.zona() ? 'Titik pengantaran di luar jangkauan Delivery' : !alamat.value.trim() ? 'Isi alamat pengantaran' : '';
+        if (kurang) { e.preventDefault(); toast(kurang); return; }
+      }
       btnSave.disabled = true;
     });
 
@@ -205,7 +250,8 @@
     var KUNCI = 'draf-input-kasir', boleh = @json(! $edit && ! $baru);
     function simpanDraf() {
       if (!boleh) return;
-      try { sessionStorage.setItem(KUNCI, JSON.stringify({ order: order, jenis: jenis.value, meja: meja.value, nama: nama.value })); } catch (_) {}
+      try { sessionStorage.setItem(KUNCI, JSON.stringify({ order: order, jenis: jenis.value, meja: meja.value, nama: nama.value,
+        antar: { penerima: namaPenerima.value, hp: hpPenerima.value, alamat: alamat.value, patokan: patokan.value, lat: lat.value, lng: lng.value, bayar: bayar.value } })); } catch (_) {}
     }
     @if ($baru) try { sessionStorage.removeItem(KUNCI); } catch (_) {} @endif
 
@@ -215,6 +261,10 @@
     if (!awal.length && boleh) { try { draf = JSON.parse(sessionStorage.getItem(KUNCI) || 'null'); } catch (_) {} }
     if (draf && draf.order && draf.order.length) {
       draf.order.forEach(function (o) { if (mg.querySelector('.mi[data-id="' + o.id + '"]')) order.push(o); });
+      if (draf.antar) {
+        namaPenerima.value = draf.antar.penerima || ''; hpPenerima.value = draf.antar.hp || ''; alamat.value = draf.antar.alamat || '';
+        patokan.value = draf.antar.patokan || ''; lat.value = draf.antar.lat || ''; lng.value = draf.antar.lng || ''; setBayar(draf.antar.bayar || 'kasir');
+      }
       setLayanan(draf.jenis || jenis.value); nama.value = draf.nama || '';
       if (draf.meja) { var bm = document.querySelector('.tables button[data-meja="' + draf.meja + '"]'); if (bm && !bm.classList.contains('busy')) bm.click(); }
       if (order.length) toast('Draf pesanan sebelumnya dipulihkan');
@@ -223,9 +273,10 @@
       var b = mg.querySelector('.mi[data-id="' + it.id_menu + '"]');
       if (b) order.push({ id: +it.id_menu, n: b.dataset.n, p: +b.dataset.p, q: +it.jumlah || 1, c: it.catatan || '' });
     });
-    [jenis, nama].forEach(function (el) { el.addEventListener('change', simpanDraf); });
+    [jenis, nama, namaPenerima, hpPenerima, alamat, patokan].forEach(function (el) { el.addEventListener('change', simpanDraf); });
     svc.addEventListener('click', function () { setTimeout(simpanDraf, 0); });
     document.querySelector('.tables').addEventListener('click', function () { setTimeout(simpanDraf, 0); });
+    siap = true;
     draw();
   })();
 </script>
