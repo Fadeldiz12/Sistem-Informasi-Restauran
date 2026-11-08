@@ -27,7 +27,9 @@ class KurirService
         return Pengiriman::query()->fifo()
             ->where('status_kirim', Pengiriman::STATUS_MENUNGGU_KURIR)
             ->whereNull('id_kurir')
-            ->whereHas('pesanan', fn ($q) => $q->where('status', Pesanan::STATUS_SIAP));
+            // Delivery dari kasir yang dibayar di kasir baru boleh diantar setelah lunas
+            ->whereHas('pesanan', fn ($q) => $q->where('status', Pesanan::STATUS_SIAP)
+                ->where(fn ($b) => $b->whereNotNull('id_pelanggan')->orWhereHas('pembayaran')));
     }
 
     /**

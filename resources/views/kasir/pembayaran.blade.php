@@ -36,6 +36,16 @@
   .tabs a.on { background: var(--m); color: var(--cr); box-shadow: none; }
   .lunas-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1.2px solid var(--m15); }
   .lunas-row:last-child { border-bottom: 0; }
+  /* dialog Cetak Struk di HP: satu kolom (ringkasan & tombol di atas, struk di bawah); tampilan laptop tidak berubah */
+  @media (max-width: 640px) {
+    #mStruk .mh { padding: 18px 18px 0; }
+    #mStruk .mb.struk-grid { grid-template-columns: minmax(0, 1fr) !important; gap: 14px !important; padding: 14px 18px 20px; }
+    #mStruk .struk-aksi { order: -1; }
+    #mStruk .struk-kertas { padding: 10px !important; }
+    #mStruk .struk-kertas > div { padding: 16px 14px !important; }
+    #mStruk .struk .sr > span:first-child { min-width: 0; }
+    #mStruk .struk .sr > span:last-child { flex: none; text-align: right; white-space: nowrap; }
+  }
 </style>
 @endpush
 
@@ -117,9 +127,9 @@
 @if ($struk)
 <div class="ovl on" id="mStruk"><div class="modal" style="width:min(720px,100%)">
   <div class="mh"><div><div class="eyebrow" style="opacity:.7">Pembayaran berhasil · Lunas</div><h3>Cetak Struk</h3></div><button class="icon-btn" data-close><svg class="ic"><use href="#i-x"/></svg></button></div>
-  <div class="mb" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start">
-    <div class="stripes" style="border-radius:20px;padding:20px"><div style="background:var(--pp);padding:20px 22px;font-size:13px;border-radius:4px">@include('kasir.partials.struk-isi', ['pesanan' => $struk])</div></div>
-    <div style="display:grid;gap:12px"><div style="display:flex;gap:14px;align-items:center;padding:16px;border-radius:18px;background:var(--m);color:var(--cr)"><span style="width:48px;height:48px;border-radius:50%;background:var(--cr);color:var(--m);display:grid;place-items:center"><svg class="ic" style="width:24px;height:24px"><use href="#i-check"/></svg></span>
+  <div class="mb struk-grid" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start">
+    <div class="stripes struk-kertas" style="border-radius:20px;padding:20px"><div style="background:var(--pp);padding:20px 22px;font-size:13px;border-radius:4px">@include('kasir.partials.struk-isi', ['pesanan' => $struk])</div></div>
+    <div class="struk-aksi" style="display:grid;gap:12px"><div style="display:flex;gap:14px;align-items:center;padding:16px;border-radius:18px;background:var(--m);color:var(--cr)"><span style="width:48px;height:48px;border-radius:50%;background:var(--cr);color:var(--m);display:grid;place-items:center"><svg class="ic" style="width:24px;height:24px"><use href="#i-check"/></svg></span>
       <div><div class="eyebrow" style="opacity:.8">{{ $struk->kode() }}</div><b style="font:700 24px var(--f-title)">Rp {{ number_format($struk->total, 0, ',', '.') }}</b></div></div>
       @if ($struk->pembayaran->kembalian() !== null)<div class="note"><svg class="ic"><use href="#i-cash"/></svg><span>Kembalian <b>Rp {{ number_format($struk->pembayaran->kembalian(), 0, ',', '.') }}</b></span></div>@endif
       <div class="note"><svg class="ic"><use href="#i-info"/></svg><span>Status pembayaran Lunas dan pemasukan tercatat pukul {{ $struk->pembayaran->waktu_bayar->format('H:i') }}.</span></div>

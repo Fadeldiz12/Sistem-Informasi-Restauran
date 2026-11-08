@@ -23,6 +23,12 @@ class PesananService
      */
     public const TOTAL_MAKS = 9_999_999_999.99;
 
+    /** Delivery yang diinput kasir: dibayar sekarang di kasir */
+    public const BAYAR_DI_KASIR = 'kasir';
+
+    /** Delivery yang diinput kasir: dibayar tunai ke kurir saat pesanan tiba (COD) */
+    public const BAYAR_KE_KURIR = 'kurir';
+
     public function __construct(private MidtransService $midtrans) {}
 
     /**
@@ -99,6 +105,8 @@ class PesananService
                 // jarak sebenarnya dari titik peta; bila tidak ada titik, memakai radius zona
                 $pesanan->pengiriman()->create([
                     'id_zona' => $zona->id,
+                    'nama_penerima' => $data['nama_penerima'] ?? null,
+                    'no_hp_penerima' => $data['no_hp_penerima'] ?? null,
                     'alamat' => $data['alamat'],
                     'lat' => $data['lat'] ?? null,
                     'lng' => $data['lng'] ?? null,
@@ -108,6 +116,7 @@ class PesananService
             }
 
             if ($kasir) {
+                $this->aturBayarDeliveryKasir($pesanan, $data['bayar'] ?? null);
                 $this->kirimTiketDapur($pesanan);
             }
 
@@ -190,7 +199,11 @@ class PesananService
             $this->pastikanBisaDiubah($pesanan, $tiket);
 
             [$baris, $subtotal] = $this->barisPesanan($items);
-            $hasil = $this->hitung($subtotal);
+            $zona = $jenisLayanan === Pesanan::LAYANAN_DELIVERY ? ZonaPengiriman::find($data['id_zona'] ?? null) : null;
+            if ($jenisLayanan === Pesanan::LAYANAN_DELIVERY && ! $zona) {
+                throw ValidationException::withMessages(['lat' => 'Tentukan titik pengantaran di peta.']);
+            }
+            $hasil = $this->hitung($subtotal, $zona?->ongkir() ?? 0);
             if ($hasil['total'] > self::TOTAL_MAKS) {
                 throw ValidationException::withMessages(['items' => 'Total pesanan terlalu besar. Kurangi jumlah porsi atau periksa harga menu.']);
             }
@@ -200,13 +213,46 @@ class PesananService
                 'nomor_meja' => $jenisLayanan === Pesanan::LAYANAN_DINE_IN ? $this->nomorMeja($data['nomor_meja'] ?? null, kecuali: $pesanan) : null,
                 'nama_pemesan' => $data['nama_pemesan'] ?? null,
                 'subtotal' => $hasil['subtotal'],
+                'ongkir' => $hasil['ongkir'],
                 'total' => $hasil['total'],
             ]);
             $pesanan->detail()->delete();
             $pesanan->detail()->createMany($baris);
 
+            if ($zona) {
+                $pesanan->pengiriman()->updateOrCreate([], [
+                    'id_zona' => $zona->id,
+                    'nama_penerima' => $data['nama_penerima'] ?? null,
+                    'no_hp_penerima' => $data['no_hp_penerima'] ?? null,
+                    'alamat' => $data['alamat'],
+                    'lat' => $data['lat'] ?? null,
+                    'lng' => $data['lng'] ?? null,
+                    'patokan' => $data['patokan'] ?? null,
+                    'jarak_km' => $data['jarak_km'] ?? $zona->radius_km,
+                ]);
+            } else {
+                $pesanan->pengiriman()->delete();
+            }
+            $this->aturBayarDeliveryKasir($pesanan, $data['bayar'] ?? null);
+
             return $pesanan;
         });
+    }
+
+    /**
+     * Delivery yang diinput kasir: COD ke kurir dicatat sebagai pembayaran tunai yang menunggu (ditagih kurir);
+     * bayar di kasir dibiarkan tanpa data pembayaran sampai dilunasi di menu Pembayaran.
+     */
+    private function aturBayarDeliveryKasir(Pesanan $pesanan, ?string $bayar): void
+    {
+        if ($pesanan->isDelivery() && $bayar === self::BAYAR_KE_KURIR) {
+            $pesanan->pembayaran()->updateOrCreate([], [
+                'metode' => Pembayaran::METODE_TUNAI, 'jumlah' => $pesanan->total, 'status_bayar' => Pembayaran::STATUS_MENUNGGU,
+            ]);
+        } else {
+            $pesanan->pembayaran()->where('status_bayar', '!=', Pembayaran::STATUS_LUNAS)->delete();
+        }
+        $pesanan->unsetRelation('pembayaran');
     }
 
     /**
@@ -420,8 +466,8 @@ class PesananService
         if ($pesanan->isLunas()) {
             throw ValidationException::withMessages(['pesanan' => 'Pesanan ini sudah lunas.']);
         }
-        if ($pesanan->isDelivery()) {
-            throw ValidationException::withMessages(['pesanan' => 'Pesanan Delivery dibayar ke kurir saat diantar, tidak dilunasi di kasir.']);
+        if ($pesanan->isDelivery() && ! $pesanan->isDeliveryBayarDiKasir()) {
+            throw ValidationException::withMessages(['pesanan' => 'Pesanan Delivery ini dibayar tunai ke kurir saat diantar, tidak dilunasi di kasir.']);
         }
         if ($pesanan->status === Pesanan::STATUS_MENUNGGU) {
             throw ValidationException::withMessages(['pesanan' => 'Konfirmasi pesanan ini dulu di menu Pesanan Online sebelum dibayar.']);

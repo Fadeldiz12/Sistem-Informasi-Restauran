@@ -18,7 +18,8 @@
       <div style="font-size:12.5px;opacity:.75;margin-top:6px">{{ $kirim->alamat }}{{ $kirim->patokan ? ' · Patokan: '.$kirim->patokan : '' }}</div>
       <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
         <a class="btn o sm" href="{{ route('kurir.tugas.show', $kirim) }}"><svg class="ic" style="width:15px;height:15px"><use href="#i-receipt"/></svg>Detail</a>
-        @if ($p->pelanggan?->no_hp)<a class="btn o sm" href="tel:{{ preg_replace('/[^\d+]/', '', $p->pelanggan->no_hp) }}"><svg class="ic" style="width:15px;height:15px"><use href="#i-phone"/></svg>Telepon</a>@endif
+        @php $hpPenerima = $kirim->no_hp_penerima ?: $p->pelanggan?->no_hp; @endphp
+        @if ($hpPenerima)<a class="btn o sm" href="tel:{{ preg_replace('/[^\d+]/', '', $hpPenerima) }}"><svg class="ic" style="width:15px;height:15px"><use href="#i-phone"/></svg>Telepon</a>@endif
         <a class="btn o sm" href="{{ \App\Models\ZonaPengiriman::urlMaps($kirim->lat !== null ? (float) $kirim->lat : null, $kirim->lng !== null ? (float) $kirim->lng : null, $kirim->alamat) }}" target="_blank" rel="noopener"><svg class="ic" style="width:15px;height:15px"><use href="#i-nav"/></svg>Maps</a></div></div></div>
 
     <form method="post" action="{{ route('kurir.tugas.diterima', $kirim) }}" enctype="multipart/form-data" id="fStatus">@csrf

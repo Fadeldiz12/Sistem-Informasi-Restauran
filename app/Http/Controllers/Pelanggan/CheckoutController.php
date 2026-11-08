@@ -14,7 +14,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class CheckoutController extends Controller
@@ -95,7 +94,7 @@ class CheckoutController extends Controller
         }
 
         if ($data['jenis_layanan'] === Pesanan::LAYANAN_DELIVERY) {
-            $data += $this->zonaDariTitik($set, (float) $data['lat'], (float) $data['lng']);
+            $data += ZonaPengiriman::dariTitik((float) $data['lat'], (float) $data['lng']);
         }
 
         $items = $this->keranjang->items();
@@ -132,29 +131,5 @@ class CheckoutController extends Controller
     private function pesanDibuang(array $dibuang): string
     {
         return collect($dibuang)->join(', ', ' dan ').' sedang habis dan sudah dihapus dari keranjang.';
-    }
-
-    /**
-     * Zona pengiriman dari jarak titik antar ke restoran. Di luar zona terjauh → ditolak.
-     *
-     * @return array{id_zona: int, jarak_km: float}
-     */
-    private function zonaDariTitik(PengaturanSistem $set, float $lat, float $lng): array
-    {
-        $jarak = $set->jarakKm($lat, $lng);
-        $zona = ZonaPengiriman::untukJarak($jarak);
-        if (! $zona) {
-            $maks = (float) ZonaPengiriman::max('radius_km');
-            throw ValidationException::withMessages([
-                'lat' => 'Titik pengantaran '.self::km($jarak).' km dari restoran, di luar jangkauan Delivery (maksimal '.self::km($maks).' km). Silakan pilih Take Away.',
-            ]);
-        }
-
-        return ['id_zona' => $zona->id, 'jarak_km' => $jarak];
-    }
-
-    private static function km(float $n): string
-    {
-        return rtrim(rtrim(number_format($n, 1, ',', '.'), '0'), ',');
     }
 }

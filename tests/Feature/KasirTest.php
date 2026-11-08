@@ -141,7 +141,7 @@ class KasirTest extends TestCase
 
         $this->actingAs($this->kasir)->get('/kasir/pembayaran')->assertDontSee(route('kasir.pembayaran', ['pesanan' => $p->id]));
         $this->actingAs($this->kasir)->post("/kasir/pembayaran/{$p->id}/lunas", ['metode' => 'tunai', 'uang_diterima' => '500000'])
-            ->assertSessionHasErrors(['pesanan' => 'Pesanan Delivery dibayar ke kurir saat diantar, tidak dilunasi di kasir.']);
+            ->assertSessionHasErrors(['pesanan' => 'Pesanan Delivery ini dibayar tunai ke kurir saat diantar, tidak dilunasi di kasir.']);
         $this->assertFalse($p->fresh()->isLunas());
     }
 
