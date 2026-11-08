@@ -23,6 +23,11 @@
   .kasir-atas .btn.lg .pill { flex: none; }
   .notif-row { display: flex; gap: 12px; align-items: center; padding: 11px 0; border-bottom: 1px solid var(--m15); }
   .notif-row b { display: block; font: 600 13.5px/1.35 var(--f-title); }
+  /* Notifikasi setinggi kartu Aksi Cepat di sebelahnya; sisanya digulir */
+  .notif-card { display: flex; flex-direction: column; }
+  .notif-list { flex: 1 1 0; height: 0; min-height: 190px; overflow-y: auto; overscroll-behavior: contain; margin-right: -8px; padding-right: 8px; scrollbar-width: thin; scrollbar-color: var(--m60) transparent; }
+  .notif-list .notif-row:last-child { border-bottom: 0; }
+  @media (max-width: 860px) { .notif-list { flex: none; height: auto; min-height: 0; max-height: 216px; } }
 </style>
 @endpush
 
@@ -35,17 +40,19 @@
     <div class="card stat p"><div class="top"><span class="eyebrow">Pemasukan hari ini</span><span class="ico"><svg class="ic"><use href="#i-cash"/></svg></span></div><div class="v">{{ $pemasukanLabel }}</div><div class="t">{{ $jumlahLunas }} pembayaran lunas{{ $batas->isAfter(today()) ? ' · sejak tutup hari '.$batas->format('H:i') : '' }}</div></div>
   </div>
 
-  <div class="grid split kasir-atas" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr);margin-top:18px;align-items:start">
+  <div class="grid split kasir-atas" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr);margin-top:18px;align-items:stretch">
       <div class="card f"><div class="card-head" style="margin-bottom:12px"><h2>Aksi Cepat</h2></div><div style="display:grid;gap:10px">
         <a class="btn cr lg" href="{{ route('kasir.input') }}" style="justify-content:flex-start"><svg class="ic"><use href="#i-plus"/></svg><span style="flex:1;text-align:left">Input Pesanan di Tempat</span><svg class="ic"><use href="#i-arr"/></svg></a>
         <a class="btn b lg" href="{{ route('kasir.online') }}" style="justify-content:flex-start"><svg class="ic"><use href="#i-bell"/></svg><span style="flex:1;text-align:left">Konfirmasi Pesanan Online</span><span class="pill m">{{ $menunggu }}</span></a>
         <a class="btn lg" href="{{ route('kasir.pembayaran') }}" style="justify-content:flex-start;box-shadow:inset 0 0 0 1.5px var(--cr)"><svg class="ic"><use href="#i-wallet"/></svg><span style="flex:1;text-align:left">Proses Pembayaran</span><span class="pill c">{{ $belumLunas->count() }}</span></a></div></div>
-      <div class="card"><div class="card-head" style="margin-bottom:4px"><h2>Notifikasi</h2><span class="pill b">{{ $notif->count() }} terbaru</span></div>
+      <div class="card notif-card"><div class="card-head" style="margin-bottom:4px"><h2>Notifikasi</h2><span class="pill b">{{ $notif->count() }} terbaru</span></div>
+        <div class="notif-list">
         @forelse ($notif as $n)
           <a href="{{ $n['url'] }}" class="notif-row"><span @class(['av', 'm' => $n['m']])><svg class="ic" style="width:16px;height:16px"><use href="#{{ $n['ikon'] }}"/></svg></span><div style="flex:1;min-width:0"><b>{{ $n['judul'] }}</b><div style="font-size:12px;opacity:.65">{{ $n['ket'] }}</div></div><span style="font-size:12px;opacity:.6;white-space:nowrap">{{ $n['waktu']?->diffForHumans(short: true) }}</span></a>
         @empty
           <div class="empty" style="padding:20px 8px">Belum ada notifikasi.</div>
         @endforelse
+        </div>
       </div>
   </div>
 
