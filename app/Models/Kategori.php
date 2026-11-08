@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\IdTerenkripsiDiUrl;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Attributes\Table;
@@ -14,6 +15,8 @@ use Illuminate\Support\Str;
 #[Fillable(['nama_kategori', 'tampil_navbar', 'urutan_navbar'])]
 class Kategori extends Model
 {
+    use IdTerenkripsiDiUrl;
+
     /**
      * Menu di kategori bernama "Promo" tampil sebagai promo di beranda (menu paket dengan harga promo).
      */

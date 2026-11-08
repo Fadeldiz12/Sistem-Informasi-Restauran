@@ -82,7 +82,7 @@
       <div class="card" style="padding:16px"><div class="card-head" style="margin-bottom:10px"><h2>Belum Lunas</h2><span class="pill m">{{ $daftar->count() }}</span></div>
         @foreach ($daftar as $p)
           @php $mt = $p->pembayaran?->metode ?? Pembayaran::METODE_TUNAI; @endphp
-          <a @class(['qi', 'on' => $pesanan->id === $p->id]) href="{{ route('kasir.pembayaran', ['pesanan' => $p->id]) }}#detail"><div style="display:flex;justify-content:space-between;align-items:center"><b style="font:700 14px var(--f-title)">{{ $p->kode() }}</b><span @class(['pill', 'b' => $mt !== Pembayaran::METODE_TUNAI, 'c' => $pesanan->id === $p->id]) style="font-size:10.5px;padding:3px 9px"><svg class="ic" style="width:12px;height:12px"><use href="#{{ $ikonMetode[$mt] }}"/></svg>{{ Pembayaran::LABEL_METODE[$mt] }}</span></div>
+          <a @class(['qi', 'on' => $pesanan->id === $p->id]) href="{{ route('kasir.pembayaran', ['pesanan' => $p]) }}#detail"><div style="display:flex;justify-content:space-between;align-items:center"><b style="font:700 14px var(--f-title)">{{ $p->kode() }}</b><span @class(['pill', 'b' => $mt !== Pembayaran::METODE_TUNAI, 'c' => $pesanan->id === $p->id]) style="font-size:10.5px;padding:3px 9px"><svg class="ic" style="width:12px;height:12px"><use href="#{{ $ikonMetode[$mt] }}"/></svg>{{ Pembayaran::LABEL_METODE[$mt] }}</span></div>
             <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:12.5px;gap:8px"><span style="opacity:.85;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ $p->namaPemesan() }} · {{ $p->layananLabel() }}</span><b style="font:700 13.5px var(--f-title);white-space:nowrap">{{ $rp($p->total) }}</b></div></a>
         @endforeach
       </div>

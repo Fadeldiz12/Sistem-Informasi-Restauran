@@ -33,7 +33,7 @@ class TugasController extends Controller
             return to_route('kurir.tugas')->with('error', 'Tugas ini sudah diambil kurir lain.');
         }
         if ($saya && $pengiriman->status_kirim === Pengiriman::STATUS_DALAM_PERJALANAN) {
-            return to_route('kurir.status', ['pengiriman' => $pengiriman->id]);
+            return to_route('kurir.status', ['pengiriman' => $pengiriman]);
         }
 
         $antrean = KurirService::antrean()->pluck('id');
@@ -48,7 +48,7 @@ class TugasController extends Controller
     {
         $this->kurir->terima($pengiriman, $request->user());
 
-        return to_route('kurir.status', ['pengiriman' => $pengiriman->id])
+        return to_route('kurir.status', ['pengiriman' => $pengiriman])
             ->with('status', 'Tugas diterima · status Dalam Perjalanan · pelanggan dapat melacak pesanan');
     }
 
@@ -60,7 +60,7 @@ class TugasController extends Controller
         $aktif = $request->user()->tugasPengiriman()
             ->where('status_kirim', Pengiriman::STATUS_DALAM_PERJALANAN)
             ->with(self::RELASI)->orderBy('updated_at')->get();
-        $kirim = $aktif->firstWhere('id', $request->integer('pengiriman')) ?? $aktif->first();
+        $kirim = $aktif->firstWhere('id', Pengiriman::idDariKode($request->query('pengiriman'))) ?? $aktif->first();
 
         return view('kurir.status', $this->ringkasan($request) + [
             'aktif' => $aktif,

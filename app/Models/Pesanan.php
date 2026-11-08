@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\IdTerenkripsiDiUrl;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Attributes\Table;
@@ -15,6 +16,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 #[Fillable(['id_pelanggan', 'id_kasir', 'jenis_layanan', 'nomor_meja', 'nama_pemesan', 'waktu_pesan', 'subtotal', 'ongkir', 'total', 'status', 'alasan_batal', 'selesai_pada'])]
 class Pesanan extends Model
 {
+    use IdTerenkripsiDiUrl;
+
     public const LAYANAN_DINE_IN = 'dine_in';
 
     public const LAYANAN_TAKE_AWAY = 'take_away';

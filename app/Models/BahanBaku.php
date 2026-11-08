@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\IdTerenkripsiDiUrl;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Attributes\Table;
@@ -14,6 +15,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 #[Fillable(['nama_bahan', 'satuan', 'stok', 'rata_pemakaian', 'lead_time', 'safety_stock', 'rop'])]
 class BahanBaku extends Model
 {
+    use IdTerenkripsiDiUrl;
     use SoftDeletes;
 
     /**

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\IdTerenkripsiDiUrl;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Table;
 use Illuminate\Database\Eloquent\Model;
@@ -12,6 +13,8 @@ use Illuminate\Support\Carbon;
 #[Fillable(['id_kasir', 'mulai_dari', 'waktu_tutup', 'jumlah_pesanan', 'jumlah_batal', 'total_pemasukan', 'total_tunai', 'total_nontunai', 'total_setoran'])]
 class TutupKasir extends Model
 {
+    use IdTerenkripsiDiUrl;
+
     protected function casts(): array
     {
         return [

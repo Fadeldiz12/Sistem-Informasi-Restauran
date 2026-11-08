@@ -56,7 +56,7 @@ class DapurTest extends TestCase
             ->assertSee('potong 12')->assertSee('Meja 07');
 
         $this->actingAs($this->kasir)->get('/dapur/antrean')->assertForbidden();
-        $this->actingAs($this->kasir)->post("/dapur/tiket/{$a->tiketDapur->id}/mulai")->assertForbidden();
+        $this->actingAs($this->kasir)->post("/dapur/tiket/{$a->tiketDapur->getRouteKey()}/mulai")->assertForbidden();
     }
 
     public function test_ubah_status_masakan_sampai_siap(): void
@@ -65,14 +65,14 @@ class DapurTest extends TestCase
         $t = $p->tiketDapur;
 
         // tidak bisa langsung selesai sebelum dimasak
-        $this->actingAs($this->dapur)->post("/dapur/tiket/{$t->id}/selesai")->assertSessionHasErrors('tiket');
+        $this->actingAs($this->dapur)->post("/dapur/tiket/{$t->getRouteKey()}/selesai")->assertSessionHasErrors('tiket');
 
-        $this->actingAs($this->dapur)->post("/dapur/tiket/{$t->id}/mulai")->assertSessionHasNoErrors();
+        $this->actingAs($this->dapur)->post("/dapur/tiket/{$t->getRouteKey()}/mulai")->assertSessionHasNoErrors();
         $this->assertSame(TiketDapur::STATUS_DIMASAK, $t->fresh()->status_masak);
         $this->assertSame(Pesanan::STATUS_DIPROSES, $p->fresh()->status);
-        $this->actingAs($this->dapur)->post("/dapur/tiket/{$t->id}/mulai")->assertSessionHasErrors('tiket');
+        $this->actingAs($this->dapur)->post("/dapur/tiket/{$t->getRouteKey()}/mulai")->assertSessionHasErrors('tiket');
 
-        $this->actingAs($this->dapur)->post("/dapur/tiket/{$t->id}/selesai")->assertSessionHasNoErrors();
+        $this->actingAs($this->dapur)->post("/dapur/tiket/{$t->getRouteKey()}/selesai")->assertSessionHasNoErrors();
         $this->assertSame(TiketDapur::STATUS_SELESAI, $t->fresh()->status_masak);
         $this->assertSame(Pesanan::STATUS_SIAP, $p->fresh()->status);
 
@@ -91,13 +91,13 @@ class DapurTest extends TestCase
         $t = $p->fresh()->tiketDapur;
         $this->assertNull($p->pengiriman->waktu_siap);
 
-        $this->actingAs($this->dapur)->post("/dapur/tiket/{$t->id}/mulai");
-        $this->actingAs($this->dapur)->post("/dapur/tiket/{$t->id}/selesai");
+        $this->actingAs($this->dapur)->post("/dapur/tiket/{$t->getRouteKey()}/mulai");
+        $this->actingAs($this->dapur)->post("/dapur/tiket/{$t->getRouteKey()}/selesai");
 
         $p->refresh();
         $this->assertSame(Pesanan::STATUS_SIAP, $p->status);
         $this->assertNotNull($p->pengiriman->waktu_siap);
-        $this->actingAs($pelanggan)->get("/tracking?pesanan={$p->id}")->assertSee('class="st done"', false)->assertSee('Siap Diantar');
+        $this->actingAs($pelanggan)->get("/tracking?pesanan={$p->getRouteKey()}")->assertSee('class="st done"', false)->assertSee('Siap Diantar');
     }
 
     // ---------- bahan baku & ROP
@@ -137,9 +137,9 @@ class DapurTest extends TestCase
         $this->assertFalse($b->fresh()->isStokKritis()); // 101 > 12
 
         // ubah lead time -> ROP ikut berubah
-        $this->actingAs($this->dapur)->put("/dapur/bahan-baku/{$b->id}", ['nama_bahan' => 'Tepung', 'satuan' => 'kg', 'lead_time' => 5, 'safety_stock' => 6]);
+        $this->actingAs($this->dapur)->put("/dapur/bahan-baku/{$b->getRouteKey()}", ['nama_bahan' => 'Tepung', 'satuan' => 'kg', 'lead_time' => 5, 'safety_stock' => 6]);
         $this->assertEquals(16, (float) $b->fresh()->rop);
-        $this->actingAs($this->dapur)->put("/dapur/bahan-baku/{$b->id}", ['nama_bahan' => 'Tepung', 'satuan' => 'kg', 'stok' => 999, 'lead_time' => 5, 'safety_stock' => 6])
+        $this->actingAs($this->dapur)->put("/dapur/bahan-baku/{$b->getRouteKey()}", ['nama_bahan' => 'Tepung', 'satuan' => 'kg', 'stok' => 999, 'lead_time' => 5, 'safety_stock' => 6])
             ->assertSessionHasErrors('stok');
     }
 
@@ -169,7 +169,7 @@ class DapurTest extends TestCase
 
         $b = BahanBaku::where('nama_bahan', 'Lemon')->first();
         $riwayat = MutasiBahanBaku::where('id_bahan', $b->id)->count();
-        $this->actingAs($this->dapur)->delete("/dapur/bahan-baku/{$b->id}")->assertSessionHas('status');
+        $this->actingAs($this->dapur)->delete("/dapur/bahan-baku/{$b->getRouteKey()}")->assertSessionHas('status');
         $this->assertSoftDeleted($b);
         $this->assertSame($riwayat, MutasiBahanBaku::where('id_bahan', $b->id)->count()); // riwayat tetap ada
         $this->actingAs($this->dapur)->get('/dapur/bahan-baku')->assertDontSee('data-name="Lemon"', false);
@@ -180,7 +180,7 @@ class DapurTest extends TestCase
         $this->seed([BahanBakuSeeder::class, ResepSeeder::class]);
         $lemon = BahanBaku::firstWhere('nama_bahan', 'Lemon');
 
-        $this->actingAs($this->dapur)->delete("/dapur/bahan-baku/{$lemon->id}")
+        $this->actingAs($this->dapur)->delete("/dapur/bahan-baku/{$lemon->getRouteKey()}")
             ->assertSessionHas('error', fn ($m) => str_contains($m, 'Lemon Iced Tea'));
         $this->assertNotSoftDeleted($lemon);
         $this->assertSame(1, $lemon->resep()->count());
@@ -205,7 +205,7 @@ class DapurTest extends TestCase
         $pemakaian = (float) $selada->mutasi()->sum('jumlah');
         $isi = ['nama_bahan' => 'Selada Romaine', 'lead_time' => $selada->lead_time, 'safety_stock' => $ss];
 
-        $this->actingAs($this->dapur)->put("/dapur/bahan-baku/{$selada->id}", ['satuan' => 'gram'] + $isi)
+        $this->actingAs($this->dapur)->put("/dapur/bahan-baku/{$selada->getRouteKey()}", ['satuan' => 'gram'] + $isi)
             ->assertSessionHasNoErrors()->assertSessionHas('status', fn ($m) => str_contains($m, 'dikonversi'));
 
         $selada->refresh();
@@ -216,7 +216,7 @@ class DapurTest extends TestCase
         $this->assertEqualsWithDelta(150, (float) $selada->resep()->whereHas('menu', fn ($q) => $q->where('nama_menu', 'Caesar Salad'))->value('jumlah'), 0.001);
 
         // satuan yang tidak bisa dikonversi ditolak
-        $this->actingAs($this->dapur)->put("/dapur/bahan-baku/{$selada->id}", ['satuan' => 'pcs'] + $isi)->assertSessionHasErrors('satuan');
+        $this->actingAs($this->dapur)->put("/dapur/bahan-baku/{$selada->getRouteKey()}", ['satuan' => 'pcs'] + $isi)->assertSessionHasErrors('satuan');
         $this->assertSame('gram', $selada->fresh()->satuan);
     }
 
@@ -232,7 +232,7 @@ class DapurTest extends TestCase
 
         $p = app(PesananService::class)->buat([['id_menu' => $menu->id, 'jumlah' => 2]], 'dine_in', kasir: $this->kasir, data: ['nomor_meja' => '01']);
 
-        $this->actingAs($this->dapur)->post("/dapur/tiket/{$p->tiketDapur->id}/mulai")
+        $this->actingAs($this->dapur)->post("/dapur/tiket/{$p->tiketDapur->getRouteKey()}/mulai")
             ->assertSessionHasNoErrors()->assertSessionMissing('error');
 
         // 2 porsi × 0,15 kg keju, 2 × 0,25 kg tepung
@@ -252,11 +252,11 @@ class DapurTest extends TestCase
         $p = app(PesananService::class)->buat([['id_menu' => $menu->id, 'jumlah' => 2]], 'dine_in', kasir: $this->kasir, data: ['nomor_meja' => '01']);
 
         // sebelum mulai: kebutuhan bahan & peringatan stok kurang terlihat
-        $this->actingAs($this->dapur)->get("/dapur/antrean?tiket={$p->tiketDapur->id}")
+        $this->actingAs($this->dapur)->get("/dapur/antrean?tiket={$p->tiketDapur->getRouteKey()}")
             ->assertSee('Bahan yang akan dipakai')->assertSee('⚠ Keju Mozzarella')->assertSee('butuh 0,3 kg · sisa 0,2');
 
         // sesudah mulai: hanya satu pesan peringatan, tanpa toast sukses
-        $this->actingAs($this->dapur)->post("/dapur/tiket/{$p->tiketDapur->id}/mulai")
+        $this->actingAs($this->dapur)->post("/dapur/tiket/{$p->tiketDapur->getRouteKey()}/mulai")
             ->assertSessionHasNoErrors()->assertSessionHas('error', fn ($m) => str_contains($m, 'Keju Mozzarella'))->assertSessionMissing('status');
 
         $this->assertSame(TiketDapur::STATUS_DIMASAK, $p->tiketDapur->fresh()->status_masak);
@@ -273,7 +273,7 @@ class DapurTest extends TestCase
         $lemon = BahanBaku::firstWhere('nama_bahan', 'Lemon');
         $isi = ['nama_menu' => $menu->nama_menu, 'id_kategori' => $menu->id_kategori, 'harga' => '28.000', 'tersedia' => 1];
 
-        $this->actingAs($admin)->put("/admin/menu/{$menu->id}", $isi + ['resep' => [
+        $this->actingAs($admin)->put("/admin/menu/{$menu->getRouteKey()}", $isi + ['resep' => [
             ['id_bahan' => $kentang->id, 'jumlah' => '0,2'],
             ['id_bahan' => '', 'jumlah' => ''], // baris kosong diabaikan
             ['id_bahan' => $lemon->id, 'jumlah' => '0.01'],
@@ -283,9 +283,9 @@ class DapurTest extends TestCase
         $this->actingAs($admin)->get('/admin/menu')->assertSee('Resep: 2 bahan baku');
 
         // hapus satu bahan, takaran tidak valid ditolak
-        $this->actingAs($admin)->put("/admin/menu/{$menu->id}", $isi + ['resep' => [['id_bahan' => $kentang->id, 'jumlah' => '0.25']]]);
+        $this->actingAs($admin)->put("/admin/menu/{$menu->getRouteKey()}", $isi + ['resep' => [['id_bahan' => $kentang->id, 'jumlah' => '0.25']]]);
         $this->assertSame(1, $menu->resep()->count());
-        $this->actingAs($admin)->put("/admin/menu/{$menu->id}", $isi + ['resep' => [['id_bahan' => $kentang->id, 'jumlah' => '0']]])
+        $this->actingAs($admin)->put("/admin/menu/{$menu->getRouteKey()}", $isi + ['resep' => [['id_bahan' => $kentang->id, 'jumlah' => '0']]])
             ->assertSessionHasErrors('resep.0.jumlah');
         $this->assertSame('0.25', $menu->resep()->first()->jumlah);
     }

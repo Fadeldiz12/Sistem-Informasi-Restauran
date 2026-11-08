@@ -66,8 +66,8 @@ Route::middleware(['auth', 'role:'.User::ROLE_PELANGGAN])->name('pelanggan.')->g
     Route::get('/keranjang', [Pelanggan\KeranjangController::class, 'index'])->name('keranjang');
     Route::post('/keranjang', [Pelanggan\KeranjangController::class, 'store'])->name('keranjang.store');
     Route::delete('/keranjang', [Pelanggan\KeranjangController::class, 'clear'])->name('keranjang.clear');
-    Route::patch('/keranjang/{menu}', [Pelanggan\KeranjangController::class, 'update'])->whereNumber('menu')->name('keranjang.update');
-    Route::delete('/keranjang/{menu}', [Pelanggan\KeranjangController::class, 'destroy'])->whereNumber('menu')->name('keranjang.destroy');
+    Route::patch('/keranjang/{menu}', [Pelanggan\KeranjangController::class, 'update'])->name('keranjang.update');
+    Route::delete('/keranjang/{menu}', [Pelanggan\KeranjangController::class, 'destroy'])->name('keranjang.destroy');
 
     Route::get('/checkout', [Pelanggan\CheckoutController::class, 'create'])->name('checkout');
     Route::post('/checkout', [Pelanggan\CheckoutController::class, 'store'])->middleware('throttle:10,1,checkout')->name('checkout.store');

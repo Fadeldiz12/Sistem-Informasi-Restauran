@@ -73,7 +73,7 @@ class MidtransTest extends TestCase
     {
         $this->fakeCharge(['va_numbers' => [['bank' => 'bca', 'va_number' => '12345678901']]]);
 
-        $this->actingAs($this->pelanggan)->post("/pesanan/{$this->pesanan->id}/pembayaran", ['metode' => 'transfer', 'bank' => 'bca'])
+        $this->actingAs($this->pelanggan)->post("/pesanan/{$this->pesanan->getRouteKey()}/pembayaran", ['metode' => 'transfer', 'bank' => 'bca'])
             ->assertSessionHasNoErrors();
 
         Http::assertSent(fn (Request $r) => $r->url() === 'https://api.sandbox.midtrans.com/v2/charge'
@@ -87,18 +87,18 @@ class MidtransTest extends TestCase
         $this->assertNotNull($bayar->kedaluwarsa_pada);
         $this->assertSame(Pesanan::STATUS_MENUNGGU, $this->pesanan->fresh()->status);
 
-        $this->actingAs($this->pelanggan)->get("/pesanan/{$this->pesanan->id}/pembayaran")
+        $this->actingAs($this->pelanggan)->get("/pesanan/{$this->pesanan->getRouteKey()}/pembayaran")
             ->assertSee('12345678901')->assertSee('VA BCA')->assertSee('Menunggu pembayaran')->assertSee('simulator Midtrans');
 
         // memilih VA yang sama lagi tidak membuat transaksi baru
-        $this->actingAs($this->pelanggan)->post("/pesanan/{$this->pesanan->id}/pembayaran", ['metode' => 'transfer', 'bank' => 'bca']);
+        $this->actingAs($this->pelanggan)->post("/pesanan/{$this->pesanan->getRouteKey()}/pembayaran", ['metode' => 'transfer', 'bank' => 'bca']);
         Http::assertSentCount(1);
 
         // pesanan VA tidak perlu dikonfirmasi / diproses kasir
         $kasir = User::factory()->create(['role' => User::ROLE_KASIR]);
         $this->actingAs($kasir)->get('/kasir/online')->assertDontSee($this->pesanan->kode());
         $this->actingAs($kasir)->get('/kasir/pembayaran')->assertDontSee($this->pesanan->kode());
-        $this->actingAs($kasir)->post("/kasir/online/{$this->pesanan->id}/terima")->assertSessionHasErrors('pesanan');
+        $this->actingAs($kasir)->post("/kasir/online/{$this->pesanan->getRouteKey()}/terima")->assertSessionHasErrors('pesanan');
     }
 
     public function test_va_permata_dan_qris(): void
@@ -107,26 +107,26 @@ class MidtransTest extends TestCase
             ['permata_va_number' => '8778001122334455'],
             ['actions' => [['name' => 'generate-qr-code', 'method' => 'GET', 'url' => 'https://api.sandbox.midtrans.com/v2/qris/abc/qr-code']]],
         );
-        $this->actingAs($this->pelanggan)->post("/pesanan/{$this->pesanan->id}/pembayaran", ['metode' => 'transfer', 'bank' => 'permata']);
+        $this->actingAs($this->pelanggan)->post("/pesanan/{$this->pesanan->getRouteKey()}/pembayaran", ['metode' => 'transfer', 'bank' => 'permata']);
         $this->assertSame('8778001122334455', $this->pesanan->fresh()->pembayaran->nomor_va);
 
-        $this->actingAs($this->pelanggan)->post("/pesanan/{$this->pesanan->id}/pembayaran", ['metode' => 'qris'])->assertSessionHasNoErrors();
+        $this->actingAs($this->pelanggan)->post("/pesanan/{$this->pesanan->getRouteKey()}/pembayaran", ['metode' => 'qris'])->assertSessionHasNoErrors();
 
         Http::assertSent(fn (Request $r) => str_ends_with($r->url(), '/v2/charge') && $r['payment_type'] === 'qris');
         Http::assertSent(fn (Request $r) => str_ends_with($r->url(), '/cancel')); // VA Permata lama dibatalkan
         $bayar = $this->pesanan->fresh()->pembayaran;
         $this->assertSame(['qris', null, 'https://api.sandbox.midtrans.com/v2/qris/abc/qr-code'], [$bayar->metode, $bayar->bank, $bayar->qris_url]);
-        $this->actingAs($this->pelanggan)->get("/pesanan/{$this->pesanan->id}/pembayaran")->assertSee('https://api.sandbox.midtrans.com/v2/qris/abc/qr-code');
+        $this->actingAs($this->pelanggan)->get("/pesanan/{$this->pesanan->getRouteKey()}/pembayaran")->assertSee('https://api.sandbox.midtrans.com/v2/qris/abc/qr-code');
     }
 
     public function test_validasi_dan_error_midtrans(): void
     {
-        $this->actingAs($this->pelanggan)->post("/pesanan/{$this->pesanan->id}/pembayaran", ['metode' => 'transfer'])->assertSessionHasErrors('bank');
-        $this->actingAs($this->pelanggan)->post("/pesanan/{$this->pesanan->id}/pembayaran", ['metode' => 'transfer', 'bank' => 'jago'])->assertSessionHasErrors('bank');
+        $this->actingAs($this->pelanggan)->post("/pesanan/{$this->pesanan->getRouteKey()}/pembayaran", ['metode' => 'transfer'])->assertSessionHasErrors('bank');
+        $this->actingAs($this->pelanggan)->post("/pesanan/{$this->pesanan->getRouteKey()}/pembayaran", ['metode' => 'transfer', 'bank' => 'jago'])->assertSessionHasErrors('bank');
 
         // Midtrans bisa membalas HTTP 200 dengan status_code error
         Http::fake(['api.sandbox.midtrans.com/*' => Http::response(['status_code' => '401', 'status_message' => 'Access denied due to unauthorized transaction'])]);
-        $this->actingAs($this->pelanggan)->post("/pesanan/{$this->pesanan->id}/pembayaran", ['metode' => 'transfer', 'bank' => 'bni'])
+        $this->actingAs($this->pelanggan)->post("/pesanan/{$this->pesanan->getRouteKey()}/pembayaran", ['metode' => 'transfer', 'bank' => 'bni'])
             ->assertSessionHasErrors(['metode' => 'Midtrans: Access denied due to unauthorized transaction']);
         $this->assertSame('tunai', $this->pesanan->fresh()->pembayaran->metode); // metode dari checkout tidak berubah
     }
@@ -134,31 +134,31 @@ class MidtransTest extends TestCase
     public function test_cek_status_lunas_langsung_ke_dapur(): void
     {
         $this->fakeCharge(['va_numbers' => [['bank' => 'bri', 'va_number' => '88810000001']]]);
-        $this->actingAs($this->pelanggan)->post("/pesanan/{$this->pesanan->id}/pembayaran", ['metode' => 'transfer', 'bank' => 'bri']);
+        $this->actingAs($this->pelanggan)->post("/pesanan/{$this->pesanan->getRouteKey()}/pembayaran", ['metode' => 'transfer', 'bank' => 'bri']);
         $kode = $this->pesanan->fresh()->pembayaran->kode_transaksi;
 
         Http::fake(["api.sandbox.midtrans.com/v2/{$kode}/status" => Http::sequence()
             ->push(['status_code' => '201', 'transaction_status' => 'pending'])
             ->push(['status_code' => '200', 'transaction_status' => 'settlement', 'fraud_status' => 'accept'])]);
 
-        $this->actingAs($this->pelanggan)->getJson("/pesanan/{$this->pesanan->id}/pembayaran/status")
+        $this->actingAs($this->pelanggan)->getJson("/pesanan/{$this->pesanan->getRouteKey()}/pembayaran/status")
             ->assertOk()->assertJson(['lunas' => false, 'status_pesanan' => Pesanan::STATUS_MENUNGGU]);
 
         $this->travel(5)->seconds(); // dibatasi satu cek per 4 detik
-        $this->actingAs($this->pelanggan)->getJson("/pesanan/{$this->pesanan->id}/pembayaran/status")
+        $this->actingAs($this->pelanggan)->getJson("/pesanan/{$this->pesanan->getRouteKey()}/pembayaran/status")
             ->assertOk()->assertJson(['lunas' => true, 'status_pesanan' => Pesanan::STATUS_DIPROSES]);
 
         $p = $this->pesanan->fresh();
         $this->assertSame(Pembayaran::STATUS_LUNAS, $p->pembayaran->status_bayar);
         $this->assertNotNull($p->pembayaran->waktu_bayar);
         $this->assertSame(TiketDapur::STATUS_ANTRE, $p->tiketDapur->status_masak);
-        $this->actingAs($this->pelanggan)->get("/pesanan/{$this->pesanan->id}/pembayaran")->assertSee('berhasil');
+        $this->actingAs($this->pelanggan)->get("/pesanan/{$this->pesanan->getRouteKey()}/pembayaran")->assertSee('berhasil');
     }
 
     public function test_notifikasi_webhook(): void
     {
         $this->fakeCharge(['va_numbers' => [['bank' => 'bni', 'va_number' => '9881234']]]);
-        $this->actingAs($this->pelanggan)->post("/pesanan/{$this->pesanan->id}/pembayaran", ['metode' => 'transfer', 'bank' => 'bni']);
+        $this->actingAs($this->pelanggan)->post("/pesanan/{$this->pesanan->getRouteKey()}/pembayaran", ['metode' => 'transfer', 'bank' => 'bni']);
 
         // tanpa login & tanpa CSRF; signature salah ditolak
         $this->postJson('/midtrans/notifikasi', $this->notifikasi('settlement', signature: 'palsu'))->assertForbidden();
@@ -179,14 +179,14 @@ class MidtransTest extends TestCase
     public function test_kedaluwarsa_bisa_pilih_metode_lagi(): void
     {
         $this->fakeCharge(['va_numbers' => [['bank' => 'bca', 'va_number' => '111']]], ['va_numbers' => [['bank' => 'bca', 'va_number' => '222']]]);
-        $this->actingAs($this->pelanggan)->post("/pesanan/{$this->pesanan->id}/pembayaran", ['metode' => 'transfer', 'bank' => 'bca']);
+        $this->actingAs($this->pelanggan)->post("/pesanan/{$this->pesanan->getRouteKey()}/pembayaran", ['metode' => 'transfer', 'bank' => 'bca']);
 
         $this->postJson('/midtrans/notifikasi', $this->notifikasi('expire'))->assertOk();
         $this->assertSame(Pembayaran::STATUS_DITOLAK, $this->pesanan->fresh()->pembayaran->status_bayar);
-        $this->actingAs($this->pelanggan)->get("/pesanan/{$this->pesanan->id}/pembayaran")->assertSee('kedaluwarsa')->assertSee('Pilih metode pembayaran');
+        $this->actingAs($this->pelanggan)->get("/pesanan/{$this->pesanan->getRouteKey()}/pembayaran")->assertSee('kedaluwarsa')->assertSee('Pilih metode pembayaran');
 
         // VA sama dipilih lagi -> transaksi baru
-        $this->actingAs($this->pelanggan)->post("/pesanan/{$this->pesanan->id}/pembayaran", ['metode' => 'transfer', 'bank' => 'bca']);
+        $this->actingAs($this->pelanggan)->post("/pesanan/{$this->pesanan->getRouteKey()}/pembayaran", ['metode' => 'transfer', 'bank' => 'bca']);
         $bayar = $this->pesanan->fresh()->pembayaran;
         $this->assertSame(['222', Pembayaran::STATUS_MENUNGGU], [$bayar->nomor_va, $bayar->status_bayar]);
     }

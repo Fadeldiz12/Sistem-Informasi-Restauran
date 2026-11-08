@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\IdTerenkripsiDiUrl;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Attributes\Table;
@@ -13,6 +14,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['id_pesanan', 'waktu_masuk', 'status_masak', 'mulai_pada', 'selesai_pada'])]
 class TiketDapur extends Model
 {
+    use IdTerenkripsiDiUrl;
+
     public const STATUS_ANTRE = 'antre';
 
     public const STATUS_DIMASAK = 'dimasak';

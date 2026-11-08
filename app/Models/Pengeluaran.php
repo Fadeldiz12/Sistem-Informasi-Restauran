@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\IdTerenkripsiDiUrl;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Table;
 use Illuminate\Database\Eloquent\Model;
@@ -11,6 +12,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['id_owner', 'kategori', 'nominal', 'keterangan', 'tanggal'])]
 class Pengeluaran extends Model
 {
+    use IdTerenkripsiDiUrl;
+
     public const KATEGORI = ['Bahan baku', 'Gas', 'Utilitas', 'Gaji', 'Perawatan', 'Kemasan', 'Lainnya'];
 
     protected function casts(): array

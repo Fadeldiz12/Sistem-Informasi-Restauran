@@ -19,7 +19,7 @@ class PembayaranController extends Controller
     public function index(Request $request): View
     {
         $daftar = Pesanan::belumLunas()->with(['pelanggan', 'pembayaran', 'pengiriman.zona', 'kasir', 'tiketDapur'])->orderBy('waktu_pesan')->get();
-        $dipilih = $daftar->firstWhere('id', $request->integer('pesanan')) ?? $daftar->first();
+        $dipilih = $daftar->firstWhere('id', Pesanan::idDariKode($request->query('pesanan'))) ?? $daftar->first();
 
         $struk = session('struk') ? Pesanan::with(['detail.menu', 'pembayaran.kasir', 'pelanggan', 'pengiriman.zona'])->find(session('struk')) : null;
 

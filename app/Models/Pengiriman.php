@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\IdTerenkripsiDiUrl;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Attributes\Table;
@@ -13,6 +14,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['id_pesanan', 'id_kurir', 'id_zona', 'nama_penerima', 'no_hp_penerima', 'alamat', 'lat', 'lng', 'patokan', 'jarak_km', 'waktu_siap', 'status_kirim', 'bukti_kirim', 'berangkat_pada', 'diterima_pada'])]
 class Pengiriman extends Model
 {
+    use IdTerenkripsiDiUrl;
+
     public const STATUS_MENUNGGU_KURIR = 'menunggu_kurir';
 
     public const STATUS_DALAM_PERJALANAN = 'dalam_perjalanan';

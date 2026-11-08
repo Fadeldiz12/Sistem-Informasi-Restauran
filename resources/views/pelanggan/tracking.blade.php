@@ -190,7 +190,7 @@
     {{-- di HP: detail pesanan tampil lebih dulu, riwayat dilipat di bawahnya (QA A2-#2) --}}
     <aside class="card riwayat"><details class="riw" open><summary class="card-head" style="margin-bottom:4px"><h2>Pesanan saya</h2><span class="pill b">{{ $daftar->count() }}</span></summary>
       @foreach ($daftar as $p)
-        <a @class(['od', 'on' => $pesanan->id === $p->id]) href="{{ route('pelanggan.tracking', ['pesanan' => $p->id]) }}#detail"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b style="font:700 16px var(--f-title)">{{ $p->kode() }}</b><span class="pill {{ $pillStatus($p) }}">{{ $statusTeks($p) }}</span></div>
+        <a @class(['od', 'on' => $pesanan->id === $p->id]) href="{{ route('pelanggan.tracking', ['pesanan' => $p]) }}#detail"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b style="font:700 16px var(--f-title)">{{ $p->kode() }}</b><span class="pill {{ $pillStatus($p) }}">{{ $statusTeks($p) }}</span></div>
           <div style="font-size:13px;opacity:.8;margin-top:6px">{{ $waktu($p->waktu_pesan) }} · {{ $p->layananDetail() }} · {{ $p->detail->sum('jumlah') }} item</div></a>
       @endforeach
     </details></aside>

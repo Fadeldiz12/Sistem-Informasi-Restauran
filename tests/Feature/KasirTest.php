@@ -73,7 +73,7 @@ class KasirTest extends TestCase
         $p = $this->pesananOnline();
         $this->actingAs($this->kasir)->get('/kasir/online')->assertSee($p->kode())->assertSee('Sari Wulandari')->assertSee('Bayar Tunai');
 
-        $this->actingAs($this->kasir)->post("/kasir/online/{$p->id}/terima")->assertSessionHasNoErrors()->assertSessionHas('status');
+        $this->actingAs($this->kasir)->post("/kasir/online/{$p->getRouteKey()}/terima")->assertSessionHasNoErrors()->assertSessionHas('status');
 
         $p->refresh();
         $this->assertSame([Pesanan::STATUS_DIPROSES, $this->kasir->id], [$p->status, $p->id_kasir]);
@@ -81,7 +81,7 @@ class KasirTest extends TestCase
         $this->assertNotNull($p->tiketDapur->waktu_masuk);
 
         // tidak bisa dikonfirmasi dua kali, tiket tetap satu
-        $this->actingAs($this->kasir)->post("/kasir/online/{$p->id}/terima")->assertSessionHasErrors('pesanan');
+        $this->actingAs($this->kasir)->post("/kasir/online/{$p->getRouteKey()}/terima")->assertSessionHasErrors('pesanan');
         $this->assertSame(1, TiketDapur::count());
         $this->actingAs($this->kasir)->get('/kasir/online')->assertDontSee($p->kode());
     }
@@ -89,26 +89,26 @@ class KasirTest extends TestCase
     public function test_konfirmasi_butuh_metode_pembayaran(): void
     {
         $p = $this->pesananOnline(metode: null);
-        $this->actingAs($this->kasir)->post("/kasir/online/{$p->id}/terima")->assertSessionHasErrors('pesanan');
+        $this->actingAs($this->kasir)->post("/kasir/online/{$p->getRouteKey()}/terima")->assertSessionHasErrors('pesanan');
         $this->assertSame(Pesanan::STATUS_MENUNGGU, $p->fresh()->status);
 
         $q = $this->pesananOnline(metode: 'tunai');
-        $this->actingAs($this->kasir)->post("/kasir/online/{$q->id}/terima")->assertSessionHasNoErrors();
+        $this->actingAs($this->kasir)->post("/kasir/online/{$q->getRouteKey()}/terima")->assertSessionHasNoErrors();
         $this->assertSame(Pesanan::STATUS_DIPROSES, $q->fresh()->status);
     }
 
     public function test_tolak_pesanan_online(): void
     {
         $p = $this->pesananOnline();
-        $this->actingAs($this->kasir)->post("/kasir/online/{$p->id}/tolak")->assertSessionHasErrors('alasan');
-        $this->actingAs($this->kasir)->post("/kasir/online/{$p->id}/tolak", ['alasan' => 'Lainnya'])->assertSessionHasErrors('alasan_lain');
-        $this->actingAs($this->kasir)->post("/kasir/online/{$p->id}/tolak", ['alasan' => 'Menu habis'])->assertSessionHasNoErrors();
+        $this->actingAs($this->kasir)->post("/kasir/online/{$p->getRouteKey()}/tolak")->assertSessionHasErrors('alasan');
+        $this->actingAs($this->kasir)->post("/kasir/online/{$p->getRouteKey()}/tolak", ['alasan' => 'Lainnya'])->assertSessionHasErrors('alasan_lain');
+        $this->actingAs($this->kasir)->post("/kasir/online/{$p->getRouteKey()}/tolak", ['alasan' => 'Menu habis'])->assertSessionHasNoErrors();
 
         $this->assertSame([Pesanan::STATUS_DIBATALKAN, 'Menu habis'], [$p->fresh()->status, $p->fresh()->alasan_batal]);
         $this->assertNull($p->fresh()->tiketDapur);
-        $this->actingAs($this->pelanggan)->get("/tracking?pesanan={$p->id}")->assertSee('dibatalkan oleh kasir. Alasan: Menu habis');
+        $this->actingAs($this->pelanggan)->get("/tracking?pesanan={$p->getRouteKey()}")->assertSee('dibatalkan oleh kasir. Alasan: Menu habis');
         // dikonfirmasi dari tab lama: pesannya jelas
-        $this->actingAs($this->kasir)->post("/kasir/online/{$p->id}/terima")->assertSessionHasErrors(['pesanan' => "{$p->kode()} sudah ditolak/dibatalkan."]);
+        $this->actingAs($this->kasir)->post("/kasir/online/{$p->getRouteKey()}/terima")->assertSessionHasErrors(['pesanan' => "{$p->kode()} sudah ditolak/dibatalkan."]);
         $this->actingAs($this->kasir)->get('/kasir/pembayaran')->assertDontSee($p->kode());
     }
 
@@ -118,29 +118,29 @@ class KasirTest extends TestCase
     {
         $p = $this->pesananOnline();
         $this->actingAs($this->kasir)->get('/kasir/pembayaran')->assertDontSee($p->kode()); // belum dikonfirmasi
-        $this->actingAs($this->kasir)->post("/kasir/pembayaran/{$p->id}/lunas", ['metode' => 'tunai', 'uang_diterima' => '200000'])->assertSessionHasErrors('pesanan');
+        $this->actingAs($this->kasir)->post("/kasir/pembayaran/{$p->getRouteKey()}/lunas", ['metode' => 'tunai', 'uang_diterima' => '200000'])->assertSessionHasErrors('pesanan');
         $this->assertFalse($p->fresh()->isLunas());
 
-        $this->actingAs($this->kasir)->post("/kasir/online/{$p->id}/terima");
-        $this->actingAs($this->kasir)->get("/kasir/pembayaran?pesanan={$p->id}")->assertSee($p->kode())->assertSee('Sari Wulandari');
+        $this->actingAs($this->kasir)->post("/kasir/online/{$p->getRouteKey()}/terima");
+        $this->actingAs($this->kasir)->get("/kasir/pembayaran?pesanan={$p->getRouteKey()}")->assertSee($p->kode())->assertSee('Sari Wulandari');
 
-        $this->actingAs($this->kasir)->post("/kasir/pembayaran/{$p->id}/lunas", ['metode' => 'tunai', 'uang_diterima' => '200000'])->assertSessionHasNoErrors();
+        $this->actingAs($this->kasir)->post("/kasir/pembayaran/{$p->getRouteKey()}/lunas", ['metode' => 'tunai', 'uang_diterima' => '200000'])->assertSessionHasNoErrors();
         $bayar = $p->fresh()->pembayaran;
         $this->assertSame([Pembayaran::STATUS_LUNAS, $this->kasir->id], [$bayar->status_bayar, $bayar->id_kasir]);
         $this->assertNotNull($bayar->waktu_bayar);
-        $this->actingAs($this->kasir)->get('/kasir/pembayaran')->assertDontSee(route('kasir.pembayaran', ['pesanan' => $p->id]));
+        $this->actingAs($this->kasir)->get('/kasir/pembayaran')->assertDontSee(route('kasir.pembayaran', ['pesanan' => $p]));
 
         // pelanggan tidak bisa mengubah pembayaran yang sudah lunas
-        $this->actingAs($this->pelanggan)->post("/pesanan/{$p->id}/pembayaran", ['metode' => 'tunai'])->assertSessionHasErrors('metode');
+        $this->actingAs($this->pelanggan)->post("/pesanan/{$p->getRouteKey()}/pembayaran", ['metode' => 'tunai'])->assertSessionHasErrors('metode');
     }
 
     public function test_pesanan_delivery_tunai_tidak_bisa_dilunasi_kasir(): void
     {
         $p = $this->pesananOnline('delivery');
-        $this->actingAs($this->kasir)->post("/kasir/online/{$p->id}/terima");
+        $this->actingAs($this->kasir)->post("/kasir/online/{$p->getRouteKey()}/terima");
 
-        $this->actingAs($this->kasir)->get('/kasir/pembayaran')->assertDontSee(route('kasir.pembayaran', ['pesanan' => $p->id]));
-        $this->actingAs($this->kasir)->post("/kasir/pembayaran/{$p->id}/lunas", ['metode' => 'tunai', 'uang_diterima' => '500000'])
+        $this->actingAs($this->kasir)->get('/kasir/pembayaran')->assertDontSee(route('kasir.pembayaran', ['pesanan' => $p]));
+        $this->actingAs($this->kasir)->post("/kasir/pembayaran/{$p->getRouteKey()}/lunas", ['metode' => 'tunai', 'uang_diterima' => '500000'])
             ->assertSessionHasErrors(['pesanan' => 'Pesanan Delivery ini dibayar tunai ke kurir saat diantar, tidak dilunasi di kasir.']);
         $this->assertFalse($p->fresh()->isLunas());
     }
@@ -159,22 +159,22 @@ class KasirTest extends TestCase
         $this->actingAs($this->kasir)->post('/kasir/input', ['jenis_layanan' => 'dine_in', 'nomor_meja' => '12', 'items' => [['id_menu' => $this->pizza->id, 'jumlah' => 1]]]);
         $p = Pesanan::firstOrFail(); // 109.000 + 10.900 + 5.450 = 125.350
 
-        $this->actingAs($this->kasir)->post("/kasir/pembayaran/{$p->id}/lunas", ['metode' => 'tunai', 'uang_diterima' => '100.000'])
+        $this->actingAs($this->kasir)->post("/kasir/pembayaran/{$p->getRouteKey()}/lunas", ['metode' => 'tunai', 'uang_diterima' => '100.000'])
             ->assertSessionHasErrors('uang_diterima');
         $this->assertFalse($p->fresh()->isLunas());
 
-        $this->actingAs($this->kasir)->post("/kasir/pembayaran/{$p->id}/lunas", ['metode' => 'tunai', 'uang_diterima' => '150.000', 'cetak' => '1'])
+        $this->actingAs($this->kasir)->post("/kasir/pembayaran/{$p->getRouteKey()}/lunas", ['metode' => 'tunai', 'uang_diterima' => '150.000', 'cetak' => '1'])
             ->assertSessionHasNoErrors()->assertSessionHas('struk', $p->id);
         $this->assertTrue($p->fresh()->isLunas());
 
         $this->assertEquals(150000, (float) $p->fresh()->pembayaran->uang_diterima);
 
         $this->actingAs($this->kasir)->get('/kasir/pembayaran')->assertSee('Cetak Struk')->assertSee('Kembalian <b>Rp 24.650</b>', false);
-        $this->actingAs($this->kasir)->get("/kasir/pesanan/{$p->id}/struk")->assertOk()
+        $this->actingAs($this->kasir)->get("/kasir/pesanan/{$p->getRouteKey()}/struk")->assertOk()
             ->assertSee('Meja 12')->assertSee('Rp 125.350')->assertSee('Rp 150.000')->assertSee('Rp 24.650')->assertSee('LUNAS');
 
         // angka di struk diambil dari database, tidak bisa diubah lewat URL
-        $this->actingAs($this->kasir)->get("/kasir/pesanan/{$p->id}/struk?tunai=5000000")->assertOk()
+        $this->actingAs($this->kasir)->get("/kasir/pesanan/{$p->getRouteKey()}/struk?tunai=5000000")->assertOk()
             ->assertDontSee('Rp 5.000.000')->assertSee('Rp 24.650');
 
         // cetak ulang dari tab Sudah Lunas dan dari dashboard
@@ -182,13 +182,13 @@ class KasirTest extends TestCase
             ->assertSee(route('kasir.struk', $p));
         $this->actingAs($this->kasir)->get('/kasir/dashboard')->assertSee(route('kasir.struk', $p));
 
-        $this->actingAs($this->kasir)->post("/kasir/pembayaran/{$p->id}/lunas", ['metode' => 'tunai', 'uang_diterima' => '200000'])->assertSessionHasErrors('pesanan');
+        $this->actingAs($this->kasir)->post("/kasir/pembayaran/{$p->getRouteKey()}/lunas", ['metode' => 'tunai', 'uang_diterima' => '200000'])->assertSessionHasErrors('pesanan');
     }
 
     public function test_struk_hanya_untuk_pesanan_lunas(): void
     {
         $p = $this->pesananOnline();
-        $this->actingAs($this->kasir)->get("/kasir/pesanan/{$p->id}/struk")->assertNotFound();
+        $this->actingAs($this->kasir)->get("/kasir/pesanan/{$p->getRouteKey()}/struk")->assertNotFound();
     }
 
     // ---------- input pesanan di tempat
@@ -229,18 +229,18 @@ class KasirTest extends TestCase
         $this->actingAs($this->kasir)->post('/kasir/input', ['jenis_layanan' => 'dine_in', 'nomor_meja' => '03', 'items' => [['id_menu' => $this->pizza->id, 'jumlah' => 1]]]);
         $p = Pesanan::firstOrFail();
 
-        $this->actingAs($this->kasir)->post("/kasir/pesanan/{$p->id}/selesai")->assertSessionHasErrors('pesanan'); // belum siap
+        $this->actingAs($this->kasir)->post("/kasir/pesanan/{$p->getRouteKey()}/selesai")->assertSessionHasErrors('pesanan'); // belum siap
         $p->update(['status' => Pesanan::STATUS_SIAP]);
-        $this->actingAs($this->kasir)->post("/kasir/pesanan/{$p->id}/selesai")->assertSessionHasErrors('pesanan'); // belum lunas
+        $this->actingAs($this->kasir)->post("/kasir/pesanan/{$p->getRouteKey()}/selesai")->assertSessionHasErrors('pesanan'); // belum lunas
 
-        $this->actingAs($this->kasir)->post("/kasir/pembayaran/{$p->id}/lunas", ['metode' => 'qris']);
+        $this->actingAs($this->kasir)->post("/kasir/pembayaran/{$p->getRouteKey()}/lunas", ['metode' => 'qris']);
         $this->actingAs($this->kasir)->get('/kasir/dashboard')->assertSee(route('kasir.selesai', $p));
-        $this->actingAs($this->kasir)->post("/kasir/pesanan/{$p->id}/selesai")->assertSessionHasNoErrors();
+        $this->actingAs($this->kasir)->post("/kasir/pesanan/{$p->getRouteKey()}/selesai")->assertSessionHasNoErrors();
         $this->assertSame(Pesanan::STATUS_SELESAI, $p->fresh()->status);
 
         $d = $this->pesananOnline('delivery', 'tunai');
         $d->update(['status' => Pesanan::STATUS_SIAP]);
-        $this->actingAs($this->kasir)->post("/kasir/pesanan/{$d->id}/selesai")->assertSessionHasErrors('pesanan'); // delivery oleh kurir
+        $this->actingAs($this->kasir)->post("/kasir/pesanan/{$d->getRouteKey()}/selesai")->assertSessionHasErrors('pesanan'); // delivery oleh kurir
     }
 
     public function test_dashboard_kasir_menghitung_data_hari_ini(): void
@@ -248,7 +248,7 @@ class KasirTest extends TestCase
         $this->pesananOnline();
         $this->actingAs($this->kasir)->post('/kasir/input', ['jenis_layanan' => 'dine_in', 'nomor_meja' => '01', 'items' => [['id_menu' => $this->pizza->id, 'jumlah' => 1]]]);
         $q = Pesanan::latest('id')->first();
-        $this->actingAs($this->kasir)->post("/kasir/pembayaran/{$q->id}/lunas", ['metode' => 'tunai', 'uang_diterima' => '200000']);
+        $this->actingAs($this->kasir)->post("/kasir/pembayaran/{$q->getRouteKey()}/lunas", ['metode' => 'tunai', 'uang_diterima' => '200000']);
 
         $this->actingAs($this->kasir)->get('/kasir/dashboard')->assertOk()
             ->assertSee('Dine In 1 · Take Away 1 · Delivery 0')
@@ -272,15 +272,15 @@ class KasirTest extends TestCase
         $p = $this->inputKasir('05');
         $this->assertNotNull($p->tiketDapur);
 
-        $this->actingAs($this->kasir)->post("/kasir/pesanan/{$p->id}/batal", ['alasan' => ''])->assertSessionHasErrors('alasan');
-        $this->actingAs($this->kasir)->post("/kasir/pesanan/{$p->id}/batal", ['alasan' => 'Salah input kasir'])->assertSessionHas('status');
+        $this->actingAs($this->kasir)->post("/kasir/pesanan/{$p->getRouteKey()}/batal", ['alasan' => ''])->assertSessionHasErrors('alasan');
+        $this->actingAs($this->kasir)->post("/kasir/pesanan/{$p->getRouteKey()}/batal", ['alasan' => 'Salah input kasir'])->assertSessionHas('status');
 
         $p->refresh();
         $this->assertSame([Pesanan::STATUS_DIBATALKAN, 'Salah input kasir'], [$p->status, $p->alasan_batal]);
         $this->assertNull($p->tiketDapur);
         $this->inputKasir('05'); // meja kosong lagi
 
-        $this->actingAs($this->kasir)->post("/kasir/pesanan/{$p->id}/batal", ['alasan' => 'lagi'])->assertSessionHasErrors('pesanan');
+        $this->actingAs($this->kasir)->post("/kasir/pesanan/{$p->getRouteKey()}/batal", ['alasan' => 'lagi'])->assertSessionHasErrors('pesanan');
     }
 
     public function test_batal_setelah_mulai_masak_bisa_mengembalikan_stok(): void
@@ -290,11 +290,11 @@ class KasirTest extends TestCase
         $awal = (float) $keju->stok;
         $p = $this->inputKasir('06', 2);
         $dapur = User::factory()->create(['role' => User::ROLE_DAPUR]);
-        $this->actingAs($dapur)->post("/dapur/tiket/{$p->tiketDapur->id}/mulai");
+        $this->actingAs($dapur)->post("/dapur/tiket/{$p->tiketDapur->getRouteKey()}/mulai");
         $this->assertLessThan($awal, (float) $keju->fresh()->stok);
 
         $this->actingAs($this->kasir)->get('/kasir/dashboard')->assertSee('data-dimasak="1"', false);
-        $this->actingAs($this->kasir)->post("/kasir/pesanan/{$p->id}/batal", ['alasan' => 'Pelanggan batal', 'kembalikan_stok' => 1])
+        $this->actingAs($this->kasir)->post("/kasir/pesanan/{$p->getRouteKey()}/batal", ['alasan' => 'Pelanggan batal', 'kembalikan_stok' => 1])
             ->assertSessionHas('status', fn ($m) => str_contains($m, 'stok'));
 
         $this->assertEqualsWithDelta($awal, (float) $keju->fresh()->stok, 0.001);
@@ -304,11 +304,11 @@ class KasirTest extends TestCase
     public function test_pesanan_lunas_atau_online_menunggu_tidak_bisa_dibatalkan_kasir(): void
     {
         $p = $this->inputKasir('07');
-        $this->actingAs($this->kasir)->post("/kasir/pembayaran/{$p->id}/lunas", ['metode' => 'qris']);
-        $this->actingAs($this->kasir)->post("/kasir/pesanan/{$p->id}/batal", ['alasan' => 'x'])->assertSessionHasErrors('pesanan');
+        $this->actingAs($this->kasir)->post("/kasir/pembayaran/{$p->getRouteKey()}/lunas", ['metode' => 'qris']);
+        $this->actingAs($this->kasir)->post("/kasir/pesanan/{$p->getRouteKey()}/batal", ['alasan' => 'x'])->assertSessionHasErrors('pesanan');
 
         $q = $this->pesananOnline();
-        $this->actingAs($this->kasir)->post("/kasir/pesanan/{$q->id}/batal", ['alasan' => 'x'])->assertSessionHasErrors('pesanan');
+        $this->actingAs($this->kasir)->post("/kasir/pesanan/{$q->getRouteKey()}/batal", ['alasan' => 'x'])->assertSessionHasErrors('pesanan');
         $this->assertSame(Pesanan::STATUS_MENUNGGU, $q->fresh()->status);
     }
 
@@ -318,9 +318,9 @@ class KasirTest extends TestCase
         $teh = Menu::where('nama_menu', 'Lemon Iced Tea')->firstOrFail();
 
         $this->actingAs($this->kasir)->get('/kasir/dashboard')->assertSee(route('kasir.pesanan.ubah', $p));
-        $this->actingAs($this->kasir)->get("/kasir/pesanan/{$p->id}/ubah")->assertOk()->assertSee('Ubah Pesanan '.$p->kode())->assertSee('Simpan Perubahan');
+        $this->actingAs($this->kasir)->get("/kasir/pesanan/{$p->getRouteKey()}/ubah")->assertOk()->assertSee('Ubah Pesanan '.$p->kode())->assertSee('Simpan Perubahan');
 
-        $this->actingAs($this->kasir)->put("/kasir/pesanan/{$p->id}", ['jenis_layanan' => 'dine_in', 'nomor_meja' => '04', 'items' => [
+        $this->actingAs($this->kasir)->put("/kasir/pesanan/{$p->getRouteKey()}", ['jenis_layanan' => 'dine_in', 'nomor_meja' => '04', 'items' => [
             ['id_menu' => $this->pizza->id, 'jumlah' => 2], ['id_menu' => $teh->id, 'jumlah' => 1, 'catatan' => 'es sedikit'],
         ]])->assertSessionHasNoErrors()->assertRedirect('/kasir/dashboard');
 
@@ -334,14 +334,14 @@ class KasirTest extends TestCase
 
         // setelah dapur mulai memasak, pesanan tidak bisa diubah lagi
         $p->tiketDapur->update(['status_masak' => TiketDapur::STATUS_DIMASAK]);
-        $this->actingAs($this->kasir)->get("/kasir/pesanan/{$p->id}/ubah")->assertRedirect('/kasir/dashboard')->assertSessionHas('error');
-        $this->actingAs($this->kasir)->put("/kasir/pesanan/{$p->id}", ['jenis_layanan' => 'take_away', 'items' => [['id_menu' => $teh->id, 'jumlah' => 1]]])
+        $this->actingAs($this->kasir)->get("/kasir/pesanan/{$p->getRouteKey()}/ubah")->assertRedirect('/kasir/dashboard')->assertSessionHas('error');
+        $this->actingAs($this->kasir)->put("/kasir/pesanan/{$p->getRouteKey()}", ['jenis_layanan' => 'take_away', 'items' => [['id_menu' => $teh->id, 'jumlah' => 1]]])
             ->assertSessionHasErrors('pesanan');
         $this->assertSame(2, $p->detail()->count());
 
         // pesanan online tidak bisa diubah kasir
         $q = $this->pesananOnline();
-        $this->actingAs($this->kasir)->get("/kasir/pesanan/{$q->id}/ubah")->assertRedirect('/kasir/dashboard');
+        $this->actingAs($this->kasir)->get("/kasir/pesanan/{$q->getRouteKey()}/ubah")->assertRedirect('/kasir/dashboard');
     }
 
     public function test_nomor_meja_divalidasi_di_server(): void

@@ -84,7 +84,7 @@ class KasirDeliveryTest extends TestCase
         $this->siap($p);
         $this->assertFalse(KurirService::antrean()->exists());
 
-        $this->actingAs($this->kasir)->post("/kasir/pembayaran/{$p->id}/lunas", ['metode' => 'qris'])->assertSessionHasNoErrors();
+        $this->actingAs($this->kasir)->post("/kasir/pembayaran/{$p->getRouteKey()}/lunas", ['metode' => 'qris'])->assertSessionHasNoErrors();
         $this->assertTrue($p->fresh()->isLunas());
         $this->assertTrue(KurirService::antrean()->whereKey($kirim->id)->exists());
         $this->assertFalse(app(KurirService::class)->perluTagihTunai($p->fresh()));
@@ -100,7 +100,7 @@ class KasirDeliveryTest extends TestCase
         $this->actingAs($this->kasir)->get('/kasir/input')->assertSee('membayar tunai ke kurir');
 
         $this->actingAs($this->kasir)->get('/kasir/pembayaran')->assertDontSee($p->kode());
-        $this->actingAs($this->kasir)->post("/kasir/pembayaran/{$p->id}/lunas", ['metode' => 'tunai', 'uang_diterima' => '999999'])
+        $this->actingAs($this->kasir)->post("/kasir/pembayaran/{$p->getRouteKey()}/lunas", ['metode' => 'tunai', 'uang_diterima' => '999999'])
             ->assertSessionHasErrors('pesanan');
 
         $this->siap($p);
@@ -108,7 +108,7 @@ class KasirDeliveryTest extends TestCase
         $this->assertTrue(app(KurirService::class)->perluTagihTunai($p->fresh()));
 
         $kurir = User::factory()->create(['role' => User::ROLE_KURIR]);
-        $this->actingAs($kurir)->get("/kurir/tugas/{$p->pengiriman->id}")->assertOk()->assertSee('Rina Amalia')->assertSee('tel:081234567890', false);
+        $this->actingAs($kurir)->get("/kurir/tugas/{$p->pengiriman->getRouteKey()}")->assertOk()->assertSee('Rina Amalia')->assertSee('tel:081234567890', false);
     }
 
     public function test_isian_delivery_kasir_divalidasi(): void
@@ -130,16 +130,16 @@ class KasirDeliveryTest extends TestCase
     {
         $this->actingAs($this->kasir)->post('/kasir/input', $this->isian(['bayar' => PesananService::BAYAR_KE_KURIR]));
         $p = Pesanan::sole();
-        $this->actingAs($this->kasir)->get("/kasir/pesanan/{$p->id}/ubah")->assertOk()->assertSee('Jl. Sei Batang Hari No. 12, Medan')->assertSee('081234567890');
+        $this->actingAs($this->kasir)->get("/kasir/pesanan/{$p->getRouteKey()}/ubah")->assertOk()->assertSee('Jl. Sei Batang Hari No. 12, Medan')->assertSee('081234567890');
 
-        $this->actingAs($this->kasir)->put("/kasir/pesanan/{$p->id}", ['jenis_layanan' => 'take_away', 'items' => [['id_menu' => $this->pizza->id, 'jumlah' => 2]]])
+        $this->actingAs($this->kasir)->put("/kasir/pesanan/{$p->getRouteKey()}", ['jenis_layanan' => 'take_away', 'items' => [['id_menu' => $this->pizza->id, 'jumlah' => 2]]])
             ->assertSessionHasNoErrors();
         $p->refresh();
         $this->assertSame([Pesanan::LAYANAN_TAKE_AWAY, 0.0], [$p->jenis_layanan, (float) $p->ongkir]);
         $this->assertNull($p->pengiriman);
         $this->assertNull($p->pembayaran);
 
-        $this->actingAs($this->kasir)->put("/kasir/pesanan/{$p->id}", $this->isian(['bayar' => PesananService::BAYAR_KE_KURIR, 'lat' => PengaturanSistem::LAT_AWAL + 0.018]))
+        $this->actingAs($this->kasir)->put("/kasir/pesanan/{$p->getRouteKey()}", $this->isian(['bayar' => PesananService::BAYAR_KE_KURIR, 'lat' => PengaturanSistem::LAT_AWAL + 0.018]))
             ->assertSessionHasNoErrors();
         $p->refresh();
         $this->assertSame('Zona A', $p->pengiriman->zona->nama_zona);

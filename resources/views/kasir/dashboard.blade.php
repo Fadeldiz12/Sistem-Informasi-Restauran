@@ -63,9 +63,9 @@
               @if ($p->status === Pesanan::STATUS_SIAP && ! $p->isDelivery() && $p->isLunas())
                 <form method="post" action="{{ route('kasir.selesai', $p) }}">@csrf<button class="btn sm" type="submit"><svg class="ic" style="width:15px;height:15px"><use href="#i-check"/></svg>Selesai</button></form>
               @elseif (! $p->isLunas() && ! $p->isDelivery() && $p->status !== Pesanan::STATUS_MENUNGGU && ! $p->pembayaran?->isOtomatis())
-                <a class="btn o sm" href="{{ route('kasir.pembayaran', ['pesanan' => $p->id]) }}">Bayar</a>
+                <a class="btn o sm" href="{{ route('kasir.pembayaran', ['pesanan' => $p]) }}">Bayar</a>
               @elseif ($p->status === Pesanan::STATUS_MENUNGGU && $p->pembayaran?->metode === Pembayaran::METODE_TUNAI)
-                <a class="btn o sm" href="{{ route('kasir.online', ['pesanan' => $p->id]) }}">Konfirmasi</a>
+                <a class="btn o sm" href="{{ route('kasir.online', ['pesanan' => $p]) }}">Konfirmasi</a>
               @endif
               @if ($p->isLunas())
                 <a class="btn o sm" style="margin-top:6px" href="{{ route('kasir.struk', $p) }}" target="_blank" rel="noopener" title="Cetak ulang struk"><svg class="ic" style="width:15px;height:15px"><use href="#i-printer"/></svg>Struk</a>

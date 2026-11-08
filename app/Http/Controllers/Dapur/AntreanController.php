@@ -23,7 +23,7 @@ class AntreanController extends Controller
             ->with(['pesanan.detail.menu', 'pesanan.pelanggan', 'pesanan.pengiriman.zona'])
             ->get();
 
-        $tiket = $antrean->firstWhere('id', $request->integer('tiket')) ?? $antrean->first();
+        $tiket = $antrean->firstWhere('id', TiketDapur::idDariKode($request->query('tiket'))) ?? $antrean->first();
 
         return view('dapur.antrean', [
             'antrean' => $antrean,
@@ -37,7 +37,7 @@ class AntreanController extends Controller
     public function mulai(TiketDapur $tiket): RedirectResponse
     {
         $kurang = $this->dapur->mulaiMasak($tiket);
-        $redirect = to_route('dapur.antrean', ['tiket' => $tiket->id]);
+        $redirect = to_route('dapur.antrean', ['tiket' => $tiket]);
 
         // satu pesan saja: peringatan bila stok kurang, sukses bila cukup
         return $kurang

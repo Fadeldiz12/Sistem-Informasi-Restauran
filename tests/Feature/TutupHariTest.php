@@ -36,7 +36,7 @@ class TutupHariTest extends TestCase
         $this->actingAs($this->kasir)->post('/kasir/input', ['jenis_layanan' => 'dine_in', 'nomor_meja' => '02', 'items' => [['id_menu' => $this->pizza->id, 'jumlah' => 1]]])
             ->assertSessionHasNoErrors();
         $p = Pesanan::latest('id')->firstOrFail();
-        $this->actingAs($this->kasir)->post("/kasir/pembayaran/{$p->id}/lunas", ['metode' => 'tunai', 'uang_diterima' => '200000'])->assertSessionHasNoErrors();
+        $this->actingAs($this->kasir)->post("/kasir/pembayaran/{$p->getRouteKey()}/lunas", ['metode' => 'tunai', 'uang_diterima' => '200000'])->assertSessionHasNoErrors();
         if ($selesai) {
             $p->update(['status' => Pesanan::STATUS_SELESAI]);
         }

@@ -40,7 +40,7 @@
     <div class="tbl-wrap"><table class="tbl-stack"><thead><tr><th>Nama</th><th>Email</th><th>Nomor HP</th><th>Peran</th><th class="hide-md">Terdaftar</th><th>Aksi</th></tr></thead>
       <tbody id="tbUser">
         @forelse ($users as $u)
-          <tr data-id="{{ $u->id }}" data-url="{{ route($rute.'.update', $u) }}" data-nama="{{ $u->nama }}" data-email="{{ $u->email }}" data-hp="{{ $u->no_hp }}" data-role="{{ $u->role }}">
+          <tr data-id="{{ $u->getRouteKey() }}" data-url="{{ route($rute.'.update', $u) }}" data-nama="{{ $u->nama }}" data-email="{{ $u->email }}" data-hp="{{ $u->no_hp }}" data-role="{{ $u->role }}">
             <td><div class="who"><span @class(['av', 'm' => $u->hasRole(User::ROLE_ADMIN, User::ROLE_OWNER)])>{{ $u->inisial() }}</span><b>{{ $u->nama }}</b>@if ($u->is(auth()->user()))<span class="pill c">Anda</span>@endif</div></td>
             <td>{{ $u->email }}</td>
             <td>{{ $u->no_hp }}</td>

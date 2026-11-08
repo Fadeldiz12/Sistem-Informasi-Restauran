@@ -182,7 +182,7 @@
 @section('content')
 <main class="wrap">
   <div class="page-head">
-    <div><div class="crumb"><a href="{{ route('pelanggan.beranda') }}">Beranda</a><span>/</span><a href="{{ route('pelanggan.tracking', ['pesanan' => $pesanan->id]) }}">Pesanan saya</a><span>/</span><span>Pembayaran</span></div><h1>Pembayaran</h1></div>
+    <div><div class="crumb"><a href="{{ route('pelanggan.beranda') }}">Beranda</a><span>/</span><a href="{{ route('pelanggan.tracking', ['pesanan' => $pesanan]) }}">Pesanan saya</a><span>/</span><span>Pembayaran</span></div><h1>Pembayaran</h1></div>
     <div class="steps"><div class="s done"><span class="n"><svg class="ic" style="width:15px;height:15px;stroke-width:2.6"><use href="#i-check"/></svg></span><span>Keranjang</span></div><div class="line done"></div><div class="s done"><span class="n"><svg class="ic" style="width:15px;height:15px;stroke-width:2.6"><use href="#i-check"/></svg></span><span>Checkout</span></div><div class="line done"></div><div class="s now"><span class="n">3</span><span>Pembayaran</span></div></div>
   </div>
 
@@ -209,7 +209,7 @@
             Pesanan::STATUS_SIAP => $pesanan->isDelivery() ? 'Pesananmu siap dan menunggu kurir.' : 'Pesananmu sudah siap.',
             default => 'Pesananmu sudah diteruskan ke dapur. Terima kasih!',
           } }}</span></div>
-          <a class="btn" href="{{ route('pelanggan.tracking', ['pesanan' => $pesanan->id]) }}">Lacak Pesanan <svg class="ic"><use href="#i-arr"/></svg></a>
+          <a class="btn" href="{{ route('pelanggan.tracking', ['pesanan' => $pesanan]) }}">Lacak Pesanan <svg class="ic"><use href="#i-arr"/></svg></a>
         @else
           @if ($menungguOtomatis)
             {{-- instruksi VA / QRIS --}}
@@ -248,7 +248,7 @@
               <div class="state bad"><svg class="ic"><use href="#i-info"/></svg><span>Pembayaran sebelumnya <b>gagal atau kedaluwarsa</b>. Silakan pilih metode pembayaran lagi.</span></div>
             @elseif ($tunai)
               <div class="state"><svg class="ic"><use href="#i-cash"/></svg><span>Kamu memilih <b>bayar tunai {{ $rp($pesanan->total) }}</b>. {{ $pesanan->isDelivery() ? 'Siapkan uang saat pesanan diantar kurir.' : 'Bayar di kasir saat mengambil pesanan.' }} {{ $pesanan->status === Pesanan::STATUS_MENUNGGU ? 'Pesanan menunggu konfirmasi kasir.' : 'Pesanan sudah dikonfirmasi kasir.' }}</span></div>
-              <a class="btn" href="{{ route('pelanggan.tracking', ['pesanan' => $pesanan->id]) }}">Lacak Pesanan <svg class="ic"><use href="#i-arr"/></svg></a>
+              <a class="btn" href="{{ route('pelanggan.tracking', ['pesanan' => $pesanan]) }}">Lacak Pesanan <svg class="ic"><use href="#i-arr"/></svg></a>
               @if ($bisaGanti)<details class="ganti" style="margin-top:18px" @if ($errors->any()) open @endif><summary>Ganti metode pembayaran</summary>@endif
             @endif
           @endif
@@ -278,7 +278,7 @@
           @if ($pesanan->isDelivery())<div class="sum-row"><span>Ongkos kirim ({{ $pesanan->pengiriman?->zona?->nama_zona }})</span><span>{{ $rp($pesanan->ongkir) }}</span></div>@endif
         </div>
         <div class="sum-total"><div class="t"><span class="eyebrow" style="opacity:.8">Total pembayaran</span><b>{{ $rp($pesanan->total) }}</b></div>
-          <a class="btn cr blk" href="{{ route('pelanggan.tracking', ['pesanan' => $pesanan->id]) }}">Lacak Pesanan <svg class="ic"><use href="#i-arr"/></svg></a>
+          <a class="btn cr blk" href="{{ route('pelanggan.tracking', ['pesanan' => $pesanan]) }}">Lacak Pesanan <svg class="ic"><use href="#i-arr"/></svg></a>
           <small>{{ $lunas ? 'Pembayaran sudah diterima' : 'Status pesanan bisa dipantau kapan saja' }}</small></div>
       </div>
     </aside>
@@ -295,11 +295,11 @@
     @if ($tunai)
       <span class="pill b" style="font-size:13px;padding:7px 14px">Menunggu Konfirmasi Kasir</span>
       <p style="font:500 14px/1.5 var(--f-body);opacity:.75;margin:14px 0 18px">Pesananmu sudah dikirim ke kasir. {{ $pesanan->isDelivery() ? 'Bayar tunai ke kurir saat pesanan tiba' : 'Bayar tunai di kasir' }} sebesar <b>{{ $rp($pesanan->total) }}</b>.</p></div>
-      <div class="bot"><a class="btn blk" href="{{ route('pelanggan.tracking', ['pesanan' => $pesanan->id]) }}">Lacak Pesanan <svg class="ic"><use href="#i-arr"/></svg></a><a class="btn o blk" href="{{ route('pelanggan.beranda') }}">Kembali ke Beranda</a></div>
+      <div class="bot"><a class="btn blk" href="{{ route('pelanggan.tracking', ['pesanan' => $pesanan]) }}">Lacak Pesanan <svg class="ic"><use href="#i-arr"/></svg></a><a class="btn o blk" href="{{ route('pelanggan.beranda') }}">Kembali ke Beranda</a></div>
     @else
       <span class="pill b" style="font-size:13px;padding:7px 14px">Menunggu Pembayaran</span>
       <p style="font:500 14px/1.5 var(--f-body);opacity:.75;margin:14px 0 18px">Selesaikan pembayaran {{ $bayar?->metodeLabel() }} di halaman ini. Setelah dibayar, pesanan otomatis diteruskan ke dapur.</p></div>
-      <div class="bot"><button class="btn blk" type="button" data-close-ovl>Bayar Sekarang <svg class="ic"><use href="#i-arr"/></svg></button><a class="btn o blk" href="{{ route('pelanggan.tracking', ['pesanan' => $pesanan->id]) }}">Lacak Pesanan</a></div>
+      <div class="bot"><button class="btn blk" type="button" data-close-ovl>Bayar Sekarang <svg class="ic"><use href="#i-arr"/></svg></button><a class="btn o blk" href="{{ route('pelanggan.tracking', ['pesanan' => $pesanan]) }}">Lacak Pesanan</a></div>
     @endif
 </div></div>
 @endif

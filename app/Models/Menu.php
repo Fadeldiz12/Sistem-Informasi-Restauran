@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\IdTerenkripsiDiUrl;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Attributes\Table;
@@ -15,6 +16,8 @@ use Illuminate\Support\Str;
 #[Fillable(['id_kategori', 'nama_menu', 'harga', 'foto', 'tersedia'])]
 class Menu extends Model
 {
+    use IdTerenkripsiDiUrl;
+
     /**
      * Harga menu tertinggi (Rp 99.999.999) supaya total pesanan tidak melebihi kapasitas kolom decimal(12,2).
      */
