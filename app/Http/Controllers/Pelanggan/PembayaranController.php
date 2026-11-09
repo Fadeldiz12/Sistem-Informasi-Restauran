@@ -7,10 +7,13 @@ use App\Models\Pembayaran;
 use App\Models\Pesanan;
 use App\Services\MidtransService;
 use App\Services\PesananService;
+use App\Support\PesananTamu;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -23,7 +26,7 @@ class PembayaranController extends Controller
      */
     public function terakhir(Request $request): RedirectResponse
     {
-        $p = $request->user()->pesanan()
+        $p = PesananTamu::milik($request->user())
             ->where('status', '!=', Pesanan::STATUS_DIBATALKAN)
             ->where(fn ($q) => $q->whereDoesntHave('pembayaran')->orWhereHas('pembayaran', fn ($b) => $b->where('status_bayar', '!=', Pembayaran::STATUS_LUNAS)))
             ->latest('waktu_pesan')->latest('id')->first();
@@ -34,6 +37,7 @@ class PembayaranController extends Controller
     public function show(Request $request, Pesanan $pesanan): View
     {
         $this->milikSendiri($request, $pesanan);
+        PesananTamu::ingat($pesanan);
         $pesanan->load('detail.menu', 'pembayaran', 'pengiriman.zona');
 
         return view('pelanggan.pembayaran', [
@@ -90,8 +94,31 @@ class PembayaranController extends Controller
         ]);
     }
 
+    /**
+     * Unduh gambar QRIS. Gambar dari Midtrans ada di domain lain, jadi tombol unduh biasa di browser
+     * hanya membuka gambarnya; di sini gambar diambil server lalu dikirim sebagai file.
+     */
+    public function qris(Request $request, Pesanan $pesanan): Response
+    {
+        $this->milikSendiri($request, $pesanan);
+        $bayar = $pesanan->pembayaran;
+        abort_unless($bayar?->metode === Pembayaran::METODE_QRIS && $bayar->qris_url && $bayar->status_bayar === Pembayaran::STATUS_MENUNGGU, 404);
+
+        try {
+            $gambar = Http::timeout(15)->get($bayar->qris_url)->throw();
+        } catch (\Throwable) {
+            return response('Gambar QRIS belum bisa diambil. Coba lagi sebentar, atau pindai langsung dari layar.', 502);
+        }
+
+        return response($gambar->body(), 200, [
+            'Content-Type' => $gambar->header('Content-Type') ?: 'image/png',
+            'Content-Disposition' => 'attachment; filename="QRIS-'.$pesanan->kode().'.png"',
+            'Cache-Control' => 'private, no-store',
+        ]);
+    }
+
     private function milikSendiri(Request $request, Pesanan $pesanan): void
     {
-        abort_unless($pesanan->id_pelanggan === $request->user()->id, 404);
+        abort_unless(PesananTamu::bolehLihat($pesanan, $request->user()), 404);
     }
 }

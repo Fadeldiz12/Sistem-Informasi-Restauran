@@ -18,5 +18,9 @@
   <a href="{{ route('pelanggan.beranda') }}#menu" @class(['on' => request()->routeIs('pelanggan.beranda')])><svg class="ic"><use href="#i-dine"/></svg>Menu</a>
   <a href="{{ route('pelanggan.keranjang') }}" @class(['on' => request()->routeIs('pelanggan.keranjang', 'pelanggan.checkout')])><svg class="ic"><use href="#i-cart"/></svg>Keranjang<span class="n" data-cart-count @if (! ($keranjangInfo['jumlah'] ?? 0)) hidden @endif>{{ $keranjangInfo['jumlah'] ?? 0 }}</span></a>
   <a href="{{ route('pelanggan.tracking') }}" @class(['on' => request()->routeIs('pelanggan.tracking', 'pelanggan.pembayaran')])><svg class="ic"><use href="#i-receipt"/></svg>Pesanan</a>
+  @auth
   <a href="{{ route('pelanggan.profil') }}" @class(['on' => request()->routeIs('pelanggan.profil', 'pelanggan.bantuan')])><svg class="ic"><use href="#i-user"/></svg>Akun</a>
+  @else
+  <a href="{{ route('login') }}"><svg class="ic"><use href="#i-user"/></svg>Masuk</a>
+  @endauth
 </nav>

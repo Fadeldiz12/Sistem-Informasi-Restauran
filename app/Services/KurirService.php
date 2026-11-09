@@ -29,7 +29,7 @@ class KurirService
             ->whereNull('id_kurir')
             // Delivery dari kasir yang dibayar di kasir baru boleh diantar setelah lunas
             ->whereHas('pesanan', fn ($q) => $q->where('status', Pesanan::STATUS_SIAP)
-                ->where(fn ($b) => $b->whereNotNull('id_pelanggan')->orWhereHas('pembayaran')));
+                ->where(fn ($b) => $b->where('sumber', Pesanan::SUMBER_ONLINE)->orWhereHas('pembayaran')));
     }
 
     /**

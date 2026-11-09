@@ -184,6 +184,7 @@
     <section class="card empty-track">
       <b>Belum ada pesanan</b><p>Pesanan yang kamu buat akan muncul di sini beserta status terbarunya.</p>
       <a class="btn" href="{{ route('pelanggan.beranda') }}#menu">Pesan Sekarang</a>
+      @guest<p style="margin-top:14px">Sudah pernah pesan tanpa akun di perangkat lain? <a href="{{ route('pelanggan.cek') }}" style="font-weight:700;text-decoration:underline">Cek Pesanan</a> dengan nomor pesanan + nomor HP, atau <a href="{{ route('login') }}" style="font-weight:700;text-decoration:underline">masuk</a>.</p>@endguest
     </section>
   @else
   <div class="split">
@@ -270,6 +271,11 @@
         </div></section>
     </div>
   </div>
+  @guest
+    <div class="ajak-akun" style="margin-top:20px"><svg class="ic" style="width:28px;height:28px;flex:none"><use href="#i-user"/></svg>
+      <div style="flex:1;min-width:200px"><b>Pesan tanpa akun</b><p>Pesanan di atas tersimpan di browser ini saja. Buat akun supaya riwayat pesanan aman dan bisa dibuka di HP mana pun. Pesanan lain? <a href="{{ route('pelanggan.cek') }}" style="font-weight:700;text-decoration:underline">Cek Pesanan</a>.</p></div>
+      <a class="btn" href="{{ route('registrasi') }}">Buat Akun</a></div>
+  @endguest
   @endif
 </main>
 @endsection

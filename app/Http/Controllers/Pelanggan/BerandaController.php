@@ -8,6 +8,7 @@ use App\Models\Menu;
 use App\Models\PengaturanSistem;
 use App\Models\Pesanan;
 use App\Models\ZonaPengiriman;
+use App\Support\PesananTamu;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -51,7 +52,7 @@ class BerandaController extends Controller
                 ->map(fn ($k) => ['k' => $k, 'foto' => $perKategori[$k->id]->first(fn ($m) => $m->foto)?->fotoUrl()])
                 ->values(),
             'aktif' => $aktif?->slug(),
-            'pesananAktif' => $request->user()->pesanan()
+            'pesananAktif' => PesananTamu::milik($request->user())
                 ->with(['detail', 'tiketDapur', 'pengiriman.kurir', 'pengiriman.zona'])
                 ->whereNotIn('status', [Pesanan::STATUS_SELESAI, Pesanan::STATUS_DIBATALKAN])
                 ->latest('waktu_pesan')->latest('id')->first(),

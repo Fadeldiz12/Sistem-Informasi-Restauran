@@ -173,11 +173,14 @@
 @php
   $persen = fn ($v) => \App\Models\PengaturanSistem::persen($v);
   $rp = fn ($n) => 'Rp '.number_format((float) $n, 0, ',', '.');
-  $layanan = old('jenis_layanan', $zona->isEmpty() && $layananPilihan === Pesanan::LAYANAN_DELIVERY ? Pesanan::LAYANAN_TAKE_AWAY : $layananPilihan);
+  $u = auth()->user();
+  $tamu = $u === null;
+  // pesan tanpa login: Delivery wajib bayar online, jadi butuh VA/QRIS aktif
+  $deliveryMati = $zona->isEmpty() || ($tamu && ! $midtransAktif);
+  $layanan = old('jenis_layanan', $deliveryMati && $layananPilihan === Pesanan::LAYANAN_DELIVERY ? Pesanan::LAYANAN_TAKE_AWAY : $layananPilihan);
   $metode = old('metode', $midtransAktif ? \App\Models\Pembayaran::METODE_TRANSFER : \App\Models\Pembayaran::METODE_TUNAI);
   $bankPilih = old('bank', array_key_first($bank));
-  $u = auth()->user();
-  $alamatLama = old('alamat', $u->alamat);
+  $alamatLama = old('alamat', $u?->alamat);
   $prevRadius = 0;
 @endphp
 
@@ -231,7 +234,7 @@
           <div class="svc-grid" id="svc">
             <button type="button" @class(['svc-opt', 'on' => $layanan === Pesanan::LAYANAN_DINE_IN]) data-svc="{{ Pesanan::LAYANAN_DINE_IN }}"><div class="top"><span class="ico"><svg class="ic"><use href="#i-dine"/></svg></span><span class="rad"></span></div><b>Dine In</b><small>Makan di restoran</small></button>
             <button type="button" @class(['svc-opt', 'on' => $layanan === Pesanan::LAYANAN_TAKE_AWAY]) data-svc="{{ Pesanan::LAYANAN_TAKE_AWAY }}"><div class="top"><span class="ico"><svg class="ic"><use href="#i-bag"/></svg></span><span class="rad"></span></div><b>Take Away</b><small>Ambil sendiri di kasir</small></button>
-            <button type="button" @class(['svc-opt', 'on' => $layanan === Pesanan::LAYANAN_DELIVERY]) data-svc="{{ Pesanan::LAYANAN_DELIVERY }}" @disabled($zona->isEmpty())><div class="top"><span class="ico"><svg class="ic"><use href="#i-truck"/></svg></span><span class="rad"></span></div><b>Delivery</b><small>{{ $zona->isEmpty() ? 'Belum tersedia' : 'Diantar kurir, ongkir sesuai zona' }}</small></button>
+            <button type="button" @class(['svc-opt', 'on' => $layanan === Pesanan::LAYANAN_DELIVERY]) data-svc="{{ Pesanan::LAYANAN_DELIVERY }}" @disabled($deliveryMati)><div class="top"><span class="ico"><svg class="ic"><use href="#i-truck"/></svg></span><span class="rad"></span></div><b>Delivery</b><small>{{ $zona->isEmpty() ? 'Belum tersedia' : ($deliveryMati ? 'Masuk ke akun untuk memesan Delivery' : 'Diantar kurir, ongkir sesuai zona') }}</small></button>
           </div>
 
           <div @class(['svc-panel', 'on' => $layanan === Pesanan::LAYANAN_DINE_IN]) data-panel="{{ Pesanan::LAYANAN_DINE_IN }}">
@@ -250,18 +253,28 @@
           </div>
 
           <div @class(['svc-panel', 'on' => $layanan === Pesanan::LAYANAN_DELIVERY]) data-panel="{{ Pesanan::LAYANAN_DELIVERY }}">
-            @include('partials.peta-antar', ['petaAlamat' => $alamatLama, 'petaPatokan' => old('patokan'), 'petaLat' => old('lat'), 'petaLng' => old('lng'), 'petaAlamatProfil' => $u->alamat])
+            @include('partials.peta-antar', ['petaAlamat' => $alamatLama, 'petaPatokan' => old('patokan'), 'petaLat' => old('lat'), 'petaLng' => old('lng'), 'petaAlamatProfil' => $u?->alamat])
             <div class="note" style="margin-top:14px"><svg class="ic"><use href="#i-info"/></svg><span>Ongkir mengikuti jarak titik ke restoran ({{ config('resto.alamat') }}): @php $dari = 0; @endphp @foreach ($zona as $z){{ $z->nama_zona }} {{ rtrim(rtrim(number_format($dari, 1, ',', '.'), '0'), ',') }}–{{ rtrim(rtrim(number_format((float) $z->radius_km, 1, ',', '.'), '0'), ',') }} km {{ $rp($z->ongkir()) }}{{ $loop->last ? '' : ' · ' }}@php $dari = (float) $z->radius_km; @endphp @endforeach. Bisa memesan untuk alamat lain walau kamu sedang di luar kota.</span></div>
           </div>
         </section>
 
         <!-- 2. Data pemesan -->
         <section class="card sec">
+          @if ($u)
           <div class="sec-title"><span class="no">2</span><div><h2>Data pemesan</h2><p>Diambil dari profil akunmu · <a href="{{ route('pelanggan.profil') }}" style="font-weight:700;text-decoration:underline">Ubah</a></p></div></div>
           <div class="grid2">
             <div class="field"><label>Nama</label><div class="in ro"><svg class="ic"><use href="#i-user"/></svg><input value="{{ $u->nama }}" readonly></div></div>
             <div class="field"><label>Nomor HP</label><div class="in ro"><svg class="ic"><use href="#i-phone"/></svg><input value="{{ $u->no_hp }}" readonly></div></div>
           </div>
+          @else
+          <div class="sec-title"><span class="no">2</span><div><h2>Data pemesan</h2><p>Pesan tanpa akun · sudah punya akun? <a href="{{ route('login') }}" style="font-weight:700;text-decoration:underline">Masuk</a> (keranjang tetap tersimpan)</p></div></div>
+          <div class="grid2">
+            <div class="field"><label for="namaPemesan">Nama</label><div class="in"><svg class="ic"><use href="#i-user"/></svg><input id="namaPemesan" name="nama_pemesan" value="{{ old('nama_pemesan') }}" maxlength="100" autocomplete="name" placeholder="Nama untuk dipanggil" required></div>@error('nama_pemesan')<div style="font:600 12.5px var(--f-body);margin-top:6px">{{ $message }}</div>@enderror</div>
+            <div class="field"><label for="hpPemesan">Nomor HP</label><div class="in"><svg class="ic"><use href="#i-phone"/></svg><input id="hpPemesan" name="no_hp_pemesan" type="tel" inputmode="tel" value="{{ old('no_hp_pemesan') }}" maxlength="20" autocomplete="tel" placeholder="Contoh 081234567890" required></div>@error('no_hp_pemesan')<div style="font:600 12.5px var(--f-body);margin-top:6px">{{ $message }}</div>@enderror</div>
+          </div>
+          <div class="field" style="margin-top:12px"><label for="emailPemesan">Email (opsional)</label><div class="in"><svg class="ic"><use href="#i-mail"/></svg><input id="emailPemesan" name="email_pemesan" type="email" value="{{ old('email_pemesan') }}" maxlength="100" autocomplete="email" placeholder="Untuk menyimpan pesanan ke akun bila nanti mendaftar"></div>@error('email_pemesan')<div style="font:600 12.5px var(--f-body);margin-top:6px">{{ $message }}</div>@enderror</div>
+          <div class="note" style="margin-top:14px"><svg class="ic"><use href="#i-info"/></svg><span>Nomor HP dipakai kasir / kurir untuk menghubungimu dan untuk mencari pesanan di halaman <b>Cek Pesanan</b>.</span></div>
+          @endif
           <div class="note" style="margin-top:14px"><svg class="ic"><use href="#i-edit"/></svg>Catatan untuk tiap menu (mis. "pedas", "es sedikit") diisi di halaman Keranjang.</div>
         </section>
 
@@ -269,6 +282,7 @@
         <section class="card sec">
           <div class="sec-title" style="margin-bottom:12px"><span class="no">3</span><div><h2>Pilih metode pembayaran</h2><p>{{ $midtransAktif ? 'Virtual Account & QRIS dicek otomatis dan pesanan langsung diteruskan ke dapur.' : 'Bayar tunai saat pesanan diambil atau diantar.' }}</p></div></div>
           @include('pelanggan.partials.metode-bayar', ['teksTunai' => $layanan === Pesanan::LAYANAN_DELIVERY ? 'Bayar tunai ke kurir saat pesanan tiba' : 'Bayar tunai di kasir'])
+          @if ($tamu)<div class="note" id="tunaiTamu" style="margin-top:14px" @if ($layanan !== Pesanan::LAYANAN_DELIVERY) hidden @endif><svg class="ic"><use href="#i-info"/></svg><span>Pesan Delivery tanpa akun wajib bayar online (Virtual Account / QRIS). Bayar tunai ke kurir bisa setelah <a href="{{ route('login') }}" style="font-weight:700;text-decoration:underline">masuk ke akun</a>.</span></div>@endif
         </section>
       </div>
 
@@ -304,7 +318,7 @@
 @push('scripts')
 <script>
   (function () {
-    var dasar = {{ (float) $hitung['total'] }}, label = @json(Pesanan::LABEL_LAYANAN);
+    var dasar = {{ (float) $hitung['total'] }}, label = @json(Pesanan::LABEL_LAYANAN), TAMU = @json($tamu);
 
     function zonaDipilih() { return window.PetaAntar ? PetaAntar.zona() : null; }
     document.addEventListener('peta:zona', hitung);
@@ -315,6 +329,12 @@
       grand.textContent = rp(dasar + ong); svcBadge.textContent = label[s];
       var t = s === 'delivery' ? 'Bayar tunai ke kurir saat pesanan tiba' : 'Bayar tunai di kasir';
       tunaiSub.textContent = t; tunaiInfo.textContent = t + '.';
+      if (TAMU) {
+        // Delivery tanpa akun wajib bayar online
+        var tb = document.querySelector('#pay [data-p=tunai]'), kunci = s === 'delivery';
+        tb.disabled = kunci; tunaiTamu.hidden = !kunci;
+        if (kunci && metode.value === 'tunai') { var lain = document.querySelector('#pay .opt:not([disabled])'); if (lain) lain.click(); }
+      }
     }
     document.querySelectorAll('.svc-opt').forEach(function (b) {
       b.addEventListener('click', function () {

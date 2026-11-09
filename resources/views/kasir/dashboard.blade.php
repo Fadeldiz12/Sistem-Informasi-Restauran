@@ -62,7 +62,7 @@
       <div class="tbl-wrap"><table class="tbl-stack"><thead><tr><th>No.</th><th>Pelanggan · layanan</th><th>Total</th><th>Status</th><th>Bayar</th><th></th></tr></thead><tbody id="tbJalan">
         @forelse ($berjalan as $p)
           <tr data-f="{{ $p->jenis_layanan }}"><td><b>{{ $p->kode() }}</b><div style="font-size:12px;opacity:.6">{{ $p->waktu_pesan->format('H:i') }}</div></td>
-            <td>{{ $p->namaPemesan() }}<div style="font-size:12px;opacity:.65">{{ $p->layananDetail() }}</div></td>
+            <td>{{ $p->namaPemesan() }}@if ($p->isTamu()) <span class="pill b" style="font-size:10px;padding:1px 7px">Tamu</span>@endif<div style="font-size:12px;opacity:.65">{{ $p->layananDetail() }}</div></td>
             <td>{{ $rp($p->total) }}</td>
             <td><span class="pill {{ $p->statusPill() }}">{{ $statusTeks($p) }}</span></td>
             <td><span @class(['pill', 'm' => $p->isLunas(), 'b' => ! $p->isLunas()])>{{ $p->bayarLabel() }}</span></td>

@@ -13,10 +13,16 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Table('pesanan')]
-#[Fillable(['id_pelanggan', 'id_kasir', 'jenis_layanan', 'nomor_meja', 'nama_pemesan', 'waktu_pesan', 'subtotal', 'ongkir', 'total', 'status', 'alasan_batal', 'selesai_pada'])]
+#[Fillable(['id_pelanggan', 'id_kasir', 'sumber', 'jenis_layanan', 'nomor_meja', 'nama_pemesan', 'no_hp_pemesan', 'email_pemesan', 'waktu_pesan', 'subtotal', 'ongkir', 'total', 'status', 'alasan_batal', 'selesai_pada'])]
 class Pesanan extends Model
 {
     use IdTerenkripsiDiUrl;
+
+    /** Dipesan pelanggan lewat aplikasi (dengan akun atau sebagai tamu) */
+    public const SUMBER_ONLINE = 'online';
+
+    /** Diinput kasir untuk pembeli di restoran */
+    public const SUMBER_KASIR = 'kasir';
 
     public const LAYANAN_DINE_IN = 'dine_in';
 
@@ -161,7 +167,36 @@ class Pesanan extends Model
 
     public function isOnline(): bool
     {
-        return $this->id_pelanggan !== null;
+        return $this->sumber === self::SUMBER_ONLINE;
+    }
+
+    /**
+     * Pesanan online tanpa akun (pesan tanpa login).
+     */
+    public function isTamu(): bool
+    {
+        return $this->isOnline() && $this->id_pelanggan === null;
+    }
+
+    /**
+     * Inisial untuk avatar: dari akun, atau dari nama yang diisi tamu / kasir.
+     */
+    public function inisialPemesan(): string
+    {
+        if ($this->pelanggan) {
+            return $this->pelanggan->inisial();
+        }
+        $kata = preg_split('/\s+/', trim((string) $this->nama_pemesan)) ?: [];
+
+        return mb_strtoupper(collect($kata)->filter()->take(2)->map(fn ($k) => mb_substr($k, 0, 1))->join('')) ?: 'PL';
+    }
+
+    /**
+     * Nomor HP pemesan: dari akun pelanggan, atau yang diisi tamu.
+     */
+    public function noHpPemesan(): ?string
+    {
+        return $this->pelanggan?->no_hp ?: $this->no_hp_pemesan;
     }
 
     public function isLunas(): bool
@@ -200,9 +235,9 @@ class Pesanan extends Model
     {
         $query->whereNotIn('status', [self::STATUS_DIBATALKAN, self::STATUS_MENUNGGU])
             ->where(fn ($l) => $l->where('jenis_layanan', '!=', self::LAYANAN_DELIVERY)
-                ->orWhere(fn ($d) => $d->whereNull('id_pelanggan')->whereDoesntHave('pembayaran')))
+                ->orWhere(fn ($d) => $d->where('sumber', self::SUMBER_KASIR)->whereDoesntHave('pembayaran')))
             ->where(fn ($w) => $w
-                ->where(fn ($a) => $a->whereNull('id_pelanggan')
+                ->where(fn ($a) => $a->where('sumber', self::SUMBER_KASIR)
                     ->whereDoesntHave('pembayaran', fn ($b) => $b->where('status_bayar', Pembayaran::STATUS_LUNAS)))
                 ->orWhereHas('pembayaran', fn ($b) => $b->where('metode', Pembayaran::METODE_TUNAI)->where('status_bayar', Pembayaran::STATUS_MENUNGGU)));
     }
@@ -214,7 +249,7 @@ class Pesanan extends Model
     #[Scope]
     protected function menungguKonfirmasi(Builder $query): void
     {
-        $query->whereNotNull('id_pelanggan')->where('status', self::STATUS_MENUNGGU)
+        $query->where('sumber', self::SUMBER_ONLINE)->where('status', self::STATUS_MENUNGGU)
             ->whereHas('pembayaran', fn ($b) => $b->where('metode', Pembayaran::METODE_TUNAI))
             ->orderBy('waktu_pesan')->orderBy('id');
     }

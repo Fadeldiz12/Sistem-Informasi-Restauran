@@ -88,7 +88,7 @@
       </div>
 
       <div class="card" id="detail">
-        <div class="card-head"><div><h2>{{ $pesanan->kode() }} · {{ $pesanan->namaPemesan() }}</h2><p>{{ $pesanan->layananDetail() }}{{ $pesanan->kasir ? ' · kasir '.$pesanan->kasir->nama : '' }}</p></div>
+        <div class="card-head"><div><h2>{{ $pesanan->kode() }} · {{ $pesanan->namaPemesan() }}@if ($pesanan->isTamu()) <span class="pill b" style="font-size:11px;padding:2px 9px;vertical-align:middle">Tamu</span>@endif</h2><p>{{ $pesanan->layananDetail() }}{{ $pesanan->kasir ? ' · kasir '.$pesanan->kasir->nama : '' }}</p></div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="pill {{ $pesanan->statusPill() }}">{{ $pesanan->statusLabel() }}</span>
             <button type="button" class="btn o sm js-batal" data-url="{{ route('kasir.pesanan.batal', $pesanan) }}" data-kode="{{ $pesanan->kode() }}" data-dimasak="{{ $pesanan->tiketDapur && $pesanan->tiketDapur->status_masak !== \App\Models\TiketDapur::STATUS_ANTRE ? 1 : 0 }}"><svg class="ic" style="width:15px;height:15px"><use href="#i-x"/></svg>Batalkan</button></div></div>
         <div class="seg" id="mtd" style="margin-bottom:16px">

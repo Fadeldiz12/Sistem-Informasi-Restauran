@@ -22,11 +22,11 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-// Halaman awal: ke dashboard sesuai role kalau sudah login, kalau belum ke login
+// Halaman awal: ke dashboard sesuai role kalau sudah login; tamu langsung ke beranda (bisa pesan tanpa login)
 Route::get('/', function (Request $request) {
     return $request->user()
         ? redirect()->route($request->user()->homeRoute())
-        : redirect()->route('login');
+        : redirect()->route('pelanggan.beranda');
 });
 
 // Syarat & ketentuan (bisa dibaca tanpa login, ditautkan dari registrasi)
@@ -59,8 +59,8 @@ Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->n
 | Masih menampilkan UI statis (Route::view); diganti controller per tahap.
 */
 
-// Pelanggan
-Route::middleware(['auth', 'role:'.User::ROLE_PELANGGAN])->name('pelanggan.')->group(function () {
+// Pelanggan: memesan & melacak bisa tanpa login (tamu); profil butuh akun
+Route::middleware('pelanggan-atau-tamu')->name('pelanggan.')->group(function () {
     Route::get('/beranda', Pelanggan\BerandaController::class)->name('beranda');
 
     Route::get('/keranjang', [Pelanggan\KeranjangController::class, 'index'])->name('keranjang');
@@ -76,14 +76,20 @@ Route::middleware(['auth', 'role:'.User::ROLE_PELANGGAN])->name('pelanggan.')->g
     Route::get('/pesanan/{pesanan}/pembayaran', [Pelanggan\PembayaranController::class, 'show'])->name('pembayaran');
     Route::post('/pesanan/{pesanan}/pembayaran', [Pelanggan\PembayaranController::class, 'store'])->middleware('throttle:10,1,bayar')->name('pembayaran.store');
     Route::get('/pesanan/{pesanan}/pembayaran/status', [Pelanggan\PembayaranController::class, 'status'])->name('pembayaran.status');
+    Route::get('/pesanan/{pesanan}/pembayaran/qris', [Pelanggan\PembayaranController::class, 'qris'])->middleware('throttle:20,1,qris')->name('pembayaran.qris');
 
     Route::get('/tracking', Pelanggan\TrackingController::class)->name('tracking');
+    // tamu yang kehilangan link lacak: cari dengan nomor pesanan + nomor HP
+    Route::get('/cek-pesanan', [Pelanggan\CekPesananController::class, 'create'])->name('cek');
+    Route::post('/cek-pesanan', [Pelanggan\CekPesananController::class, 'store'])->middleware('throttle:10,1,cek-pesanan')->name('cek.store');
 
+    Route::get('/bantuan', fn () => view('pelanggan.bantuan', ['zona' => ZonaPengiriman::orderBy('radius_km')->get()]))->name('bantuan');
+});
+
+Route::middleware(['auth', 'role:'.User::ROLE_PELANGGAN])->name('pelanggan.')->group(function () {
     Route::get('/profil', [Pelanggan\ProfilController::class, 'edit'])->name('profil');
     Route::put('/profil', [Pelanggan\ProfilController::class, 'update'])->name('profil.update');
     Route::put('/profil/password', [Pelanggan\ProfilController::class, 'password'])->middleware('throttle:10,1,ganti-password')->name('profil.password');
-
-    Route::get('/bantuan', fn () => view('pelanggan.bantuan', ['zona' => ZonaPengiriman::orderBy('radius_km')->get()]))->name('bantuan');
 });
 
 // Notifikasi pembayaran dari Midtrans (webhook, tanpa login; diverifikasi lewat signature)
@@ -169,7 +175,7 @@ Route::middleware(['auth', 'role:'.User::ROLE_KURIR])->prefix('kurir')->name('ku
 });
 
 // Foto bukti pengiriman (privat): pelanggan pemilik, kurir pengantar, kasir, admin, owner
-Route::get('/pengiriman/{pengiriman}/bukti', BuktiKirimController::class)->middleware('auth')->name('pengiriman.bukti');
+Route::get('/pengiriman/{pengiriman}/bukti', BuktiKirimController::class)->name('pengiriman.bukti');
 
 // Owner
 Route::middleware(['auth', 'role:'.User::ROLE_OWNER])->prefix('owner')->name('owner.')->group(function () {

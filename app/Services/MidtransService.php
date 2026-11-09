@@ -59,9 +59,9 @@ class MidtransService
         $payload = [
             'transaction_details' => ['order_id' => $kode, 'gross_amount' => (int) round((float) $pesanan->total)],
             'customer_details' => array_filter([
-                'first_name' => $pesanan->pelanggan?->nama,
-                'email' => $pesanan->pelanggan?->email,
-                'phone' => $pesanan->pelanggan?->no_hp,
+                'first_name' => $pesanan->namaPemesan(),
+                'email' => $pesanan->pelanggan?->email ?? $pesanan->email_pemesan,
+                'phone' => $pesanan->noHpPemesan(),
             ]),
             'custom_expiry' => ['expiry_duration' => config('services.midtrans.kedaluwarsa_menit'), 'unit' => 'minute'],
         ];

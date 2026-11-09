@@ -250,9 +250,9 @@ class AkunTest extends TestCase
     public function test_setelah_login_kembali_ke_halaman_tujuan_sesuai_role(): void
     {
         $pelanggan = User::factory()->create(['role' => User::ROLE_PELANGGAN]);
-        $this->get('/tracking')->assertRedirect('/login');
+        $this->get('/profil')->assertRedirect('/login');
         $this->get('/login')->assertSee('Silakan masuk dulu untuk membuka halaman itu.');
-        $this->post('/login', ['email' => $pelanggan->email, 'password' => 'password'])->assertRedirect('/tracking');
+        $this->post('/login', ['email' => $pelanggan->email, 'password' => 'password'])->assertRedirect('/profil');
         $this->post('/logout');
 
         // halaman staf yang tidak sesuai role: ke halaman utama role
@@ -271,7 +271,7 @@ class AkunTest extends TestCase
     public function test_halaman_error_berbahasa_indonesia(): void
     {
         $this->get('/halaman-tidak-ada')->assertNotFound()->assertSee('Halaman Tidak Ditemukan')->assertSee('Ke halaman masuk');
-        $this->getJson('/keranjang')->assertUnauthorized()->assertJson(['message' => 'Sesi kamu sudah berakhir. Silakan masuk lagi.']);
+        $this->getJson('/profil')->assertUnauthorized()->assertJson(['message' => 'Sesi kamu sudah berakhir. Silakan masuk lagi.']);
     }
 
     public function test_buka_reset_password_langsung_pesan_netral(): void
