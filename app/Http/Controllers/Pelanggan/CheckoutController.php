@@ -9,11 +9,15 @@ use App\Models\Pesanan;
 use App\Models\ZonaPengiriman;
 use App\Services\MidtransService;
 use App\Services\PesananService;
+use App\Support\AturanAkun;
 use App\Support\Keranjang;
+use App\Support\PesananTamu;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class CheckoutController extends Controller
@@ -38,7 +42,7 @@ class CheckoutController extends Controller
         }
         if ($items->isEmpty()) {
             // tombol Back dari halaman pembayaran: arahkan ke pesanan yang baru dibuat, bukan pesan error
-            $baru = session(self::SESI_PESANAN_BARU) ? $request->user()->pesanan()->whereKey(session(self::SESI_PESANAN_BARU))
+            $baru = session(self::SESI_PESANAN_BARU) ? PesananTamu::milik($request->user())->whereKey(session(self::SESI_PESANAN_BARU))
                 ->where('waktu_pesan', '>=', now()->subHour())->first() : null;
             if ($baru) {
                 return to_route('pelanggan.pembayaran', $baru)->with('status', "Pesanan {$baru->kode()} sudah dibuat. Status bisa dipantau di Lacak Pesanan.");
@@ -49,6 +53,10 @@ class CheckoutController extends Controller
 
         $set = PengaturanSistem::aktif();
         $subtotal = (float) $items->sum('subtotal');
+        if (! $request->user()) {
+            // tombol "Masuk" di checkout tamu kembali ke checkout setelah login (keranjang tetap tersimpan)
+            $request->session()->put('url.intended', route('pelanggan.checkout'));
+        }
 
         return view('pelanggan.checkout', [
             'items' => $items,
@@ -67,7 +75,20 @@ class CheckoutController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $tamu = $request->user() === null;
+        if ($tamu) {
+            $request->merge([
+                'no_hp_pemesan' => AturanAkun::rapikanHp($request->input('no_hp_pemesan')),
+                'email_pemesan' => Str::lower(trim((string) $request->input('email_pemesan'))) ?: null,
+            ]);
+        }
+        $wajibTamu = $tamu ? 'required' : 'exclude';
+
         $data = $request->validate([
+            // pesan tanpa login: kontak pemesan diisi sendiri (pelanggan berakun memakai data profil)
+            'nama_pemesan' => [$wajibTamu, 'string', 'max:100', 'regex:'.AturanAkun::REGEX_NAMA],
+            'no_hp_pemesan' => [$wajibTamu, 'string', 'max:20', 'regex:'.AturanAkun::REGEX_HP],
+            'email_pemesan' => [$tamu ? 'nullable' : 'exclude', 'email', 'max:100'],
             'jenis_layanan' => ['required', Rule::in(array_keys(Pesanan::LABEL_LAYANAN))],
             'nomor_meja' => ['required_if:jenis_layanan,'.Pesanan::LAYANAN_DINE_IN, 'nullable', 'string', 'max:10'],
             'alamat' => ['required_if:jenis_layanan,'.Pesanan::LAYANAN_DELIVERY, 'nullable', 'string', 'max:500'],
@@ -78,6 +99,11 @@ class CheckoutController extends Controller
             'metode' => ['required', Rule::in(array_keys(Pembayaran::LABEL_METODE))],
             'bank' => ['nullable', 'required_if:metode,'.Pembayaran::METODE_TRANSFER, Rule::in(array_keys(MidtransService::BANK))],
         ], [
+            'nama_pemesan.required' => 'Isi nama pemesan.',
+            'nama_pemesan.regex' => AturanAkun::PESAN_NAMA,
+            'no_hp_pemesan.required' => 'Isi nomor HP supaya kasir / kurir bisa menghubungi.',
+            'no_hp_pemesan.regex' => AturanAkun::PESAN_HP,
+            'email_pemesan.email' => 'Format email tidak valid.',
             'metode.required' => 'Pilih metode pembayaran.',
             'metode.in' => 'Pilih metode pembayaran.',
             'bank.required_if' => 'Pilih bank untuk Virtual Account.',
@@ -94,6 +120,9 @@ class CheckoutController extends Controller
         }
 
         if ($data['jenis_layanan'] === Pesanan::LAYANAN_DELIVERY) {
+            if ($tamu && $data['metode'] === Pembayaran::METODE_TUNAI) {
+                throw ValidationException::withMessages(['metode' => 'Pesan Delivery tanpa akun wajib bayar online (Virtual Account / QRIS). Masuk ke akun bila ingin bayar tunai ke kurir.']);
+            }
             $data += ZonaPengiriman::dariTitik((float) $data['lat'], (float) $data['lng']);
         }
 
@@ -121,6 +150,11 @@ class CheckoutController extends Controller
 
         $this->keranjang->kosongkan();
         $request->session()->put(self::SESI_PESANAN_BARU, $pesanan->id);
+        if ($tamu) {
+            PesananTamu::ingat($pesanan);
+            // isian untuk ajakan "buat akun" setelah memesan
+            $request->session()->put('kontak_tamu', ['nama' => $data['nama_pemesan'], 'hp' => $data['no_hp_pemesan'], 'email' => $data['email_pemesan'] ?? null]);
+        }
 
         return to_route('pelanggan.pembayaran', $pesanan)->with('pesanan_baru', true);
     }

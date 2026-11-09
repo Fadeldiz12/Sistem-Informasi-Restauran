@@ -26,6 +26,14 @@
   .logo .logo-tx b { white-space: nowrap; }
   @media (max-width: 520px) { .logo .logo-mk { width: 38px; height: 38px; } .logo .logo-tx b { font-size: 17px; } .logo .logo-tx small { display: none; } }
   @media (max-width: 400px) { .hd-right > .icon-btn { display: none; } }
+  .masuk-btn { display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 16px; border-radius: 999px; box-shadow: inset 0 0 0 1.5px var(--m); color: var(--m); font: 700 14px var(--f-accent); }
+  .masuk-btn:hover { background: var(--pp); }
+  .masuk-btn .ic { width: 18px; height: 18px; }
+  @media (max-width: 640px) { .masuk-btn { width: 44px; padding: 0; justify-content: center; } .masuk-btn span { display: none; } }
+  .ajak-akun { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; padding: 16px 18px; border-radius: 20px; background: var(--bl); color: var(--m); }
+  .ajak-akun b { display: block; font: 700 16px var(--f-title); }
+  .ajak-akun p { font-size: 13.5px; opacity: .85; margin-top: 2px; }
+  .ajak-akun .btn { height: 44px; padding: 0 20px; margin-left: auto; }
   .p-toast.on { transform: translate(-50%, 0); opacity: 1; visibility: visible; }
 </style>
 </head>
@@ -37,7 +45,12 @@
   @include('partials.pelanggan.nav')
   <div class="hd-right">
     <a class="icon-btn" href="{{ route('pelanggan.beranda', ['cari' => 1]) }}#menu" aria-label="Cari menu"><svg class="ic"><use href="#i-search"/></svg></a>
-    @include('partials.profile-menu', ['trigger' => 'user'])
+    @auth
+      @include('partials.profile-menu', ['trigger' => 'user'])
+    @else
+      {{-- pesan tanpa login: akun opsional --}}
+      <a class="masuk-btn" href="{{ route('login') }}"><svg class="ic"><use href="#i-user"/></svg><span>Masuk</span></a>
+    @endauth
     @include('partials.pelanggan.cart-button')
   </div>
 </div>@include('partials.pelanggan.catstrip')

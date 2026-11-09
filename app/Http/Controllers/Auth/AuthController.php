@@ -7,6 +7,7 @@ use App\Models\KodeOtp;
 use App\Models\User;
 use App\Services\OtpService;
 use App\Support\AturanAkun;
+use App\Support\PesananTamu;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -70,7 +71,11 @@ class AuthController extends Controller
         Auth::login($user, $request->boolean('remember'));
         $request->session()->regenerate();
 
-        return redirect()->to($this->tujuanSetelahLogin($request, $user));
+        $redirect = redirect()->to($this->tujuanSetelahLogin($request, $user));
+        // pesanan tanpa akun dari browser ini masuk ke riwayat akun
+        $ditautkan = $user->hasRole(User::ROLE_PELANGGAN) ? PesananTamu::tautkanKe($user) : 0;
+
+        return $ditautkan ? $redirect->with('status', "{$ditautkan} pesanan tanpa akun sebelumnya kini masuk ke riwayat pesananmu.") : $redirect;
     }
 
     /**
@@ -87,9 +92,10 @@ class AuthController extends Controller
         return $boleh ? $tujuan : route($user->homeRoute());
     }
 
-    public function showRegister(): View
+    public function showRegister(Request $request): View
     {
-        return view('auth.registrasi');
+        // tamu yang baru memesan: nama, HP, dan email dari pesanannya langsung terisi
+        return view('auth.registrasi', ['kontakTamu' => $request->session()->get('kontak_tamu', [])]);
     }
 
     /**

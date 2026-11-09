@@ -193,7 +193,7 @@ class KurirTest extends TestCase
         $this->actingAs($orangLain)->get($url)->assertForbidden();
         $this->actingAs(User::factory()->create(['role' => User::ROLE_KURIR]))->get($url)->assertForbidden();
         auth()->logout();
-        $this->get($url)->assertRedirect('/login');
+        $this->get($url)->assertForbidden(); // tanpa login hanya pesanan tamu (pemegang link) yang boleh
     }
 
     // ---------- setoran tunai kurir

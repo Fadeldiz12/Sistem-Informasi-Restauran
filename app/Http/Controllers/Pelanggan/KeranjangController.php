@@ -7,6 +7,7 @@ use App\Models\Menu;
 use App\Models\PengaturanSistem;
 use App\Models\Pesanan;
 use App\Support\Keranjang;
+use App\Support\PesananTamu;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -60,7 +61,7 @@ class KeranjangController extends Controller
     {
         $id = $request->session()->get(CheckoutController::SESI_PESANAN_BARU);
 
-        return $id ? $request->user()->pesanan()->whereKey($id)->where('waktu_pesan', '>=', now()->subHour())->first() : null;
+        return $id ? PesananTamu::milik($request->user())->whereKey($id)->where('waktu_pesan', '>=', now()->subHour())->first() : null;
     }
 
     public function update(Request $request, string $menu): JsonResponse

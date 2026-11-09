@@ -10,6 +10,10 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Raleway:wght@600;700;800&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
+  .masuk-btn { display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 16px; border-radius: 999px; box-shadow: inset 0 0 0 1.5px var(--m); color: var(--m); font: 700 14px var(--f-accent); }
+  .masuk-btn:hover { background: var(--pp); }
+  .masuk-btn .ic { width: 18px; height: 18px; }
+  @media (max-width: 640px) { .masuk-btn { width: 44px; padding: 0; justify-content: center; } .masuk-btn span { display: none; } }
   /* =========================================================
      PALET & FONT
      Poppins  : judul, harga, tombol utama
@@ -329,7 +333,11 @@
     @include('partials.pelanggan.nav')
     <div class="hd-right">
       <button class="icon-btn" id="btnCari" aria-label="Cari menu" aria-controls="cariBar"><svg class="ic"><use href="#i-search"/></svg></button>
+      @auth
       @include('partials.profile-menu', ['trigger' => 'user'])
+      @else
+      <a class="masuk-btn" href="{{ route('login') }}"><svg class="ic"><use href="#i-user"/></svg><span>Masuk</span></a>
+      @endauth
       @include('partials.pelanggan.cart-button')
     </div>
   </div>
@@ -380,7 +388,7 @@
           <button @class(['on' => $layanan === 'dine_in']) data-mode="dine_in"><svg class="ic"><use href="#i-dine"/></svg>Dine In</button>
         </div>
         <label class="addr"><svg class="ic"><use href="#i-pin" id="addrIcon"/></svg>
-          <span style="flex:1;min-width:0"><span class="lbl" id="addrLbl">Kirim ke</span><input id="addrIn" value="{{ auth()->user()->alamat }}" placeholder="Alamat pengiriman (isi di checkout)" readonly></span></label>
+          <span style="flex:1;min-width:0"><span class="lbl" id="addrLbl">Kirim ke</span><input id="addrIn" value="{{ auth()->user()?->alamat }}" placeholder="Alamat pengiriman (isi di checkout)" readonly></span></label>
         <div class="zone" id="zoneInfo"></div>
         <a class="btn" href="#menu" data-kat="">Mulai Pesan</a>
       </div>
@@ -492,7 +500,7 @@
 <script>
   // Ganti isian sesuai jenis layanan (sesuai alur Pilih Jenis Layanan)
   const modes = {
-    delivery:  { lbl: 'Kirim ke', val: @json(auth()->user()->alamat ?? ''), icon: '#i-pin',
+    delivery:  { lbl: 'Kirim ke', val: @json(auth()->user()?->alamat ?? ''), icon: '#i-pin',
                  zone: @json($infoZona) },
     take_away: { lbl: 'Ambil di kasir', val: 'Setelah pesanan siap', icon: '#i-clock',
                  zone: '<span class="pill b">Tanpa ongkir</span><span>Siap ± 20 menit</span>' },

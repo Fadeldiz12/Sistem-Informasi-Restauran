@@ -4,6 +4,11 @@
 
 @push('styles')
 <style>
+  .tamu-link { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; padding: 16px 18px; }
+  .tamu-link b { font: 700 16px var(--f-title); }
+  .tamu-link p { font-size: 13px; opacity: .8; margin: 2px 0 8px; }
+  .tamu-link p a { font-weight: 700; text-decoration: underline; }
+  .tamu-link input { width: 100%; border: 0; border-radius: 12px; background: var(--pp); color: var(--m); padding: 10px 12px; font: 600 12.5px var(--f-body); }
   /* =========================================================
      PALET & FONT (sama dengan beranda)
      Poppins: judul, harga, tombol | Raleway: logo, navigasi, label | Open Sans: isi
@@ -164,6 +169,8 @@
   .va-box { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
   .va-no { font: 700 clamp(22px, 3.4vw, 30px) var(--f-title); letter-spacing: .04em; word-break: break-all; }
   .qris-box { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+  .qris-img { display: grid; gap: 8px; justify-items: center; text-align: center; flex: none; }
+  .qris-img small { font-size: 12px; opacity: .7; max-width: 240px; }
   .qris-box img { width: 220px; height: 220px; border-radius: 18px; background: #fff; padding: 10px; box-shadow: inset 0 0 0 1.5px var(--m15); flex: none; object-fit: contain; }
   .langkah { display: grid; gap: 8px; counter-reset: l; font-size: 13.5px; }
   .langkah li { list-style: none; display: flex; gap: 10px; align-items: flex-start; }
@@ -188,6 +195,20 @@
 
   @if ($errors->any())
     <div class="flash" role="alert">{{ $errors->first() }}</div>
+  @endif
+
+  @if ($pesanan->isTamu())
+    {{-- pesan tanpa login: link lacak untuk disimpan + ajakan membuat akun --}}
+    <div class="card tamu-link" style="margin-top:18px">
+      <div style="flex:1;min-width:0"><b>Simpan link pesanan ini</b><p>Tanpa akun, pesananmu dibuka lewat link ini. Di HP ini pesanan juga ada di menu Lacak Pesanan. Lupa link? Cari di <a href="{{ route('pelanggan.cek') }}">Cek Pesanan</a> dengan nomor {{ $pesanan->kode() }} + nomor HP.</p>
+        <input id="linkLacak" readonly value="{{ route('pelanggan.tracking', ['pesanan' => $pesanan]) }}" aria-label="Link lacak pesanan"></div>
+      <button class="btn o sm" type="button" id="salinLink"><svg class="ic" style="width:15px;height:15px"><use href="#i-copy"/></svg>Salin link</button>
+    </div>
+    @guest
+    <div class="ajak-akun" style="margin-top:14px"><svg class="ic" style="width:28px;height:28px;flex:none"><use href="#i-user"/></svg>
+      <div style="flex:1;min-width:200px"><b>Simpan riwayat pesananmu</b><p>Buat akun gratis: pesanan ini otomatis masuk riwayat, pesan berikutnya tanpa isi data lagi, dan Delivery bisa bayar tunai ke kurir.</p></div>
+      <a class="btn" href="{{ route('registrasi') }}">Buat Akun</a></div>
+    @endguest
   @endif
 
   <div class="layout">
@@ -217,7 +238,9 @@
               <div class="card-head" style="margin-bottom:0"><div><h2>Selesaikan pembayaran {{ $bayar->metodeLabel() }}</h2><p style="font-size:13.5px;opacity:.7;margin-top:2px">Bayar tepat <b>{{ $rp($bayar->jumlah) }}</b> · status diperbarui otomatis</p></div></div>
               @if ($bayar->metode === Pembayaran::METODE_QRIS)
                 <div class="qris-box">
-                  @if ($bayar->qris_url)<img src="{{ $bayar->qris_url }}" alt="Kode QRIS pembayaran">@endif
+                  @if ($bayar->qris_url)<div class="qris-img"><img src="{{ $bayar->qris_url }}" alt="Kode QRIS pembayaran">
+                    <a class="btn o sm" href="{{ route('pelanggan.pembayaran.qris', $pesanan) }}" download="QRIS-{{ $pesanan->kode() }}.png"><svg class="ic" style="width:15px;height:15px"><use href="#i-download"/></svg>Unduh QRIS</a>
+                    <small>Simpan gambarnya, lalu pilih dari galeri di aplikasi bank / e-wallet.</small></div>@endif
                   <ol class="langkah" style="flex:1;min-width:220px">
                     <li><span>Buka aplikasi m-banking atau e-wallet (GoPay, OVO, DANA, ShopeePay, dll.).</span></li>
                     <li><span>Pilih menu bayar / scan QRIS, lalu scan kode di samping.</span></li>
@@ -257,7 +280,7 @@
           <form method="post" action="{{ route('pelanggan.pembayaran.store', $pesanan) }}" id="fBayar">
             @csrf
             <div class="card-head" style="margin:14px 0 6px"><div><h2>Pilih metode pembayaran</h2><p style="font-size:13.5px;opacity:.7;margin-top:2px">{{ $midtransAktif ? 'Virtual Account & QRIS terverifikasi otomatis' : 'Saat ini hanya pembayaran tunai yang tersedia' }}</p></div></div>
-            @include('pelanggan.partials.metode-bayar', ['teksTunai' => $pesanan->isDelivery() ? 'Bayar tunai ke kurir saat pesanan tiba' : 'Bayar tunai di kasir'])
+            @include('pelanggan.partials.metode-bayar', ['teksTunai' => $pesanan->isDelivery() ? 'Bayar tunai ke kurir saat pesanan tiba' : 'Bayar tunai di kasir', 'tunaiTerkunci' => $pesanan->isTamu() && $pesanan->isDelivery()])
             <button class="btn blk" type="submit" id="kirim" style="margin-top:18px;width:100%">Simpan Metode Pembayaran <svg class="ic"><use href="#i-arr"/></svg></button>
           </form>
           @endif
@@ -307,6 +330,15 @@
 
 @push('scripts')
 <script>
+  (function () {
+    var b = document.getElementById('salinLink'), inp = document.getElementById('linkLacak');
+    if (!b) return;
+    b.addEventListener('click', function () {
+      var ok = function () { pToast('Link pesanan disalin'); };
+      if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(inp.value).then(ok, function () { inp.select(); document.execCommand('copy'); ok(); });
+      else { inp.select(); document.execCommand('copy'); ok(); }
+    });
+  })();
   (function () {
     document.querySelectorAll('.ovl').forEach(function (o) {
       o.addEventListener('click', function (e) { if (e.target === o || e.target.closest('[data-close-ovl]')) o.classList.remove('on'); });

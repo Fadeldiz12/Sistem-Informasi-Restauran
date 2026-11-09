@@ -55,11 +55,12 @@ class AuthTest extends TestCase
             ->assertSee('value="admin@simresto.test"', false);
     }
 
-    public function test_tamu_diarahkan_ke_login(): void
+    public function test_tamu_bisa_melihat_menu_tapi_halaman_staf_butuh_login(): void
     {
-        $this->get('/')->assertRedirect('/login');
+        $this->get('/')->assertRedirect('/beranda');
+        $this->get('/beranda')->assertOk()->assertSee('Masuk');
         $this->get('/admin/dashboard')->assertRedirect('/login');
-        $this->get('/beranda')->assertRedirect('/login');
+        $this->get('/profil')->assertRedirect('/login');
     }
 
     public function test_role_lain_tidak_bisa_membuka_halaman_admin(): void

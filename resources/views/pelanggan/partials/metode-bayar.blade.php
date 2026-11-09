@@ -1,6 +1,6 @@
 {{--
   Pilihan metode pembayaran (Virtual Account / QRIS / Tunai), dipakai di Checkout dan halaman Pembayaran.
-  Variabel: $metode, $bankPilih, $bank (kode => nama), $midtransAktif, $teksTunai
+  Variabel: $metode, $bankPilih, $bank (kode => nama), $midtransAktif, $teksTunai, $tunaiTerkunci (opsional: Delivery tanpa akun)
 --}}
 @use('App\Models\Pembayaran')
 <style>
@@ -25,7 +25,7 @@
 <div class="g3" id="pay">
   <button type="button" @class(['opt', 'on' => $metode === Pembayaran::METODE_TRANSFER]) data-p="transfer" @disabled(! $midtransAktif)><div class="top"><span class="ico"><svg class="ic"><use href="#i-card"/></svg></span><span class="rad"></span></div><b>Virtual Account</b><small>BCA, BNI, BRI, Permata</small></button>
   <button type="button" @class(['opt', 'on' => $metode === Pembayaran::METODE_QRIS]) data-p="qris" @disabled(! $midtransAktif)><div class="top"><span class="ico"><svg class="ic"><use href="#i-qr"/></svg></span><span class="rad"></span></div><b>QRIS</b><small>Semua m-banking &amp; e-wallet</small></button>
-  <button type="button" @class(['opt', 'on' => $metode === Pembayaran::METODE_TUNAI]) data-p="tunai"><div class="top"><span class="ico"><svg class="ic"><use href="#i-cash"/></svg></span><span class="rad"></span></div><b>Tunai</b><small id="tunaiSub">{{ $teksTunai }}</small></button>
+  <button type="button" @class(['opt', 'on' => $metode === Pembayaran::METODE_TUNAI]) data-p="tunai" @disabled($tunaiTerkunci ?? false)><div class="top"><span class="ico"><svg class="ic"><use href="#i-cash"/></svg></span><span class="rad"></span></div><b>Tunai</b><small id="tunaiSub">{{ $teksTunai }}</small></button>
 </div>
 @unless ($midtransAktif)
   <div class="note" style="margin-top:14px"><svg class="ic"><use href="#i-info"/></svg><span>Pembayaran Virtual Account &amp; QRIS belum diaktifkan. Untuk sementara gunakan tunai.</span></div>

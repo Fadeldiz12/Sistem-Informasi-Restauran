@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\KodeOtp;
 use App\Models\User;
 use App\Services\OtpService;
+use App\Support\PesananTamu;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -60,8 +61,12 @@ class OtpController extends Controller
         $user->forceFill(['email_verified_at' => now()])->save();
         Auth::login($user);
         $request->session()->regenerate();
+        // pesanan yang dibuat tanpa akun (email sama / dari browser ini) masuk ke riwayat akun baru
+        $ditautkan = PesananTamu::tautkanKe($user);
+        $request->session()->forget('kontak_tamu');
 
-        return redirect()->route($user->homeRoute())->with('status', 'Akun aktif. Selamat datang, '.$user->namaDepan().'!');
+        return redirect()->route($user->homeRoute())->with('status', 'Akun aktif. Selamat datang, '.$user->namaDepan().'!'
+            .($ditautkan ? " {$ditautkan} pesanan sebelumnya sudah masuk ke riwayatmu." : ''));
     }
 
     public function resend(Request $request): RedirectResponse

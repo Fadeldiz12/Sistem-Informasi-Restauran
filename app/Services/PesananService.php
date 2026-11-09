@@ -89,9 +89,12 @@ class PesananService
             $pesanan = Pesanan::create([
                 'id_pelanggan' => $pelanggan?->id,
                 'id_kasir' => $kasir?->id,
+                'sumber' => $kasir ? Pesanan::SUMBER_KASIR : Pesanan::SUMBER_ONLINE,
                 'jenis_layanan' => $jenisLayanan,
                 'nomor_meja' => $nomorMeja,
                 'nama_pemesan' => $data['nama_pemesan'] ?? null,
+                'no_hp_pemesan' => $data['no_hp_pemesan'] ?? null,
+                'email_pemesan' => $data['email_pemesan'] ?? null,
                 'waktu_pesan' => now(),
                 'subtotal' => $hasil['subtotal'],
                 'ongkir' => $hasil['ongkir'],
@@ -364,6 +367,9 @@ class PesananService
     {
         if ($pesanan->status === Pesanan::STATUS_DIBATALKAN) {
             throw ValidationException::withMessages(['metode' => 'Pesanan ini sudah dibatalkan.']);
+        }
+        if ($metode === Pembayaran::METODE_TUNAI && $pesanan->isTamu() && $pesanan->isDelivery()) {
+            throw ValidationException::withMessages(['metode' => 'Pesan Delivery tanpa akun wajib bayar online (Virtual Account / QRIS). Bayar tunai ke kurir hanya untuk pelanggan yang masuk ke akunnya.']);
         }
         if ($pesanan->isLunas()) {
             throw ValidationException::withMessages(['metode' => 'Pesanan ini sudah lunas.']);

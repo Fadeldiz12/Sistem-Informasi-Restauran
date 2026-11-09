@@ -5,7 +5,7 @@
 @php
   $rp = fn ($n) => 'Rp '.number_format((float) $n, 0, ',', '.');
   $p = $kirim->pesanan;
-  $hp = $kirim->no_hp_penerima ?: $p->pelanggan?->no_hp;
+  $hp = $kirim->no_hp_penerima ?: $p->noHpPemesan();
   $km = rtrim(rtrim(number_format((float) $kirim->jarak_km, 2, ',', '.'), '0'), ',');
   $siap = $urutan !== false;
 @endphp
@@ -16,7 +16,7 @@
     <div style="font:700 24px var(--f-title);margin-top:6px">{{ $p->kode() }}</div>
     <div style="font-size:12.5px;opacity:.7">Dipesan {{ $p->waktu_pesan->translatedFormat('d M Y, H:i') }}@if ($kirim->waktu_siap) · siap {{ $kirim->waktu_siap->format('H:i') }}@endif</div></div></div>
 
-  <div class="card" style="margin-top:14px;padding:16px"><div class="who"><span class="av">{{ $p->pelanggan?->inisial() ?? 'PL' }}</span><div style="flex:1;min-width:0"><b style="font:600 15px var(--f-title)">{{ $p->namaPemesan() }}</b><div style="font-size:12.5px;opacity:.7">{{ $hp ?: 'Nomor HP tidak tersedia' }}</div></div>
+  <div class="card" style="margin-top:14px;padding:16px"><div class="who"><span class="av">{{ $p->inisialPemesan() }}</span><div style="flex:1;min-width:0"><b style="font:600 15px var(--f-title)">{{ $p->namaPemesan() }}</b><div style="font-size:12.5px;opacity:.7">{{ $hp ?: 'Nomor HP tidak tersedia' }}</div></div>
       @if ($hp)<a class="icon-btn" style="width:40px;height:40px" href="tel:{{ preg_replace('/[^\d+]/', '', $hp) }}" aria-label="Telepon pelanggan"><svg class="ic" style="width:16px;height:16px"><use href="#i-phone"/></svg></a>@endif</div>
     <div style="display:flex;gap:8px;font-size:13.5px;margin-top:12px;padding-top:12px;border-top:1.5px dashed var(--m60);line-height:1.45"><svg class="ic" style="width:17px;height:17px"><use href="#i-pin"/></svg><span style="flex:1">{{ $kirim->alamat }}@if ($kirim->patokan)<br><b>Patokan:</b> {{ $kirim->patokan }}@endif</span></div>
     @if ($kirim->lat !== null)
