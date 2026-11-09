@@ -280,7 +280,7 @@ class DapurTest extends TestCase
         ]])->assertSessionHasNoErrors();
         $this->assertSame(['0.20', '0.01'], $menu->resep()->orderBy('id')->pluck('jumlah')->all());
 
-        $this->actingAs($admin)->get('/admin/menu')->assertSee('Resep: 2 bahan baku');
+        $this->actingAs($admin)->get('/admin/menu?q=Kentang')->assertSee('Resep: 2 bahan baku');
 
         // hapus satu bahan, takaran tidak valid ditolak
         $this->actingAs($admin)->put("/admin/menu/{$menu->getRouteKey()}", $isi + ['resep' => [['id_bahan' => $kentang->id, 'jumlah' => '0.25']]]);

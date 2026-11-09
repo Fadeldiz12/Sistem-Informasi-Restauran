@@ -135,3 +135,10 @@
     }, 0);
   });
 })();
+
+/* Foto menu yang gagal dimuat (link rusak / sedang offline): sembunyikan, tampilkan latar kotak foto saja */
+(function () {
+  function sembunyikan(img) { if (img.tagName === 'IMG' && !img.dataset.gagal) { img.dataset.gagal = '1'; img.style.visibility = 'hidden'; } }
+  document.addEventListener('error', function (e) { sembunyikan(e.target); }, true);
+  document.querySelectorAll('img').forEach(function (img) { if (img.complete && img.naturalWidth === 0 && img.getAttribute('src')) sembunyikan(img); });
+})();
