@@ -157,7 +157,22 @@
   .chips { display: flex; gap: 8px; flex-wrap: wrap; }
   .chips button { height: 40px; padding: 0 18px; border-radius: 999px; box-shadow: inset 0 0 0 1.5px var(--m); font: 700 13.5px var(--f-accent); }
   .chips button.on { background: var(--m); color: var(--cr); box-shadow: none; }
-  .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); gap: clamp(16px, 1.8vw, 26px); }
+  /* carousel 2 baris: kartu mengalir ke samping, digeser (swipe / panah) */
+  .menu-grid { --kol: 4; --gap: clamp(14px, 1.6vw, 22px); display: grid; grid-auto-flow: column; grid-template-rows: repeat(2, auto);
+               grid-auto-columns: calc((100% - (var(--kol) - 1) * var(--gap)) / var(--kol)); gap: var(--gap);
+               overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scroll-behavior: smooth; scrollbar-width: none; padding-bottom: 4px; }
+  .menu-grid::-webkit-scrollbar { display: none; }
+  .menu-grid > .item { scroll-snap-align: start; }
+  @media (max-width: 1180px) { .menu-grid { --kol: 3; } }
+  .car-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: -8px 0 14px; }
+  .car-bar .jml { font: 700 13px var(--f-accent); opacity: .7; }
+  .car-nav { display: flex; gap: 8px; }
+  .car-nav button { width: 44px; height: 44px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--m); display: grid; place-items: center; transition: .15s; }
+  .car-nav button:hover:not(:disabled) { background: var(--m); color: var(--cr); }
+  .car-nav button:disabled { opacity: .3; cursor: default; }
+  .car-dots { display: flex; justify-content: center; gap: 6px; margin-top: 16px; }
+  .car-dots i { width: 8px; height: 8px; border-radius: 999px; background: var(--m15); transition: .2s; }
+  .car-dots i.on { width: 22px; background: var(--m); }
   .item { border-radius: 24px; box-shadow: inset 0 0 0 1.5px var(--m15); padding: 10px; display: flex; flex-direction: column; transition: .2s; background: var(--cr); }
   .item:hover { box-shadow: inset 0 0 0 1.5px var(--m); }
   .item .ph { position: relative; aspect-ratio: 4 / 3; border-radius: 18px; overflow: hidden; }
@@ -293,7 +308,9 @@
     .hero-text { padding: 26px 22px !important; }
     .hero-text h1 { font-size: clamp(26px, 8vw, 34px) !important; }
     .cats-block, #chips { display: none !important; }
-    .menu-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    /* HP: 2 kolom terlihat + sedikit kartu berikutnya, supaya terlihat bisa digeser */
+    .menu-grid { --kol: 2.15; --gap: 10px; }
+    .car-bar { margin-top: 0; }
     .item { padding: 7px; border-radius: 18px; }
     .item .bd { padding: 10px 4px 4px; }
     .item h3 { font-size: 14.5px; }
@@ -436,6 +453,8 @@
           @endforeach
         </div></div>
       <label class="cari" id="cariBar" hidden><svg class="ic"><use href="#i-search"/></svg><input id="cariIn" type="search" placeholder="Cari menu, mis. pizza, pasta, teh" autocomplete="off" aria-label="Cari menu"><button type="button" id="cariTutup" aria-label="Tutup pencarian"><svg class="ic"><use href="#i-arrl"/></svg></button></label>
+      <div class="car-bar"><span class="jml" id="carJml">{{ $menu->count() }} menu · geser untuk melihat lainnya</span>
+        <div class="car-nav"><button type="button" id="carPrev" aria-label="Menu sebelumnya" disabled><svg class="ic"><use href="#i-arrl"/></svg></button><button type="button" id="carNext" aria-label="Menu berikutnya"><svg class="ic"><use href="#i-arr"/></svg></button></div></div>
       <div class="menu-grid" id="grid">
         @foreach ($menu as $m)
           <article @class(['item', 'out' => ! $m->tersedia]) data-c="{{ $m->kategori->slug() }}" data-n="{{ mb_strtolower($m->nama_menu) }}" data-q="{{ mb_strtolower($m->nama_menu.' '.$m->kategori->nama_kategori) }}" @if ($aktif && $aktif !== $m->kategori->slug()) style="display:none" @endif>
@@ -444,6 +463,7 @@
             <div class="ft"><span class="price">Rp {{ number_format($m->harga, 0, ',', '.') }}</span>@if ($m->tersedia)<button class="add" data-id="{{ $m->id }}" data-p="{{ (int) $m->harga }}" aria-label="Tambah {{ $m->nama_menu }} ke keranjang"><svg class="ic"><use href="#i-plus"/></svg></button>@else<button class="add" disabled aria-label="{{ $m->nama_menu }} sedang habis"><svg class="ic"><use href="#i-plus"/></svg></button>@endif</div></div></article>
         @endforeach
       </div>
+      <div class="car-dots" id="carDots" aria-hidden="true"></div>
       <p class="grid-empty" id="gridEmpty" @if (! ($menu->isEmpty() || ($aktif && ! $menu->contains(fn ($m) => $m->kategori->slug() === $aktif)))) hidden @endif><span id="gridEmptyTx">Belum ada menu yang tersedia di kategori ini.</span></p>
     </div>
   </section>
@@ -541,7 +561,31 @@
     });
     gridEmpty.hidden = tampil > 0;
     gridEmptyTx.textContent = q ? 'Menu "' + cariIn.value.trim() + '" tidak ditemukan.' : 'Belum ada menu yang tersedia di kategori ini.';
+    carJml.textContent = tampil + ' menu';
+    // sedikit menu (mis. satu kategori): cukup satu baris, tidak ditumpuk
+    const kol = Math.floor(parseFloat(getComputedStyle(grid).getPropertyValue('--kol')) || 4);
+    grid.style.gridTemplateRows = tampil <= kol ? 'auto' : '';
+    grid.scrollTo({ left: 0, behavior: 'instant' });
+    requestAnimationFrame(perbaruiCarousel);
   }
+
+  // Carousel menu: panah geser satu layar, titik penanda halaman, panah mati di ujung
+  function perbaruiCarousel() {
+    const lebar = grid.clientWidth, total = grid.scrollWidth, halaman = Math.max(1, Math.ceil((total - 2) / lebar));
+    const geser = total - lebar;
+    carPrev.disabled = grid.scrollLeft <= 2;
+    carNext.disabled = grid.scrollLeft + lebar >= total - 2;
+    carJml.textContent = carJml.textContent.split(' · ')[0] + (halaman > 1 ? ' · geser untuk melihat lainnya' : '');
+    if (carDots.children.length !== halaman) carDots.innerHTML = halaman > 1 ? '<i></i>'.repeat(Math.min(halaman, 12)) : '';
+    const n = carDots.children.length, ke = geser > 0 ? Math.round(grid.scrollLeft / geser * (n - 1)) : 0;
+    [...carDots.children].forEach((d, i) => d.classList.toggle('on', i === ke));
+  }
+  carPrev.addEventListener('click', () => grid.scrollBy({ left: -grid.clientWidth, behavior: 'smooth' }));
+  carNext.addEventListener('click', () => grid.scrollBy({ left: grid.clientWidth, behavior: 'smooth' }));
+  grid.addEventListener('scroll', () => requestAnimationFrame(perbaruiCarousel), { passive: true });
+  window.addEventListener('resize', perbaruiCarousel);
+  saring(); // hitung awal (termasuk kategori dari URL)
+  window.addEventListener('load', perbaruiCarousel);
   function bukaCari() {
     cariBar.hidden = false;
     document.getElementById('menu').scrollIntoView({ behavior: 'smooth', block: 'start' });
