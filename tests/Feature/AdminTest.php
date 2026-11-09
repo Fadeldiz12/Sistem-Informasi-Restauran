@@ -40,7 +40,7 @@ class AdminTest extends TestCase
         $this->actingAs($this->admin)->get('/admin/dashboard')
             ->assertSee('ORD-0001')->assertSee('Pembeli di tempat')->assertSee('2 menu berstatus Habis')
             ->assertSee('1 pesanan · 100%')->assertDontSee('1.00 pesanan');
-        $this->actingAs($this->admin)->get('/admin/menu')->assertSee('Pizza Margherita')->assertSee('Rp 89.000');
+        $this->actingAs($this->admin)->get('/admin/menu?q=Margherita')->assertSee('Pizza Margherita')->assertSee('Rp 89.000');
         $this->actingAs($this->admin)->get('/admin/zona')->assertSee('Rp 15.000')->assertSee('3 – 6 km');
     }
 
