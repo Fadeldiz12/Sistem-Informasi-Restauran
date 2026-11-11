@@ -37,7 +37,7 @@ class LogAktivitas extends Model
     /**
      * Aksi yang ditampilkan sebagai peringatan (merah) di halaman log.
      */
-    public const AKSI_PENTING = ['akun.terkunci', 'akun.login_gagal', 'akun.diambil_alih', 'akun.ditolak', 'akun.kode_darurat', 'akun.keluar_area', 'perangkat.hapus', 'pembayaran.palsu', 'akun.spoofing', 'akun.wajah_gagal', 'akun.wajah_disetujui', 'wajah.hapus', 'pengguna.hapus', 'pesanan.batal', 'menu.hapus'];
+    public const AKSI_PENTING = ['akun.terkunci', 'akun.login_gagal', 'akun.diambil_alih', 'akun.ditolak', 'akun.kode_darurat', 'akun.keluar_area', 'perangkat.hapus', 'pembayaran.palsu', 'akun.spoofing', 'akun.wajah_gagal', 'akun.wajah_disetujui', 'wajah.hapus', 'wajah.ditolak', 'pengguna.hapus', 'pesanan.batal', 'menu.hapus'];
 
     protected function casts(): array
     {

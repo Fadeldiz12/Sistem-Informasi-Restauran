@@ -9,6 +9,9 @@
       <p class="lead">Pesan pizza &amp; pasta untuk <b>Delivery</b> (diantar), <b>Take Away</b> (bawa pulang), atau <b>Dine In</b> (makan di tempat), lalu pantau pesananmu. Staf restoran juga masuk di sini.</p>
       <div class="gap s"></div>
       @include('partials.auth.status')
+      @if (\App\Http\Controllers\Auth\SetupController::boleh(request()))
+        <div class="alert ok" role="note">Belum ada akun Owner. <a href="{{ route('setup') }}" style="text-decoration:underline;font-weight:700">Buat akun Owner pertama</a></div>
+      @endif
       <div class="stack">
         <label class="field">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>

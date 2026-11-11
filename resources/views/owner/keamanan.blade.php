@@ -156,7 +156,7 @@
         <tr>
           <td><b>{{ $u->nama }}</b>@if ($u->is(auth()->user())) <span class="pill c">Anda</span>@endif</td>
           <td><span class="pill b">{{ $u->roleLabel() }}</span></td>
-          <td style="white-space:normal">@if ($u->wajah)Terdaftar {{ $u->wajah->created_at->translatedFormat('d M Y') }} · {{ $u->wajah->jumlah_sampel }} sampel @if ($u->wajah->catatan_mirip)<br><small style="opacity:.75">{{ $u->wajah->catatan_mirip }}</small>@endif @else<span style="opacity:.6">Belum didaftarkan · masuk tanpa cek wajah</span>@endif</td>
+          <td style="white-space:normal">@if ($u->wajah)Terdaftar {{ $u->wajah->created_at->translatedFormat('d M Y') }} · {{ $u->wajah->jumlah_sampel }} sampel @else<span style="opacity:.6">Belum didaftarkan · masuk tanpa cek wajah</span>@endif</td>
           <td><div class="acts">
             <a class="btn sm o" href="{{ route('owner.wajah', $u) }}"><svg class="ic"><use href="#i-user"/></svg>{{ $u->wajah ? 'Daftar ulang' : 'Daftarkan' }}</a>
             @if ($u->wajah)<button class="ab f js-del" data-url="{{ route('owner.wajah.hapus', $u) }}" data-name="Data wajah {{ $u->nama }}" title="Hapus data wajah"><svg class="ic"><use href="#i-trash"/></svg></button>@endif

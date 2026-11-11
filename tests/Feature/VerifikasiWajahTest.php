@@ -39,20 +39,34 @@ class VerifikasiWajahTest extends TestCase
         return array_map(fn () => mt_rand(-200, 200) / 1000, range(1, 128));
     }
 
-    /** Sampel kamera dari orang yang sama: sedikit berbeda tiap frame. */
-    private function sampel(array $orang, int $n = 3): array
+    /** Sampel kamera dari orang yang sama: sedikit berbeda tiap frame, lolos cek kualitas. */
+    private function sampel(array $orang, int $n = 4): array
     {
-        return array_map(fn () => array_map(fn ($v) => round($v + mt_rand(-10, 10) / 1000, 6), $orang), range(1, $n));
+        return array_map(fn () => [
+            'descriptor' => array_map(fn ($v) => round($v + mt_rand(-10, 10) / 1000, 6), $orang),
+            'metrics' => ['score' => 0.97, 'yaw' => 2.1, 'pitch' => 4.0, 'roll' => -1.2, 'blink' => 0.08, 'jaw' => 0.02, 'width' => 0.41, 'cover' => 6.3, 'in_frame' => true],
+        ], range(1, $n));
     }
 
-    /** Bukti liveness yang lolos untuk tantangan di sesi. */
-    private function bukti(string $untuk, array $ciri, ?array $ubahLangkah = null): string
+    /**
+     * Hasil FaceGuard (face-guard.js) yang lolos untuk tantangan di sesi; $ubah menimpa bagian tertentu.
+     *
+     * @param  array<string, mixed>  $ubah
+     */
+    private function bukti(string $untuk, array $orang, array $ubah = []): string
     {
         $t = session("tantangan_wajah.{$untuk}");
-        $nilai = ['kedip' => 0.55, 'buka_mulut' => 0.4, 'noleh_kiri' => 0.3, 'noleh_kanan' => -0.3];
-        $langkah = $ubahLangkah ?? array_map(fn ($a) => ['aksi' => $a, 'durasi_ms' => 1400, 'nilai' => $nilai[$a]], $t['aksi']);
+        $nilai = ['blink' => 0.82, 'turn_left' => 27.5, 'turn_right' => 26.1, 'open_mouth' => 0.63];
 
-        return json_encode(['nonce' => $t['nonce'], 'langkah' => $langkah, 'ciri' => $ciri]);
+        return json_encode(array_merge([
+            'nonce' => $t['nonce'],
+            'samples' => $this->sampel($orang, $t['samples']['before'] + $t['samples']['after']),
+            'eye_baseline' => 0.07,
+            'steps' => array_map(fn ($s) => ['type' => $s, 'value' => $nilai[$s], 'onset_ms' => 640, 'ms' => 1310], $t['steps']),
+            'flash' => $t['flash'] ? ['colors' => $t['flash'], 'corr' => 0.86, 'amp' => 0.0042, 'frames' => 95] : null,
+            'camera' => 'Integrated Webcam (0bda:5634)',
+            'duration_ms' => 1800,
+        ], $ubah));
     }
 
     private function daftarkan(User $user, array $orang): void
@@ -77,29 +91,43 @@ class VerifikasiWajahTest extends TestCase
         $bima = $this->orang();
         $this->actingAs($this->owner)->get("/owner/wajah/{$this->kasir->getRouteKey()}")->assertOk()->assertSee('Daftarkan Wajah Bima Kasir');
 
-        $this->post("/owner/wajah/{$this->kasir->getRouteKey()}", ['bukti' => $this->bukti('daftar', $this->sampel($bima, 5))])
+        $this->post("/owner/wajah/{$this->kasir->getRouteKey()}", ['bukti' => $this->bukti('daftar', $bima)])
             ->assertSessionHasErrors('setuju');
 
         $this->get("/owner/wajah/{$this->kasir->getRouteKey()}");
-        $this->post("/owner/wajah/{$this->kasir->getRouteKey()}", ['setuju' => 1, 'bukti' => $this->bukti('daftar', $this->sampel($bima, 5))])
+        $this->post("/owner/wajah/{$this->kasir->getRouteKey()}", ['setuju' => 1, 'bukti' => $this->bukti('daftar', $bima)])
             ->assertRedirect('/owner/keamanan')->assertSessionHas('status');
 
         $w = $this->kasir->fresh()->wajah;
-        $this->assertSame(5, $w->jumlah_sampel);
+        $this->assertSame(6, $w->jumlah_sampel); // 3 sampel sebelum + 3 sesudah gerakan
         $this->assertLessThan(0.05, app(WajahService::class)->jarak($bima, $w->ciri));
         $mentah = DB::table('wajah_staf')->value('ciri');
         $this->assertStringNotContainsString((string) $w->ciri[0], $mentah); // tersimpan terenkripsi
         $this->assertDatabaseHas('log_aktivitas', ['aksi' => 'wajah.daftar', 'id_user' => $this->owner->id]);
 
-        // kembar: wajah sangat mirip ditahan sampai Owner menyetujui
-        $kembar = User::factory()->create(['role' => User::ROLE_KASIR, 'nama' => 'Bimo Kasir']);
-        $this->get("/owner/wajah/{$kembar->getRouteKey()}");
-        $this->post("/owner/wajah/{$kembar->getRouteKey()}", ['setuju' => 1, 'bukti' => $this->bukti('daftar', $this->sampel($bima, 5))])
-            ->assertSessionHas('status', fn ($s) => str_contains($s, 'sangat mirip dengan wajah Bima Kasir'));
-        $this->assertNull($kembar->fresh()->wajah);
-        $this->get("/owner/wajah/{$kembar->getRouteKey()}")->assertSee('Wajah Sangat Mirip Akun Lain');
-        $this->post("/owner/wajah/{$kembar->getRouteKey()}", ['setuju' => 1, 'konfirmasi_mirip' => 1])->assertRedirect('/owner/keamanan');
-        $this->assertStringContainsString('Sangat mirip wajah Bima Kasir', $kembar->fresh()->wajah->catatan_mirip);
+        // satu wajah hanya untuk satu akun: wajah Bima tidak bisa didaftarkan ke akun lain (role apa pun)
+        $akunLain = User::factory()->create(['role' => User::ROLE_ADMIN, 'nama' => 'Bima Admin']);
+        $this->get("/owner/wajah/{$akunLain->getRouteKey()}");
+        $this->post("/owner/wajah/{$akunLain->getRouteKey()}", ['setuju' => 1, 'bukti' => $this->bukti('daftar', $bima)])
+            ->assertSessionHasErrors('wajah');
+        $this->assertStringContainsString('sudah terdaftar untuk akun Bima Kasir (Kasir)', session('errors')->first('wajah'));
+        $this->assertNull($akunLain->fresh()->wajah);
+        $this->assertDatabaseHas('log_aktivitas', ['aksi' => 'wajah.ditolak']);
+
+        // daftar ulang wajah sendiri tetap boleh; wajah orang lain ke akun lain juga boleh
+        $this->get("/owner/wajah/{$this->kasir->getRouteKey()}");
+        $this->post("/owner/wajah/{$this->kasir->getRouteKey()}", ['setuju' => 1, 'bukti' => $this->bukti('daftar', $bima)])->assertRedirect('/owner/keamanan');
+        $this->get("/owner/wajah/{$akunLain->getRouteKey()}");
+        $this->post("/owner/wajah/{$akunLain->getRouteKey()}", ['setuju' => 1, 'bukti' => $this->bukti('daftar', $this->orang())])->assertRedirect('/owner/keamanan');
+
+        // setelah wajah di akun lama dihapus, orang itu bisa didaftarkan di akun barunya
+        $this->delete("/owner/wajah/{$akunLain->getRouteKey()}");
+        $this->delete("/owner/wajah/{$this->kasir->getRouteKey()}");
+        $this->get("/owner/wajah/{$akunLain->getRouteKey()}");
+        $this->post("/owner/wajah/{$akunLain->getRouteKey()}", ['setuju' => 1, 'bukti' => $this->bukti('daftar', $bima)])->assertRedirect('/owner/keamanan');
+        $this->delete("/owner/wajah/{$akunLain->getRouteKey()}");
+        $this->get("/owner/wajah/{$this->kasir->getRouteKey()}");
+        $this->post("/owner/wajah/{$this->kasir->getRouteKey()}", ['setuju' => 1, 'bukti' => $this->bukti('daftar', $bima)]);
 
         // hapus saat staf berhenti
         $this->delete("/owner/wajah/{$this->kasir->getRouteKey()}")->assertSessionHas('status');
@@ -113,7 +141,7 @@ class VerifikasiWajahTest extends TestCase
         $this->wajibWajah();
 
         $this->sampaiHalamanWajah($this->kasir);
-        $this->post('/verifikasi-wajah', ['bukti' => $this->bukti('login', $this->sampel($bima))])->assertRedirect('/kasir/dashboard');
+        $this->post('/verifikasi-wajah', ['bukti' => $this->bukti('login', $bima)])->assertRedirect('/kasir/dashboard');
         $this->assertAuthenticatedAs($this->kasir);
         $this->assertNotNull(session('wajah_at'));
     }
@@ -126,11 +154,11 @@ class VerifikasiWajahTest extends TestCase
 
         $this->sampaiHalamanWajah($this->kasir);
         foreach ([1, 2] as $i) {
-            $this->from('/verifikasi-wajah')->post('/verifikasi-wajah', ['bukti' => $this->bukti('login', $this->sampel($orangLain))])
+            $this->from('/verifikasi-wajah')->post('/verifikasi-wajah', ['bukti' => $this->bukti('login', $orangLain)])
                 ->assertSessionHasErrors('wajah');
             $this->get('/verifikasi-wajah');
         }
-        $this->post('/verifikasi-wajah', ['bukti' => $this->bukti('login', $this->sampel($orangLain))])->assertRedirect('/login');
+        $this->post('/verifikasi-wajah', ['bukti' => $this->bukti('login', $orangLain)])->assertRedirect('/login');
 
         $this->assertGuest();
         $this->assertTrue($this->kasir->fresh()->terkunci());
@@ -146,14 +174,14 @@ class VerifikasiWajahTest extends TestCase
         $this->sampaiHalamanWajah($this->kasir);
 
         // gerakan tidak sesuai urutan tantangan
-        $aksi = session('tantangan_wajah.login.aksi');
-        $terbalik = array_map(fn ($a) => ['aksi' => $a, 'durasi_ms' => 900, 'nilai' => 0.5], array_reverse($aksi));
-        $this->from('/verifikasi-wajah')->post('/verifikasi-wajah', ['bukti' => $this->bukti('login', $this->sampel($bima), $terbalik)])->assertSessionHasErrors('wajah');
+        $langkah = session('tantangan_wajah.login.steps');
+        $terbalik = array_map(fn ($a) => ['type' => $a, 'value' => 30, 'onset_ms' => 700, 'ms' => 1200], array_reverse($langkah));
+        $this->from('/verifikasi-wajah')->post('/verifikasi-wajah', ['bukti' => $this->bukti('login', $bima, ['steps' => $terbalik])])->assertSessionHasErrors('wajah');
         $this->assertDatabaseHas('log_aktivitas', ['aksi' => 'akun.spoofing', 'id_user' => $this->kasir->id]);
 
         // tantangan yang sama dipakai ulang
         $this->get('/verifikasi-wajah');
-        $bukti = $this->bukti('login', $this->sampel($bima));
+        $bukti = $this->bukti('login', $bima);
         $this->post('/verifikasi-wajah', ['bukti' => $bukti])->assertRedirect('/kasir/dashboard');
         $this->post('/logout');
         $this->sampaiHalamanWajah($this->kasir);
@@ -162,15 +190,53 @@ class VerifikasiWajahTest extends TestCase
 
         // frame yang persis sama (foto diputar ulang)
         $this->get('/verifikasi-wajah');
-        $this->from('/verifikasi-wajah')->post('/verifikasi-wajah', ['bukti' => $this->bukti('login', array_fill(0, 3, $bima))])->assertSessionHasErrors('wajah');
+        $this->from('/verifikasi-wajah')->post('/verifikasi-wajah', ['bukti' => $this->bukti('login', $bima, ['samples' => array_map(fn ($x) => ['descriptor' => $bima] + $x, $this->sampel($bima))])])->assertSessionHasErrors('wajah');
         $this->assertStringContainsString('foto atau rekaman', session('errors')->first('wajah'));
 
         // waktu habis
         $this->get('/verifikasi-wajah');
-        $bukti = $this->bukti('login', $this->sampel($bima));
-        $this->travel(61)->seconds();
+        $bukti = $this->bukti('login', $bima);
+        $this->travel(121)->seconds(); // tantangan berlaku 120 detik
         $this->post('/verifikasi-wajah', ['bukti' => $bukti])->assertRedirect('/login'); // dikunci (3 kali gagal)
         $this->assertTrue($this->kasir->fresh()->terkunci());
+    }
+
+    public function test_anti_spoofing_kamera_virtual_layar_reaksi_dan_masker(): void
+    {
+        $bima = $this->orang();
+        $this->daftarkan($this->kasir, $bima);
+        $this->wajibWajah();
+        $this->sampaiHalamanWajah($this->kasir);
+
+        $kasus = [
+            'kamera virtual' => [['camera' => 'OBS Virtual Camera'], 'Kamera virtual terdeteksi'],
+            'wajah dari layar HP' => [fn ($t) => ['flash' => ['colors' => $t['flash'], 'corr' => 0.12, 'amp' => 0.0004, 'frames' => 90]], 'Pantulan cahaya layar'],
+            'warna kedipan lain' => [fn ($t) => ['flash' => ['colors' => array_reverse($t['flash']), 'corr' => 0.9, 'amp' => 0.004, 'frames' => 90]], 'pantulan layar tidak lengkap'],
+            'reaksi terlalu cepat' => [fn ($t) => ['steps' => array_map(fn ($x) => ['type' => $x, 'value' => 30, 'onset_ms' => 40, 'ms' => 200], $t['steps'])], 'tidak wajar'],
+            'durasi mustahil' => [['duration_ms' => 400], 'Durasi verifikasi tidak wajar'],
+            'wajah bermasker' => [fn ($t) => ['samples' => array_map(fn ($x) => ['metrics' => ['cover' => 22.4] + $x['metrics']] + $x, $this->sampel($bima, 4))], 'tertutup'],
+            'ganti orang di tengah' => [fn ($t) => ['samples' => array_merge($this->sampel($bima, 2), $this->sampel($this->orang(), 2))], 'Wajah berubah di tengah verifikasi'],
+        ];
+        foreach ($kasus as $nama => [$ubah, $pesan]) {
+            User::whereKey($this->kasir->id)->update(['gagal_wajah' => 0]);
+            $this->get('/verifikasi-wajah');
+            $ubah = is_callable($ubah) ? $ubah(session('tantangan_wajah.login')) : $ubah;
+            $this->from('/verifikasi-wajah')->post('/verifikasi-wajah', ['bukti' => $this->bukti('login', $bima, $ubah)])->assertSessionHasErrors('wajah');
+            $this->assertStringContainsString($pesan, session('errors')->first('wajah'), $nama);
+            $this->assertGuest();
+        }
+        $this->assertGreaterThanOrEqual(5, LogAktivitas::where('aksi', 'akun.spoofing')->count());
+
+        // tantangan berisi kedip + 2 gerakan acak dan 6 warna (minimal 3 warna berbeda, tidak berurutan sama)
+        $this->postJson('/wajah/tantangan')->assertOk()->assertJson(fn ($j) => $j->hasAll(['nonce', 'steps', 'flash', 'samples'])->etc());
+        $t = session('tantangan_wajah.login');
+        $this->assertCount(3, $t['steps']);
+        $this->assertContains('blink', $t['steps']);
+        $this->assertCount(6, $t['flash']);
+        $this->assertCount(3, array_unique($t['flash']));
+        for ($i = 1; $i < 6; $i++) {
+            $this->assertNotSame($t['flash'][$i - 1], $t['flash'][$i]);
+        }
     }
 
     public function test_cadangan_persetujuan_owner_atau_admin_yang_hadir(): void
@@ -221,13 +287,13 @@ class VerifikasiWajahTest extends TestCase
         $this->actingAs($this->owner)->get($url)->assertRedirect('/konfirmasi-identitas');
         $this->get('/konfirmasi-identitas')->assertOk()->assertSee('Konfirmasi');
 
-        $this->from('/konfirmasi-identitas')->post('/konfirmasi-identitas', ['password' => 'password', 'bukti' => $this->bukti('konfirmasi', $this->sampel($this->orang()))])
+        $this->from('/konfirmasi-identitas')->post('/konfirmasi-identitas', ['password' => 'password', 'bukti' => $this->bukti('konfirmasi', $this->orang())])
             ->assertSessionHasErrors('password');
         $this->get('/konfirmasi-identitas');
-        $this->from('/konfirmasi-identitas')->post('/konfirmasi-identitas', ['password' => 'salah', 'bukti' => $this->bukti('konfirmasi', $this->sampel($owner))])
+        $this->from('/konfirmasi-identitas')->post('/konfirmasi-identitas', ['password' => 'salah', 'bukti' => $this->bukti('konfirmasi', $owner)])
             ->assertSessionHasErrors(['password' => 'Password salah.']);
         $this->get('/konfirmasi-identitas');
-        $this->post('/konfirmasi-identitas', ['password' => 'password', 'bukti' => $this->bukti('konfirmasi', $this->sampel($owner))])
+        $this->post('/konfirmasi-identitas', ['password' => 'password', 'bukti' => $this->bukti('konfirmasi', $owner)])
             ->assertRedirect($url);
         $this->get($url)->assertOk();
 
