@@ -8,8 +8,8 @@
 @section('crumb', 'Owner / Keamanan Outlet')
 @section('heading', 'Keamanan Outlet')
 @section('sub', 'Staf hanya bisa masuk dari outlet, dari perangkat terdaftar, dan sesuai jadwal shift')
-@section('delete-title', 'Hapus perangkat ini?')
-@section('delete-text', 'Staf tidak bisa lagi masuk dari perangkat ini sampai didaftarkan ulang.')
+@section('delete-title', 'Hapus data ini?')
+@section('delete-text', 'Perangkat yang dihapus tidak bisa dipakai staf lagi; data wajah yang dihapus harus didaftarkan ulang.')
 
 @php
   $ipLama = old('ip_outlet', $pengaturan->ip_outlet);
@@ -61,6 +61,7 @@
       <div class="card"><div class="card-head"><div><h2>Aturan Masuk Staf</h2><p>Semua aturan mati secara bawaan</p></div></div>
         <label class="switch-row"><span>Wajib perangkat terdaftar<small>Admin, Kasir, dan Dapur hanya bisa masuk dari PC/tablet outlet di bawah</small></span><input type="hidden" name="wajib_perangkat" value="0"><span class="toggle" style="flex:none"><input type="checkbox" name="wajib_perangkat" value="1" @checked($aktif('wajib_perangkat'))><i></i></span></label>
         <label class="switch-row"><span>Wajib sesuai jadwal shift<small>Masuk mulai {{ JadwalShift::MASUK_LEBIH_AWAL_MENIT }} menit sebelum shift sampai {{ JadwalShift::TOLERANSI_PULANG_MENIT }} menit sesudahnya; sesi berakhir setelahnya</small></span><input type="hidden" name="wajib_shift" value="0"><span class="toggle" style="flex:none"><input type="checkbox" name="wajib_shift" value="1" @checked($aktif('wajib_shift'))><i></i></span></label>
+        <label class="switch-row"><span>Wajib verifikasi wajah<small>Staf yang wajahnya sudah didaftarkan wajib lolos cek wajah saat masuk; aksi sensitif minta wajah + password lagi</small></span><input type="hidden" name="wajib_wajah" value="0"><span class="toggle" style="flex:none"><input type="checkbox" name="wajib_wajah" value="1" @checked($aktif('wajib_wajah'))><i></i></span></label>
         @if ($tanpaJadwal)
           <div class="note" style="margin-top:12px"><svg class="ic"><use href="#i-info"/></svg><span>{{ $tanpaJadwal }} staf belum punya jadwal shift. Staf tanpa jadwal tetap bisa masuk kapan saja.</span></div>
         @endif
@@ -134,6 +135,22 @@
       @empty
         <tr><td colspan="4"><div class="empty">Belum ada akun staf.</div></td></tr>
       @endforelse
+    </tbody></table></div>
+  </div>
+  <div class="card" style="margin-top:18px" id="wajah"><div class="card-head"><div><h2>Verifikasi Wajah</h2><p>Hanya angka ciri wajah (terenkripsi) yang disimpan, bukan foto. Daftarkan di outlet dengan staf hadir dan sudah memberi persetujuan tertulis.</p></div>
+      <span class="pill b">{{ $semuaStaf->filter(fn ($u) => $u->wajah)->count() }} / {{ $semuaStaf->count() }} terdaftar</span></div>
+    <div class="tbl-wrap"><table class="tbl-stack shift-tbl"><thead><tr><th>Staf</th><th>Peran</th><th>Data wajah</th><th>Aksi</th></tr></thead><tbody>
+      @foreach ($semuaStaf as $u)
+        <tr>
+          <td><b>{{ $u->nama }}</b>@if ($u->is(auth()->user())) <span class="pill c">Anda</span>@endif</td>
+          <td><span class="pill b">{{ $u->roleLabel() }}</span></td>
+          <td style="white-space:normal">@if ($u->wajah)Terdaftar {{ $u->wajah->created_at->translatedFormat('d M Y') }} · {{ $u->wajah->jumlah_sampel }} sampel @if ($u->wajah->catatan_mirip)<br><small style="opacity:.75">{{ $u->wajah->catatan_mirip }}</small>@endif @else<span style="opacity:.6">Belum didaftarkan · masuk tanpa cek wajah</span>@endif</td>
+          <td><div class="acts">
+            <a class="btn sm o" href="{{ route('owner.wajah', $u) }}"><svg class="ic"><use href="#i-user"/></svg>{{ $u->wajah ? 'Daftar ulang' : 'Daftarkan' }}</a>
+            @if ($u->wajah)<button class="ab f js-del" data-url="{{ route('owner.wajah.hapus', $u) }}" data-name="Data wajah {{ $u->nama }}" title="Hapus data wajah"><svg class="ic"><use href="#i-trash"/></svg></button>@endif
+          </div></td>
+        </tr>
+      @endforeach
     </tbody></table></div>
   </div>
 @endsection

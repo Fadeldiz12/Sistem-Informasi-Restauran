@@ -4,6 +4,7 @@ use App\Http\Controllers\Pelanggan\CheckoutController;
 use App\Http\Middleware\AmankanSesiStaf;
 use App\Http\Middleware\EnsureUserHasRole;
 use App\Http\Middleware\JanganSimpanHalamanBerlogin;
+use App\Http\Middleware\KonfirmasiUlang;
 use App\Http\Middleware\PelangganAtauTamu;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
@@ -29,6 +30,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => EnsureUserHasRole::class,
             'pelanggan-atau-tamu' => PelangganAtauTamu::class,
+            'konfirmasi' => KonfirmasiUlang::class,
         ]);
 
         // Tamu yang membuka halaman berlogin: diberi tahu kenapa diarahkan ke halaman masuk

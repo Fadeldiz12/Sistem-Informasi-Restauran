@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Notification;
@@ -127,14 +128,15 @@ class User extends Authenticatable
     /**
      * Kunci akun dan beri tahu semua Owner lewat email.
      */
-    public function kunci(): void
+    public function kunci(?string $sebab = null): void
     {
+        $sebab ??= "{$this->gagal_login} kali password salah";
         $this->forceFill(['terkunci_at' => now(), 'token_sesi' => null])->saveQuietly();
-        LogAktivitas::catat('akun.terkunci', "Akun {$this->nama} ({$this->roleLabel()}) terkunci otomatis setelah {$this->gagal_login} kali password salah", $this, pelaku: $this);
+        LogAktivitas::catat('akun.terkunci', "Akun {$this->nama} ({$this->roleLabel()}) terkunci otomatis setelah {$sebab}", $this, pelaku: $this);
 
         $owner = self::where('role', self::ROLE_OWNER)->get();
         try {
-            Notification::send($owner, new AkunTerkunciNotification($this, request()->ip()));
+            Notification::send($owner, new AkunTerkunciNotification($this, request()->ip(), $sebab));
         } catch (\Throwable $e) {
             report($e); // email gagal terkirim tidak boleh menggagalkan penguncian
         }
@@ -145,7 +147,7 @@ class User extends Authenticatable
      */
     public function bukaKunci(?self $oleh = null): void
     {
-        $this->forceFill(['terkunci_at' => null, 'gagal_login' => 0])->saveQuietly();
+        $this->forceFill(['terkunci_at' => null, 'gagal_login' => 0, 'gagal_wajah' => 0])->saveQuietly();
         LogAktivitas::catat('akun.buka_kunci', $oleh && ! $oleh->is($this)
             ? "Kunci akun {$this->nama} ({$this->roleLabel()}) dibuka oleh {$oleh->nama}"
             : "Kunci akun {$this->nama} dibuka lewat reset password dengan kode OTP", $this, pelaku: $oleh ?? $this);
@@ -253,6 +255,12 @@ class User extends Authenticatable
     public function tugasPengiriman(): HasMany
     {
         return $this->hasMany(Pengiriman::class, 'id_kurir');
+    }
+
+    /** Ciri wajah untuk verifikasi wajah (tanpa foto). */
+    public function wajah(): HasOne
+    {
+        return $this->hasOne(WajahStaf::class, 'id_user');
     }
 
     /** Jadwal shift mingguan staf. */

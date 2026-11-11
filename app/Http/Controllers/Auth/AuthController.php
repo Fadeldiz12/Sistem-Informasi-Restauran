@@ -9,8 +9,8 @@ use App\Models\LogAktivitas;
 use App\Models\User;
 use App\Services\AksesOutletService;
 use App\Services\OtpService;
+use App\Services\WajahService;
 use App\Support\AturanAkun;
-use App\Support\PesananTamu;
 use App\Support\SesiStaf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -115,21 +115,19 @@ class AuthController extends Controller
     }
 
     /**
-     * Login berhasil: buat sesi lalu ke halaman tujuan. "Ingat saya" hanya untuk pelanggan
-     * (komputer outlet dipakai bergantian, staf harus login ulang).
+     * Password (dan cek outlet) lolos: lanjut verifikasi wajah bila diwajibkan, atau langsung masuk.
      */
     private function masuk(Request $request, User $user, bool $ingat, string $via = AksesOutletService::VIA_BEBAS, ?KodeDarurat $kode = null): RedirectResponse
     {
         $request->session()->forget('login_outlet');
-        Auth::login($user, $ingat && ! $user->isStaf());
-        $request->session()->regenerate();
-        SesiStaf::mulai($request, $user, $via, $kode);
 
-        $redirect = redirect()->to($this->tujuanSetelahLogin($request, $user));
-        // pesanan tanpa akun dari browser ini masuk ke riwayat akun
-        $ditautkan = $user->hasRole(User::ROLE_PELANGGAN) ? PesananTamu::tautkanKe($user) : 0;
+        if (app(WajahService::class)->perluVerifikasi($user)) {
+            $request->session()->put('login_wajah', ['id' => $user->id, 'sampai' => now()->addMinutes(3)->timestamp, 'via' => $via, 'kode' => $kode?->id]);
 
-        return $ditautkan ? $redirect->with('status', "{$ditautkan} pesanan tanpa akun sebelumnya kini masuk ke riwayat pesananmu.") : $redirect;
+            return to_route('wajah.verifikasi');
+        }
+
+        return SesiStaf::masukkan($request, $user, $ingat, $via, $kode);
     }
 
     /**
@@ -200,20 +198,6 @@ class AuthController extends Controller
         $tunda = $request->session()->get('login_outlet');
 
         return $tunda && $tunda['sampai'] >= now()->timestamp ? $tunda : null;
-    }
-
-    /**
-     * Halaman yang tadi dibuka sebelum diminta login (bila sesuai role), atau halaman utama role.
-     */
-    private function tujuanSetelahLogin(Request $request, User $user): string
-    {
-        $tujuan = $request->session()->pull('url.intended');
-        $segmen = $tujuan ? explode('/', trim((string) parse_url($tujuan, PHP_URL_PATH), '/'))[0] : null;
-        $areaStaf = [User::ROLE_ADMIN, User::ROLE_OWNER, User::ROLE_KASIR, User::ROLE_DAPUR, User::ROLE_KURIR];
-
-        $boleh = $tujuan && (in_array($segmen, $areaStaf, true) ? $segmen === $user->role : $user->role === User::ROLE_PELANGGAN);
-
-        return $boleh ? $tujuan : route($user->homeRoute());
     }
 
     public function showRegister(Request $request): View

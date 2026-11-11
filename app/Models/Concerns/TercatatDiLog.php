@@ -22,7 +22,7 @@ trait TercatatDiLog
     /**
      * Kolom yang tidak pernah dicatat.
      */
-    private static array $logSelaluAbaikan = ['created_at', 'updated_at', 'deleted_at', 'remember_token', 'gagal_login', 'terkunci_at', 'token_sesi', 'email_verified_at'];
+    private static array $logSelaluAbaikan = ['created_at', 'updated_at', 'deleted_at', 'remember_token', 'gagal_login', 'terkunci_at', 'token_sesi', 'email_verified_at', 'gagal_wajah'];
 
     /**
      * Kolom yang isinya rahasia atau data pribadi terenkripsi: hanya dicatat "diganti", isinya tidak masuk log.
@@ -90,7 +90,7 @@ trait TercatatDiLog
     {
         return match (true) {
             $nilai === null || $nilai === '' => '–',
-            is_bool($nilai) || in_array($kolom, ['tersedia', 'tampil_navbar', 'cek_gps', 'wajib_perangkat', 'wajib_shift'], true) => $nilai ? 'Ya' : 'Tidak',
+            is_bool($nilai) || in_array($kolom, ['tersedia', 'tampil_navbar', 'cek_gps', 'wajib_perangkat', 'wajib_shift', 'wajib_wajah'], true) => $nilai ? 'Ya' : 'Tidak',
             in_array($kolom, self::$logUang, true) && is_numeric($nilai) => 'Rp '.number_format((float) $nilai, 0, ',', '.'),
             default => Str::limit((string) $nilai, 60),
         };

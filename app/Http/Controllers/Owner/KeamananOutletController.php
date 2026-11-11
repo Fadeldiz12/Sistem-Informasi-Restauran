@@ -42,6 +42,7 @@ class KeamananOutletController extends Controller
             'staf' => $staf,
             'tanpaJadwal' => $staf->filter(fn (User $u) => $u->jadwalShift->isEmpty())->count(),
             'kode' => KodeDarurat::aktif()->with('owner')->latest()->get(),
+            'semuaStaf' => User::where('role', '!=', User::ROLE_PELANGGAN)->with('wajah')->orderBy('role')->orderBy('nama')->get(),
             'titikDefault' => (float) $this->akses->pengaturan()->lat_resto === PengaturanSistem::LAT_AWAL,
         ]);
     }
@@ -64,11 +65,12 @@ class KeamananOutletController extends Controller
             'radius_outlet_m' => ['required', 'integer', 'min:20', 'max:1000'],
             'wajib_perangkat' => ['boolean'],
             'wajib_shift' => ['boolean'],
+            'wajib_wajah' => ['boolean'],
         ], [
             'radius_outlet_m.min' => 'Radius outlet minimal 20 meter.',
             'radius_outlet_m.max' => 'Radius outlet maksimal 1.000 meter.',
         ]);
-        $data += ['cek_gps' => false, 'wajib_perangkat' => false, 'wajib_shift' => false];
+        $data += ['cek_gps' => false, 'wajib_perangkat' => false, 'wajib_shift' => false, 'wajib_wajah' => false];
         $data['ip_outlet'] = implode("\n", array_filter(array_map('trim', preg_split('/[\r\n,]+/', (string) ($data['ip_outlet'] ?? '')) ?: []))) ?: null;
 
         if ($data['wajib_perangkat'] && ! PerangkatOutlet::exists()) {

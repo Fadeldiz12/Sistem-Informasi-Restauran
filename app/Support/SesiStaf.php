@@ -7,6 +7,7 @@ use App\Models\LogAktivitas;
 use App\Models\PengaturanSistem;
 use App\Models\User;
 use App\Services\AksesOutletService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -27,6 +28,38 @@ class SesiStaf
     public const ALASAN_PERANGKAT = 'perangkat';
 
     public const ALASAN_SHIFT = 'shift';
+
+    /**
+     * Semua pemeriksaan lolos: buat sesi login lalu ke halaman tujuan. "Ingat saya" hanya untuk pelanggan
+     * (komputer outlet dipakai bergantian, staf harus login ulang).
+     */
+    public static function masukkan(Request $request, User $user, bool $ingat, string $via = AksesOutletService::VIA_BEBAS, ?KodeDarurat $kode = null): RedirectResponse
+    {
+        $request->session()->forget(['login_outlet', 'login_wajah']);
+        Auth::login($user, $ingat && ! $user->isStaf());
+        $request->session()->regenerate();
+        self::mulai($request, $user, $via, $kode);
+
+        $redirect = redirect()->to(self::tujuanSetelahLogin($request, $user));
+        // pesanan tanpa akun dari browser ini masuk ke riwayat akun
+        $ditautkan = $user->hasRole(User::ROLE_PELANGGAN) ? PesananTamu::tautkanKe($user) : 0;
+
+        return $ditautkan ? $redirect->with('status', "{$ditautkan} pesanan tanpa akun sebelumnya kini masuk ke riwayat pesananmu.") : $redirect;
+    }
+
+    /**
+     * Halaman yang tadi dibuka sebelum diminta login (bila sesuai role), atau halaman utama role.
+     */
+    private static function tujuanSetelahLogin(Request $request, User $user): string
+    {
+        $tujuan = $request->session()->pull('url.intended');
+        $segmen = $tujuan ? explode('/', trim((string) parse_url($tujuan, PHP_URL_PATH), '/'))[0] : null;
+        $areaStaf = [User::ROLE_ADMIN, User::ROLE_OWNER, User::ROLE_KASIR, User::ROLE_DAPUR, User::ROLE_KURIR];
+
+        $boleh = $tujuan && (in_array($segmen, $areaStaf, true) ? $segmen === $user->role : $user->role === User::ROLE_PELANGGAN);
+
+        return $boleh ? $tujuan : route($user->homeRoute());
+    }
 
     /**
      * Dipanggil tepat setelah login berhasil. Sesi staf di perangkat lain otomatis berakhir.
