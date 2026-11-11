@@ -35,6 +35,9 @@ Route::view('/syarat-ketentuan', 'syarat')->name('syarat');
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:30,1,login')->name('login.submit');
+    // staf di luar outlet / perangkat tidak terdaftar: cek GPS atau kode darurat dari Owner
+    Route::get('/verifikasi-outlet', [AuthController::class, 'showVerifikasiOutlet'])->name('outlet.verifikasi');
+    Route::post('/verifikasi-outlet', [AuthController::class, 'verifikasiOutlet'])->middleware('throttle:10,1,verifikasi-outlet')->name('outlet.verifikasi.submit');
     Route::get('/registrasi', [AuthController::class, 'showRegister'])->name('registrasi');
     Route::post('/registrasi', [AuthController::class, 'register'])->middleware('throttle:5,1,registrasi')->name('registrasi.submit');
 
@@ -51,6 +54,8 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
+// posisi GPS berkala dari staf yang masuk lewat verifikasi GPS
+Route::post('/sesi/lokasi', [AuthController::class, 'perbaruiLokasi'])->middleware(['auth', 'throttle:12,1,sesi-lokasi'])->name('sesi.lokasi');
 
 /*
 |--------------------------------------------------------------------------
@@ -194,6 +199,15 @@ Route::middleware(['auth', 'role:'.User::ROLE_OWNER])->prefix('owner')->name('ow
     Route::post('/pengguna/{user}/buka-kunci', [Admin\PenggunaController::class, 'bukaKunci'])->name('pengguna.buka-kunci');
 
     Route::get('/aktivitas', Owner\AktivitasController::class)->name('aktivitas');
+
+    // Keamanan outlet: lokasi, perangkat terdaftar, jadwal shift, kode darurat
+    Route::get('/keamanan', [Owner\KeamananOutletController::class, 'index'])->name('keamanan');
+    Route::put('/keamanan', [Owner\KeamananOutletController::class, 'simpanAturan'])->name('keamanan.aturan');
+    Route::post('/keamanan/perangkat', [Owner\KeamananOutletController::class, 'daftarPerangkat'])->name('keamanan.perangkat');
+    Route::delete('/keamanan/perangkat/{perangkat}', [Owner\KeamananOutletController::class, 'hapusPerangkat'])->name('keamanan.perangkat.hapus');
+    Route::put('/keamanan/shift/{user}', [Owner\KeamananOutletController::class, 'simpanShift'])->name('keamanan.shift');
+    Route::post('/keamanan/kode', [Owner\KeamananOutletController::class, 'buatKode'])->name('keamanan.kode');
+    Route::delete('/keamanan/kode/{kode}', [Owner\KeamananOutletController::class, 'cabutKode'])->name('keamanan.kode.cabut');
 
     Route::get('/pengeluaran', [Owner\PengeluaranController::class, 'index'])->name('pengeluaran');
     Route::post('/pengeluaran', [Owner\PengeluaranController::class, 'store'])->name('pengeluaran.store');

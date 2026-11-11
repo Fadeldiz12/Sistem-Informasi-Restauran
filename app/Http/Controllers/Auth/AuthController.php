@@ -3,13 +3,16 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\KodeDarurat;
 use App\Models\KodeOtp;
 use App\Models\LogAktivitas;
 use App\Models\User;
+use App\Services\AksesOutletService;
 use App\Services\OtpService;
 use App\Support\AturanAkun;
 use App\Support\PesananTamu;
 use App\Support\SesiStaf;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -23,6 +26,8 @@ use Illuminate\View\View;
 
 class AuthController extends Controller
 {
+    public function __construct(private AksesOutletService $akses) {}
+
     public function showLogin(): View
     {
         return view('auth.login');
@@ -85,16 +90,116 @@ class AuthController extends Controller
             return $this->mulaiOtp($request, $user->email, 'Akunmu belum diverifikasi. Masukkan kode OTP yang kami kirim ke email.');
         }
 
-        // "Ingat saya" hanya untuk pelanggan: komputer outlet dipakai bergantian, staf harus login ulang
-        Auth::login($user, $request->boolean('remember') && ! $user->isStaf());
+        if ($user->isStaf()) {
+            $akses = $this->akses->periksaLogin($request, $user);
+
+            if ($akses['status'] === 'ditolak') {
+                LogAktivitas::catat('akun.ditolak', "{$user->nama} mencoba masuk di luar jadwal shift", $user, pelaku: $user);
+
+                return back()->withErrors(['email' => $akses['pesan']])->onlyInput('email');
+            }
+            if ($akses['status'] === 'verifikasi') {
+                LogAktivitas::catat('akun.ditolak', "{$user->nama} mencoba masuk dari ".implode(' & ', array_map(fn ($m) => $m === 'lokasi' ? 'luar outlet' : 'perangkat tidak terdaftar', $akses['masalah']))
+                    ." (IP {$request->ip()})", $user, ['masalah' => $akses['masalah']], $user);
+                $request->session()->put('login_outlet', [
+                    'id' => $user->id, 'sampai' => now()->addMinutes(5)->timestamp, 'masalah' => $akses['masalah'], 'bisa_gps' => $akses['bisa_gps'],
+                ]);
+
+                return to_route('outlet.verifikasi');
+            }
+
+            return $this->masuk($request, $user, false, $akses['via']);
+        }
+
+        return $this->masuk($request, $user, $request->boolean('remember'));
+    }
+
+    /**
+     * Login berhasil: buat sesi lalu ke halaman tujuan. "Ingat saya" hanya untuk pelanggan
+     * (komputer outlet dipakai bergantian, staf harus login ulang).
+     */
+    private function masuk(Request $request, User $user, bool $ingat, string $via = AksesOutletService::VIA_BEBAS, ?KodeDarurat $kode = null): RedirectResponse
+    {
+        $request->session()->forget('login_outlet');
+        Auth::login($user, $ingat && ! $user->isStaf());
         $request->session()->regenerate();
-        SesiStaf::mulai($request, $user);
+        SesiStaf::mulai($request, $user, $via, $kode);
 
         $redirect = redirect()->to($this->tujuanSetelahLogin($request, $user));
         // pesanan tanpa akun dari browser ini masuk ke riwayat akun
         $ditautkan = $user->hasRole(User::ROLE_PELANGGAN) ? PesananTamu::tautkanKe($user) : 0;
 
         return $ditautkan ? $redirect->with('status', "{$ditautkan} pesanan tanpa akun sebelumnya kini masuk ke riwayat pesananmu.") : $redirect;
+    }
+
+    /**
+     * Staf yang password-nya benar tapi tidak terdeteksi di outlet / bukan dari perangkat terdaftar.
+     */
+    public function showVerifikasiOutlet(Request $request): View|RedirectResponse
+    {
+        $tunda = $this->loginTertunda($request);
+        if (! $tunda) {
+            return to_route('login')->with('status', 'Waktu verifikasi habis. Silakan masuk lagi.');
+        }
+
+        return view('auth.verifikasi-outlet', [
+            'masalah' => $tunda['masalah'],
+            'bisaGps' => $tunda['bisa_gps'],
+            'radius' => (int) $this->akses->pengaturan()->radius_outlet_m,
+        ]);
+    }
+
+    public function verifikasiOutlet(Request $request): RedirectResponse
+    {
+        $tunda = $this->loginTertunda($request);
+        $user = $tunda ? User::find($tunda['id']) : null;
+        if (! $user || $user->terkunci()) {
+            $request->session()->forget('login_outlet');
+
+            return to_route('login')->with('status', 'Waktu verifikasi habis. Silakan masuk lagi.');
+        }
+
+        if ($request->filled('kode')) {
+            $kode = $this->akses->kodeDaruratCocok((string) $request->input('kode'));
+            if (! $kode) {
+                LogAktivitas::catat('akun.ditolak', "{$user->nama} memasukkan kode darurat yang salah atau kedaluwarsa", $user, pelaku: $user);
+
+                return back()->withErrors(['kode' => 'Kode darurat salah atau sudah tidak berlaku. Minta kode baru ke Owner.']);
+            }
+            $kode->increment('dipakai');
+            LogAktivitas::catat('akun.kode_darurat', "{$user->nama} masuk memakai kode darurat (alasan Owner: {$kode->alasan})", $kode, pelaku: $user);
+
+            return $this->masuk($request, $user, false, AksesOutletService::VIA_KODE, $kode);
+        }
+
+        abort_unless($tunda['bisa_gps'], 422, 'Verifikasi GPS tidak tersedia. Pakai kode darurat dari Owner.');
+        $data = $request->validate([
+            'lat' => ['required', 'numeric', 'between:-90,90'],
+            'lng' => ['required', 'numeric', 'between:-180,180'],
+            'akurasi' => ['required', 'numeric', 'min:0'],
+        ], ['lat.required' => 'Lokasi belum terbaca. Tekan "Periksa lokasi saya" dan izinkan akses lokasi.']);
+
+        $gps = $this->akses->cekGps((float) $data['lat'], (float) $data['lng'], (float) $data['akurasi']);
+        if (! $gps['di_outlet']) {
+            LogAktivitas::catat('akun.ditolak', "{$user->nama} ditolak: lokasi GPS sekitar {$gps['jarak']} m dari outlet", $user, $data + $gps, $user);
+
+            return back()->withErrors(['lat' => 'Lokasimu terbaca sekitar '.number_format($gps['jarak'], 0, ',', '.')." m dari outlet (batas {$this->akses->pengaturan()->radius_outlet_m} m). "
+                .'Pastikan kamu di outlet lalu coba lagi, atau minta kode darurat ke Owner.']);
+        }
+
+        return $this->masuk($request, $user, false, AksesOutletService::VIA_GPS);
+    }
+
+    /**
+     * Data login yang menunggu verifikasi outlet (berlaku 5 menit), atau null.
+     *
+     * @return array{id: int, sampai: int, masalah: array<int, string>, bisa_gps: bool}|null
+     */
+    private function loginTertunda(Request $request): ?array
+    {
+        $tunda = $request->session()->get('login_outlet');
+
+        return $tunda && $tunda['sampai'] >= now()->timestamp ? $tunda : null;
     }
 
     /**
@@ -198,6 +303,32 @@ class AuthController extends Controller
         }
 
         return to_route('otp.form')->with('status', $pesan);
+    }
+
+    /**
+     * Posisi GPS berkala (tiap 5 menit) dari staf yang masuk lewat verifikasi GPS. Di luar area = sesi berakhir.
+     */
+    public function perbaruiLokasi(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'lat' => ['required', 'numeric', 'between:-90,90'],
+            'lng' => ['required', 'numeric', 'between:-180,180'],
+            'akurasi' => ['required', 'numeric', 'min:0'],
+        ]);
+        if ($request->session()->get('lokasi_via') !== AksesOutletService::VIA_GPS) {
+            return response()->json(['ok' => true]);
+        }
+
+        $gps = $this->akses->cekGps((float) $data['lat'], (float) $data['lng'], (float) $data['akurasi']);
+        if (! $gps['di_outlet']) {
+            $pesan = SesiStaf::akhiri($request, $request->user(), SesiStaf::ALASAN_LUAR_AREA);
+            $request->session()->flash('status', $pesan);
+
+            return response()->json(['message' => $pesan, 'login' => route('login')], 401);
+        }
+        $request->session()->put('gps_at', now()->timestamp);
+
+        return response()->json(['ok' => true, 'jarak' => $gps['jarak']]);
     }
 
     public function logout(Request $request): RedirectResponse

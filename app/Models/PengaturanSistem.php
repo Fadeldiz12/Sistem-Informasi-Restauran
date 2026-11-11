@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
 #[Table('pengaturan_sistem')]
-#[Fillable(['pajak', 'biaya_layanan', 'jam_buka', 'jam_tutup', 'lat_resto', 'lng_resto', 'batas_diam_menit'])]
+#[Fillable(['pajak', 'biaya_layanan', 'jam_buka', 'jam_tutup', 'lat_resto', 'lng_resto', 'batas_diam_menit', 'ip_outlet', 'cek_gps', 'radius_outlet_m', 'wajib_perangkat', 'wajib_shift'])]
 class PengaturanSistem extends Model
 {
     use TercatatDiLog;
@@ -25,6 +25,9 @@ class PengaturanSistem extends Model
         return [
             'pajak' => 'decimal:2',
             'biaya_layanan' => 'decimal:2',
+            'cek_gps' => 'boolean',
+            'wajib_perangkat' => 'boolean',
+            'wajib_shift' => 'boolean',
         ];
     }
 

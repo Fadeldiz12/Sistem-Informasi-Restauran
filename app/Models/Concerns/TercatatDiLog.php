@@ -90,7 +90,7 @@ trait TercatatDiLog
     {
         return match (true) {
             $nilai === null || $nilai === '' => '–',
-            is_bool($nilai) || in_array($kolom, ['tersedia', 'tampil_navbar'], true) => $nilai ? 'Ya' : 'Tidak',
+            is_bool($nilai) || in_array($kolom, ['tersedia', 'tampil_navbar', 'cek_gps', 'wajib_perangkat', 'wajib_shift'], true) => $nilai ? 'Ya' : 'Tidak',
             in_array($kolom, self::$logUang, true) && is_numeric($nilai) => 'Rp '.number_format((float) $nilai, 0, ',', '.'),
             default => Str::limit((string) $nilai, 60),
         };

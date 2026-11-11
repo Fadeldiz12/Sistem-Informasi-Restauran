@@ -31,13 +31,13 @@ class LogAktivitas extends Model
         'transaksi' => ['label' => 'Pesanan & pembayaran', 'awalan' => ['pesanan.', 'pembayaran.', 'setoran.', 'eod.']],
         'stok' => ['label' => 'Stok bahan baku', 'awalan' => ['bahan.']],
         'keuangan' => ['label' => 'Keuangan & laporan', 'awalan' => ['pengeluaran.', 'laporan.']],
-        'pengaturan' => ['label' => 'Pengaturan & zona', 'awalan' => ['pengaturan.', 'zona.']],
+        'pengaturan' => ['label' => 'Pengaturan, zona & outlet', 'awalan' => ['pengaturan.', 'zona.', 'perangkat.', 'shift.', 'darurat.']],
     ];
 
     /**
      * Aksi yang ditampilkan sebagai peringatan (merah) di halaman log.
      */
-    public const AKSI_PENTING = ['akun.terkunci', 'akun.login_gagal', 'akun.diambil_alih', 'pengguna.hapus', 'pesanan.batal', 'menu.hapus'];
+    public const AKSI_PENTING = ['akun.terkunci', 'akun.login_gagal', 'akun.diambil_alih', 'akun.ditolak', 'akun.kode_darurat', 'akun.keluar_area', 'perangkat.hapus', 'pengguna.hapus', 'pesanan.batal', 'menu.hapus'];
 
     protected function casts(): array
     {

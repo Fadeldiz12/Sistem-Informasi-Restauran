@@ -29,8 +29,8 @@ class AmankanSesiStaf
             return redirect()->route('login')->with('status', $pesan);
         }
 
-        // cek notifikasi berkala (GET JSON) bukan aktivitas pengguna
-        if (! ($request->isMethod('GET') && $request->expectsJson())) {
+        // cek notifikasi berkala (GET JSON) dan kirim GPS berkala bukan aktivitas pengguna
+        if (! ($request->isMethod('GET') && $request->expectsJson()) && ! $request->routeIs('sesi.lokasi')) {
             $request->session()->put('terakhir_aktif', now()->timestamp);
         }
 

@@ -235,6 +235,12 @@ class User extends Authenticatable
         return $this->hasMany(Pengiriman::class, 'id_kurir');
     }
 
+    /** Jadwal shift mingguan staf. */
+    public function jadwalShift(): HasMany
+    {
+        return $this->hasMany(JadwalShift::class, 'id_user')->orderBy('hari');
+    }
+
     /** Pengeluaran yang dicatat owner. */
     public function pengeluaran(): HasMany
     {

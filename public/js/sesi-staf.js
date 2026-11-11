@@ -57,4 +57,19 @@
     }
   }
   setInterval(cek, 1000);
+
+  // staf yang masuk lewat verifikasi GPS: posisi dikirim tiap 5 menit; keluar area outlet = sesi berakhir
+  if (el.dataset.gps && navigator.geolocation) {
+    var kirimGps = function () {
+      navigator.geolocation.getCurrentPosition(function (pos) {
+        var t = document.querySelector('#logout-form input[name=_token]');
+        fetch(el.dataset.gps, {
+          method: 'POST', credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': t ? t.value : '' },
+          body: JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude, akurasi: Math.round(pos.coords.accuracy) })
+        }).then(function (r) { if (r.status === 401) { r.json().then(function (j) { location.href = j.login || '/login'; }); } });
+      }, function () { /* gagal membaca: server mengakhiri sesi bila GPS tidak terkirim terlalu lama */ }, { enableHighAccuracy: true, timeout: 20000, maximumAge: 60000 });
+    };
+    kirimGps(); setInterval(kirimGps, 5 * 60000);
+  }
 })();
