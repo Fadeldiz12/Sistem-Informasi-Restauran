@@ -1,15 +1,13 @@
 {{--
-  Kamera verifikasi wajah. Pakai di dalam <form>:
-  @include('partials.kamera-wajah', ['tantangan' => [...], 'tantanganBaru' => url, 'sampel' => 3, 'setelah' => 'kirim'|'aktifkan', 'tombol' => 'Mulai'])
-  Hasil (JSON) masuk ke <input name="bukti">. 'kirim' = form langsung dikirim; 'aktifkan' = tombol submit form diaktifkan.
+  Kamera verifikasi wajah (FaceGuard: MediaPipe Face Landmarker + face-api.js). Pakai di dalam <form>:
+  @include('partials.kamera-wajah', ['tantanganBaru' => url POST tantangan, 'setelah' => 'kirim'|'aktifkan', 'tombol' => 'Mulai'])
+  Hasil (JSON tanpa foto) masuk ke <input name="bukti">. 'kirim' = form langsung dikirim; 'aktifkan' = tombol submit diaktifkan.
 --}}
-<div class="kam" data-tantangan='@json($tantangan)' data-baru="{{ $tantanganBaru }}" data-sampel="{{ $sampel ?? 3 }}" data-setelah="{{ $setelah ?? 'kirim' }}">
+<div class="kam" data-baru="{{ $tantanganBaru }}" data-setelah="{{ $setelah ?? 'kirim' }}">
   <input type="hidden" name="bukti" value="">
-  <div class="kam-frame"><video playsinline muted></video><div class="kam-oval"></div><div class="kam-aksi" hidden></div></div>
-  <ol class="kam-langkah">
-    @foreach ($tantangan['langkah'] as $l)<li>{{ $l['teks'] }}</li>@endforeach
-  </ol>
-  <p class="kam-status" role="status">Tekan tombol di bawah, lalu ikuti {{ count($tantangan['langkah']) }} gerakan yang diminta. Tantangan berbeda setiap kali.</p>
+  <div class="kam-face">(Wajah)</div>
+  <p class="kam-status" role="status">Tekan tombol di bawah. Kamu akan diminta menghadap lurus, layar berkedip warna sebentar, lalu 3 gerakan acak.</p>
+  <ol class="kam-langkah"></ol>
   <button type="button" class="btn kam-mulai" style="width:100%">{{ $tombol ?? 'Mulai verifikasi wajah' }}</button>
 </div>
 
@@ -17,53 +15,67 @@
 @push('styles')
 <style>
   .kam { display: grid; gap: 12px; }
-  .kam-frame { position: relative; width: 100%; max-width: 360px; margin: 0 auto; aspect-ratio: 4 / 3; border-radius: 20px; overflow: hidden; background: #1d0f13; }
-  .kam-frame video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
-  .kam-oval { position: absolute; inset: 10% 24%; border: 3px dashed rgba(255, 255, 255, .7); border-radius: 50%; pointer-events: none; }
-  .kam-aksi { position: absolute; left: 10px; right: 10px; bottom: 10px; padding: 8px 12px; border-radius: 12px; background: rgba(151, 23, 58, .92); color: #fff; font: 700 15px/1.3 system-ui, sans-serif; text-align: center; }
-  .kam-langkah { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; padding: 0; margin: 0; list-style: none; counter-reset: k; }
-  .kam-langkah li { counter-increment: k; padding: 6px 12px; border-radius: 999px; background: var(--pp, #eee); font: 600 13px var(--f-body, system-ui); }
-  .kam-langkah li::before { content: counter(k) '. '; }
-  .kam-langkah li.on { background: var(--m, #97173A); color: #fff; }
-  .kam-langkah li.ok { background: var(--bl, #b6c4d6); }
-  .kam-status { text-align: center; font: 500 13.5px/1.5 var(--f-body, system-ui); opacity: .85; margin: 0; }
-  .kam-status.warn { color: var(--m, #97173A); font-weight: 700; opacity: 1; }
+  .kam-face { position: relative; width: min(280px, 72vw); aspect-ratio: 1; margin: 0 auto; border-radius: 50%; overflow: hidden; background: #1d0f13; color: rgba(255,255,255,.6);
+    display: grid; place-items: center; font: 600 14px var(--f-body, system-ui); border: 4px solid var(--pp, #eee); }
+  .kam-face.is-live { border-color: var(--bl, #b6c4d6); }
+  .kam-face.is-scanning { border-color: var(--m, #97173A); box-shadow: 0 0 0 6px rgba(151, 23, 58, .15); }
+  .kam-face video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+  .kam-face .face__overlay { position: absolute; inset: 0; width: 100%; height: 100%; transform: scaleX(-1); }
+  .kam-status { text-align: center; font: 600 13.5px/1.5 var(--f-body, system-ui); margin: 0; min-height: 40px; }
+  .kam-status.is-error { color: var(--m, #97173A); }
+  .kam-status.is-action { color: #fff; background: var(--m, #97173A); border-radius: 12px; padding: 8px 12px; font-size: 15px; }
+  .kam-langkah { display: grid; gap: 6px; padding: 0; margin: 0; list-style: none; font: 600 13px var(--f-body, system-ui); }
+  .kam-langkah li { display: flex; gap: 8px; align-items: center; opacity: .55; }
+  .kam-langkah li.is-active { opacity: 1; color: var(--m, #97173A); }
+  .kam-langkah li.is-done { opacity: .9; }
+  .kam-langkah .liveness__dot { width: 12px; height: 12px; border-radius: 50%; border: 2px solid currentColor; flex: none; }
+  .kam-langkah li.is-done .liveness__dot { background: currentColor; }
+  /* layar berkedip warna untuk cek pantulan cahaya di wajah (anti layar HP / video) */
+  .flash-overlay { position: fixed; inset: 0; z-index: 99999; display: flex; align-items: flex-end; justify-content: center; padding: 40px 20px; }
+  .flash-overlay p { background: rgba(0,0,0,.55); color: #fff; padding: 10px 16px; border-radius: 12px; font: 600 14px/1.5 system-ui, sans-serif; text-align: center; }
 </style>
 @endpush
 @push('scripts')
+<script>window.AppConfig = @json(\App\Services\WajahService::configBrowser());</script>
 <script src="{{ asset('vendor/face-api/face-api.js') }}?v=1.7.15"></script>
-<script src="{{ asset('js/wajah.js') }}?v={{ filemtime(public_path('js/wajah.js')) }}" data-model="{{ asset('vendor/face-api/model') }}"></script>
+<script src="{{ asset('vendor/mediapipe/vision_bundle.js') }}"></script>
+<script src="{{ asset('js/face-guard.js') }}?v={{ filemtime(public_path('js/face-guard.js')) }}"></script>
 <script>
   document.querySelectorAll('.kam').forEach(function (kam) {
-    var form = kam.closest('form'), tombol = kam.querySelector('.kam-mulai'), status = kam.querySelector('.kam-status'),
-        aksiEl = kam.querySelector('.kam-aksi'), daftar = kam.querySelectorAll('.kam-langkah li'), tantangan = JSON.parse(kam.dataset.tantangan);
-    function lapor(t, jenis) {
-      status.textContent = t; status.classList.toggle('warn', jenis === 'warn');
-      aksiEl.hidden = jenis !== 'aksi'; if (jenis === 'aksi') { aksiEl.textContent = t; }
-    }
-    function langkahKe(i) { daftar.forEach(function (li, j) { li.classList.toggle('on', j === i); li.classList.toggle('ok', j < i); }); }
-    function gambarUlang(t) {
-      tantangan = t; var ol = kam.querySelector('.kam-langkah'); ol.innerHTML = '';
-      t.langkah.forEach(function (l) { var li = document.createElement('li'); li.textContent = l.teks; ol.appendChild(li); });
-      daftar = ol.querySelectorAll('li');
-    }
-    tombol.addEventListener('click', function () {
-      tombol.disabled = true; tombol.textContent = 'Kamera aktif…';
-      WajahResto.jalankan({ video: kam.querySelector('video'), tantangan: tantangan, sampel: +kam.dataset.sampel, lapor: lapor, langkahKe: langkahKe })
-        .then(function (bukti) {
-          kam.querySelector('input[name=bukti]').value = JSON.stringify(bukti);
-          if (kam.dataset.setelah === 'kirim') { lapor('Wajah terbaca, memeriksa…'); form.submit(); return; }
-          lapor('Wajah terbaca. Lanjutkan isi form lalu tekan tombol kirim.');
-          tombol.textContent = 'Wajah terbaca ✓';
-          var kirim = form.querySelector('[type=submit]'); if (kirim) { kirim.disabled = false; }
-        })
-        .catch(function (e) {
-          lapor(e.message || 'Verifikasi wajah gagal. Coba lagi.', 'warn');
-          tombol.disabled = false; tombol.textContent = 'Coba lagi'; langkahKe(-1);
-          var t = form.querySelector('input[name=_token]');
-          fetch(kam.dataset.baru, { method: 'POST', headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': t ? t.value : '' } })
-            .then(function (r) { return r.ok ? r.json() : null; }).then(function (j) { if (j) { gambarUlang(j); } });
-        });
+    var form = kam.closest('form'), tombol = kam.querySelector('.kam-mulai'), statusEl = kam.querySelector('.kam-status'),
+        faceEl = kam.querySelector('.kam-face'), stepsEl = kam.querySelector('.kam-langkah'), jalan = false;
+    function status(teks, jenis) { statusEl.textContent = teks; statusEl.className = 'kam-status' + (jenis ? ' is-' + jenis : ''); }
+    function token() { var t = form.querySelector('input[name=_token]'); return t ? t.value : ''; }
+
+    tombol.addEventListener('click', async function () {
+      if (jalan) { return; }
+      jalan = true; tombol.disabled = true; tombol.textContent = 'Menyiapkan kamera…'; stepsEl.innerHTML = '';
+      status('Memuat model pengenalan wajah…');
+      try {
+        if (!window.isSecureContext || !navigator.mediaDevices) {
+          throw new Error('Kamera hanya bisa dipakai lewat HTTPS atau http://localhost. Minta admin memasang HTTPS di server.');
+        }
+        var r = await fetch(kam.dataset.baru, { method: 'POST', credentials: 'same-origin', headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': token() } });
+        if (!r.ok) { throw new Error(r.status === 419 ? 'Waktu verifikasi habis. Muat ulang halaman.' : 'Gagal meminta tantangan dari server. Muat ulang halaman.'); }
+        var tantangan = await r.json();
+
+        await FaceGuard.start(faceEl);
+        tombol.textContent = 'Verifikasi berlangsung…'; faceEl.classList.add('is-scanning');
+        var hasil = await FaceGuard.verify({ challenge: tantangan, samples: tantangan.samples, onStatus: status, stepsEl: stepsEl });
+        delete hasil.image; // foto tidak dikirim & tidak disimpan
+        FaceGuard.stop(faceEl);
+
+        kam.querySelector('input[name=bukti]').value = JSON.stringify(hasil);
+        if (kam.dataset.setelah === 'kirim') { status('Memeriksa data wajah di server…', 'ok'); form.submit(); return; }
+        status('Wajah terverifikasi di perangkat. Lanjutkan isi form lalu tekan tombol kirim.', 'ok');
+        tombol.textContent = 'Wajah terbaca ✓';
+        var kirim = form.querySelector('[type=submit]'); if (kirim) { kirim.disabled = false; }
+      } catch (e) {
+        FaceGuard.stop && FaceGuard.stop(faceEl);
+        status(e.message || 'Verifikasi wajah gagal. Silakan ulangi.', 'error');
+        tombol.disabled = false; tombol.textContent = 'Ulangi verifikasi';
+        jalan = false;
+      }
     });
   });
 </script>

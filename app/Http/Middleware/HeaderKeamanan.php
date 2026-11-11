@@ -16,7 +16,8 @@ class HeaderKeamanan
      */
     public const CSP = [
         "default-src 'self'",
-        "script-src 'self' 'unsafe-inline' https://unpkg.com",
+        // wasm-unsafe-eval: MediaPipe Face Landmarker berjalan sebagai WebAssembly (bukan eval JavaScript)
+        "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://unpkg.com",
         "style-src 'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com",
         "font-src 'self' data: https://fonts.gstatic.com",
         "img-src 'self' data: blob: https:",

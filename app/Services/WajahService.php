@@ -11,12 +11,13 @@ use Illuminate\Support\Str;
 /**
  * Verifikasi wajah 1:1 dengan tantangan liveness acak.
  *
- * Kamera & pembacaan wajah berjalan di browser (face-api.js). Server membuat tantangan acak sekali pakai,
- * memeriksa urutan & waktunya, kewajaran gerakan, lalu mencocokkan angka ciri wajah dengan data akun yang login saja.
+ * Kamera & pembacaan wajah berjalan di browser (public/js/face-guard.js: MediaPipe Face Landmarker + face-api.js).
+ * Server membuat tantangan acak sekali pakai (gerakan + kedipan warna layar), lalu memeriksa ulang semuanya dengan
+ * batas di config/face.php dan mencocokkan ciri wajah hanya dengan akun yang login (1:1).
  */
 class WajahService
 {
-    /** Jarak ciri wajah maksimal agar dianggap orang yang sama (face-api: 0,6 = longgar; dipakai 0,5). */
+    /** Jarak ciri wajah maksimal agar dianggap orang yang sama. */
     public const AMBANG_COCOK = 0.5;
 
     /** Saat pendaftaran: lebih dekat dari ini ke wajah akun lain = dianggap wajah yang sama, ditolak (satu wajah satu akun). */
@@ -24,15 +25,14 @@ class WajahService
 
     public const MAKS_GAGAL = 3;
 
-    public const BERLAKU_DETIK = 60;
-
-    /** Gerakan liveness yang bisa diminta, beserta kalimat petunjuknya. */
-    public const AKSI = [
-        'kedip' => 'Kedipkan mata',
-        'buka_mulut' => 'Buka mulut lebar-lebar',
-        'noleh_kiri' => 'Tolehkan kepala ke kiri',
-        'noleh_kanan' => 'Tolehkan kepala ke kanan',
+    public const LANGKAH = [
+        'blink' => 'Kedipkan mata',
+        'turn_left' => 'Toleh ke kiri',
+        'turn_right' => 'Toleh ke kanan',
+        'open_mouth' => 'Buka mulut',
     ];
+
+    private const WARNA = ['red', 'green', 'blue'];
 
     public function wajib(): bool
     {
@@ -48,60 +48,138 @@ class WajahService
     }
 
     /**
-     * Tantangan acak sekali pakai: 2 gerakan berbeda, disimpan di sesi.
+     * Konfigurasi yang dikirim ke browser (face-guard.js membaca window.AppConfig).
      *
-     * @return array{nonce: string, langkah: array<int, array{aksi: string, teks: string}>}
+     * @return array<string, mixed>
      */
-    public function buatTantangan(Request $request, string $untuk): array
+    public static function configBrowser(): array
     {
-        $aksi = collect(array_keys(self::AKSI))->shuffle()->take(2)->values()->all();
-        $request->session()->put("tantangan_wajah.{$untuk}", ['nonce' => $nonce = Str::random(32), 'aksi' => $aksi, 'dibuat' => now()->getTimestampMs()]);
-
-        return ['nonce' => $nonce, 'langkah' => array_map(fn ($a) => ['aksi' => $a, 'teks' => self::AKSI[$a]], $aksi)];
+        return [
+            'modelsUrl' => asset('vendor/face-api/model'),
+            'mediapipeWasm' => asset('vendor/mediapipe/wasm'),
+            'face' => collect(config('face'))->except('server')->all(),
+        ];
     }
 
     /**
-     * Periksa bukti dari browser terhadap tantangan di sesi (sekali pakai).
+     * Tantangan acak sekali pakai: kedip + gerakan acak (urutan diacak), urutan warna kedipan layar, jumlah sampel.
      *
-     * @param  array<string, mixed>  $bukti  {nonce, langkah: [{aksi, durasi_ms, nilai}], ciri: [[128 angka], ...]}
+     * @return array{nonce: string, steps: array<int, string>, flash: array<int, string>|null, samples: array{before: int, after: int}}
+     */
+    public function buatTantangan(Request $request, string $untuk): array
+    {
+        $l = config('face.liveness');
+        $steps = collect($l['extra_pool'])->shuffle()->take($l['extra_steps'])->push('blink')->shuffle()->values()->all();
+
+        $flash = null;
+        if (config('face.flash.enabled')) {
+            do {
+                $flash = [];
+                for ($i = 0; $i < config('face.flash.count'); $i++) {
+                    $pilihan = array_values(array_diff(self::WARNA, [end($flash) ?: null]));
+                    $flash[] = $pilihan[random_int(0, count($pilihan) - 1)];
+                }
+            } while (count(array_unique($flash)) < 3);
+        }
+
+        $samples = config($untuk === 'daftar' ? 'face.server.samples_daftar' : 'face.server.samples_login');
+        $tantangan = ['nonce' => Str::random(40), 'steps' => $steps, 'flash' => $flash, 'samples' => $samples];
+        $request->session()->put("tantangan_wajah.{$untuk}", $tantangan + ['dibuat' => now()->getTimestampMs()]);
+
+        return $tantangan;
+    }
+
+    /**
+     * Periksa ulang hasil dari browser terhadap tantangan di sesi (sekali pakai) dan batas di config/face.php.
+     *
+     * @param  array<string, mixed>  $bukti  {nonce, samples: [{descriptor, metrics}], eye_baseline, steps: [{type, value, onset_ms, ms}], flash, camera, duration_ms}
      * @return array{ok: bool, alasan: ?string, liveness: bool, ciri: array<int, array<int, float>>}
      */
-    public function periksaBukti(Request $request, string $untuk, array $bukti, int $minSampel = 3): array
+    public function periksaBukti(Request $request, string $untuk, array $bukti, ?int $minSampel = null): array
     {
-        $tantangan = $request->session()->pull("tantangan_wajah.{$untuk}");
+        $t = $request->session()->pull("tantangan_wajah.{$untuk}");
         $gagal = fn (string $alasan, bool $liveness = false) => ['ok' => false, 'alasan' => $alasan, 'liveness' => $liveness, 'ciri' => []];
+        $q = config('face.quality');
+        $l = config('face.liveness');
+        $f = config('face.flash');
 
-        if (! $tantangan || ! hash_equals($tantangan['nonce'], (string) ($bukti['nonce'] ?? ''))) {
+        if (! $t || ! hash_equals($t['nonce'], (string) ($bukti['nonce'] ?? ''))) {
             return $gagal('Tantangan sudah tidak berlaku. Ulangi dari awal.');
         }
-        if (now()->getTimestampMs() - $tantangan['dibuat'] > self::BERLAKU_DETIK * 1000) {
-            return $gagal('Waktu habis. Ulangi dan ikuti petunjuk lebih cepat.');
+        $berlalu = now()->getTimestampMs() - $t['dibuat'];
+        if ($berlalu > $l['challenge_ttl'] * 1000) {
+            return $gagal('Waktu habis. Ulangi verifikasi.');
         }
 
-        $langkah = array_values(array_filter((array) ($bukti['langkah'] ?? []), 'is_array'));
-        if (array_column($langkah, 'aksi') !== $tantangan['aksi']) {
+        // kamera virtual (OBS, ManyCam, DroidCam, ...) bisa memutar video sebagai kamera
+        $kamera = (string) ($bukti['camera'] ?? '');
+        if ($kamera !== '' && preg_match('/'.config('face.blocked_cameras').'/i', $kamera)) {
+            return $gagal("Kamera virtual terdeteksi (\"{$kamera}\"). Gunakan kamera asli perangkat.", true);
+        }
+
+        $durasi = (int) ($bukti['duration_ms'] ?? 0);
+        if ($durasi < $l['min_duration_ms'] || $durasi > $l['total_timeout'] * 1000 || $durasi > $berlalu + 2000) {
+            return $gagal('Durasi verifikasi tidak wajar (diduga rekaman / otomatis).', true);
+        }
+
+        // gerakan: urutan sama, reaksi manusia (tidak terlalu cepat / lambat), gerakannya cukup besar
+        $langkah = array_values(array_filter((array) ($bukti['steps'] ?? []), 'is_array'));
+        if (array_column($langkah, 'type') !== $t['steps']) {
             return $gagal('Gerakan tidak sesuai urutan yang diminta.', true);
         }
-        foreach ($langkah as $l) {
-            $durasi = (int) ($l['durasi_ms'] ?? 0);
-            $nilai = (float) ($l['nilai'] ?? 0);
-            $wajar = $durasi >= 150 && $durasi <= 20000 && match ($l['aksi']) {
-                'kedip' => $nilai > 0 && $nilai <= 0.75,          // mata menutup: rasio mata turun ≤ 75% dari biasanya
-                'buka_mulut' => $nilai >= 0.25,                   // bukaan mulut bertambah
-                'noleh_kiri' => $nilai >= 0.15,                   // hidung bergeser dari tengah mata
-                'noleh_kanan' => $nilai <= -0.15,
+        foreach ($langkah as $s) {
+            $onset = (int) ($s['onset_ms'] ?? -1);
+            $ms = (int) ($s['ms'] ?? -1);
+            $nilai = (float) ($s['value'] ?? 0);
+            $cukup = match ($s['type']) {
+                'blink' => $nilai >= $l['blink_closed'],
+                'turn_left', 'turn_right' => $nilai >= $l['turn_deg'],
+                'open_mouth' => $nilai >= $l['mouth_open'],
                 default => false,
             };
-            if (! $wajar) {
-                return $gagal('Gerakan "'.self::AKSI[$l['aksi']].'" tidak terdeteksi dengan jelas.', true);
+            if ($onset < $l['react_min_ms'] || $onset > $l['react_max_ms'] || $ms < $onset || $ms > $l['step_timeout'] * 1000 || ! $cukup) {
+                return $gagal('Gerakan "'.(self::LANGKAH[$s['type']] ?? $s['type']).'" tidak wajar (terlalu cepat, terlambat, atau kurang jelas).', true);
             }
         }
 
-        $ciri = array_values(array_filter(array_map([$this, 'rapikanCiri'], (array) ($bukti['ciri'] ?? []))));
-        if (count($ciri) < $minSampel) {
-            return $gagal('Wajah tidak terbaca dengan jelas. Pastikan wajah terang dan menghadap kamera.');
+        // pantulan warna layar di kulit wajah: layar HP / video tidak memantulkan pola warna yang sama
+        if ($t['flash']) {
+            $fl = (array) ($bukti['flash'] ?? []);
+            if (($fl['colors'] ?? null) !== $t['flash'] || (int) ($fl['frames'] ?? 0) < count($t['flash']) * 2) {
+                return $gagal('Cek pantulan layar tidak lengkap. Ulangi verifikasi.', true);
+            }
+            if ((float) ($fl['corr'] ?? 0) < $f['min_corr'] || (float) ($fl['amp'] ?? 0) < $f['min_amp']) {
+                return $gagal('Pantulan cahaya layar pada wajah tidak terdeteksi (diduga wajah dari layar/video).', true);
+            }
         }
-        // foto/frame yang sama diputar ulang menghasilkan angka yang persis sama
+
+        // sampel: jumlah sesuai, tiap sampel lolos cek kualitas (lurus, utuh, tidak tertutup, mata terbuka)
+        $perlu = $t['samples']['before'] + $t['samples']['after'];
+        $sampel = array_values(array_filter((array) ($bukti['samples'] ?? []), 'is_array'));
+        if (count($sampel) !== $perlu || count($sampel) < ($minSampel ?? 0)) {
+            return $gagal('Jumlah sampel wajah tidak sesuai. Ulangi verifikasi.');
+        }
+        $ciri = [];
+        foreach ($sampel as $smp) {
+            $m = (array) ($smp['metrics'] ?? []);
+            $layak = (float) ($m['score'] ?? 0) >= $q['min_score'] && ($m['in_frame'] ?? false) === true
+                && abs((float) ($m['yaw'] ?? 99)) <= $q['max_yaw'] && abs((float) ($m['roll'] ?? 99)) <= $q['max_roll']
+                && (float) ($m['pitch'] ?? 99) >= $q['pitch_min'] && (float) ($m['pitch'] ?? 99) <= $q['pitch_max']
+                && (float) ($m['cover'] ?? 99) < $q['cover_max'] && (float) ($m['blink'] ?? 1) <= $q['eye_open_max'];
+            $c = $this->rapikanCiri($smp['descriptor'] ?? null);
+            if (! $layak || ! $c) {
+                return $gagal('Wajah kurang jelas, tertutup, atau tidak menghadap lurus. Ulangi verifikasi.');
+            }
+            $ciri[] = $c;
+        }
+
+        // sampel sebelum & sesudah gerakan harus orang yang sama (anti ganti orang/foto di tengah jalan)
+        $rata = $this->rataRata($ciri);
+        foreach ($ciri as $c) {
+            if ($this->jarak($rata, $c) > self::ambangCocok() * 0.9) {
+                return $gagal('Wajah berubah di tengah verifikasi (diduga ganti orang/foto).', true);
+            }
+        }
         for ($i = 1; $i < count($ciri); $i++) {
             if ($this->jarak($ciri[0], $ciri[$i]) < 1e-6) {
                 return $gagal('Wajah terdeteksi tidak bergerak (diduga foto atau rekaman).', true);
@@ -109,6 +187,16 @@ class WajahService
         }
 
         return ['ok' => true, 'alasan' => null, 'liveness' => true, 'ciri' => $ciri];
+    }
+
+    public static function ambangCocok(): float
+    {
+        return (float) config('face.server.match_threshold', self::AMBANG_COCOK);
+    }
+
+    public static function ambangMirip(): float
+    {
+        return (float) config('face.server.duplicate_threshold', self::AMBANG_MIRIP);
     }
 
     /**
@@ -167,7 +255,7 @@ class WajahService
             return false;
         }
         foreach ($ciri as $c) {
-            if ($this->jarak($simpan, $c) > self::AMBANG_COCOK) {
+            if ($this->jarak($simpan, $c) > self::ambangCocok()) {
                 return false;
             }
         }

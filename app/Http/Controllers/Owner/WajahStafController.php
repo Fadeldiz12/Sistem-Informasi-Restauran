@@ -17,7 +17,7 @@ use Illuminate\View\View;
  */
 class WajahStafController extends Controller
 {
-    public const SAMPEL = 5;
+    public const SAMPEL = 6;
 
     public function __construct(private WajahService $wajah) {}
 
@@ -43,7 +43,7 @@ class WajahStafController extends Controller
 
         $ciri = $this->wajah->rataRata($hasil['ciri']);
         foreach ($hasil['ciri'] as $c) {
-            if ($this->wajah->jarak($ciri, $c) > WajahService::AMBANG_COCOK * 0.9) {
+            if ($this->wajah->jarak($ciri, $c) > WajahService::ambangCocok() * 0.9) {
                 return back()->withErrors(['wajah' => 'Sampel wajah tidak konsisten (mungkin ada orang lain yang ikut terekam). Ulangi dengan hanya satu orang di depan kamera.']);
             }
         }
@@ -51,7 +51,7 @@ class WajahStafController extends Controller
         // satu wajah hanya untuk satu akun (satu role): wajah yang sama / sangat mirip akun lain ditolak
         $sudahAda = WajahStaf::with('user')->where('id_user', '!=', $user->id)->get()
             ->map(fn (WajahStaf $w) => ['user' => $w->user, 'jarak' => $this->wajah->jarak($ciri, $w->ciri)])
-            ->filter(fn ($m) => $m['jarak'] < WajahService::AMBANG_MIRIP)->sortBy('jarak')->first();
+            ->filter(fn ($m) => $m['jarak'] < WajahService::ambangMirip())->sortBy('jarak')->first();
         if ($sudahAda) {
             $pemilik = $sudahAda['user'];
             LogAktivitas::catat('wajah.ditolak', "Pendaftaran wajah untuk {$user->nama} ({$user->roleLabel()}) ditolak: wajah sudah terdaftar di akun {$pemilik?->nama} ({$pemilik?->roleLabel()})", $user);

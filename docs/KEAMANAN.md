@@ -10,7 +10,7 @@ Semua butir di bawah memiliki tes otomatis (`php artisan test`) kecuali yang dit
 | 1. Akun & sesi | Audit log, kunci akun setelah 10× password salah (+ email Owner), satu akun staf satu perangkat, logout otomatis saat diam | Owner → Log Aktivitas, Pengguna & Role; Admin → Pengaturan (batas diam) |
 | 2. Lokasi, perangkat, shift | IP WiFi outlet / GPS + radius, perangkat terdaftar, jadwal shift (sekaligus absensi), kode darurat Owner | Owner → Keamanan Outlet |
 | 3. Kriptografi | Password bcrypt; no. HP, alamat & data wajah AES-256 (APP_KEY); signature Midtrans; backup AES-256-GCM | `.env` (APP_KEY, BACKUP_KEY), `php artisan resto:backup` |
-| 4. Wajah | Verifikasi 1:1 + liveness acak (face-api.js), 3× gagal = kunci, persetujuan Owner/Admin yang hadir, konfirmasi wajah + password untuk aksi sensitif | Owner → Keamanan Outlet → Verifikasi Wajah |
+| 4. Wajah | FaceGuard (dari FaceSecure Authentication): MediaPipe Face Landmarker + face-api.js; kedip + 2 gerakan acak dengan cek reaksi manusia, kedipan warna layar (anti layar HP/video), tolak kamera virtual, masker, wajah tidak utuh/miring, ganti orang di tengah; semua dicek ulang di server (`config/face.php`); cocok 1:1, satu wajah satu akun, 3× gagal = kunci, konfirmasi wajah + password untuk aksi sensitif | Owner → Keamanan Outlet → Verifikasi Wajah |
 | 5. Dokumen | Tanda tangan digital (HMAC-SHA256) di struk & laporan PDF + halaman cek keaslian publik | otomatis; QR butuh `composer require bacon/bacon-qr-code` |
 | 6. Aplikasi | Security headers + CSP, kepemilikan data, validasi input/upload, harga dihitung server, `.env` tidak bisa diakses | otomatis; lihat Owner → Keamanan Outlet → Pemeriksaan Server |
 
@@ -53,5 +53,5 @@ Temuan yang sudah diketahui dan diterima:
 ## Batasan yang perlu diketahui
 
 - Website tidak bisa mencegah kamera virtual atau pemalsuan data dari browser sepenuhnya. Itu sebabnya wajah tidak pernah menjadi satu-satunya kunci (selalu bersama password, lokasi outlet, dan perangkat terdaftar).
-- Cek tekstur anti-cetakan/layar belum ada (butuh model anti-spoofing di server).
+- Anti layar/video memakai pantulan warna layar di kulit wajah; di ruangan sangat terang atau layar redup, wajah asli bisa ditolak (naikkan kecerahan layar). Bisa dimatikan dengan `FACE_FLASH=false` di `.env`.
 - Cek IP outlet hanya andal bila internet outlet memakai IP statis.

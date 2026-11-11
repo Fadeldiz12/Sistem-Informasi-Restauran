@@ -6,7 +6,7 @@
     <form class="form" method="post" action="{{ $kirimKe }}">
       @csrf
       <h1>{{ $judul }}</h1>
-      <p class="lead">Ikuti gerakan yang diminta di depan kamera. Wajah hanya dicocokkan dengan akun yang sedang masuk, dan tidak ada foto yang disimpan.</p>
+      <p class="lead">Hadap lurus ke kamera, tetap tatap layar saat layar berkedip warna, lalu ikuti 3 gerakan yang muncul. Wajah hanya dicocokkan dengan akun yang sedang masuk; foto tidak dikirim atau disimpan.</p>
       <div class="gap s"></div>
       @include('partials.auth.status')
       @include('partials.kamera-wajah', ['tantangan' => $tantangan, 'tantanganBaru' => $tantanganBaru, 'setelah' => 'kirim'])
