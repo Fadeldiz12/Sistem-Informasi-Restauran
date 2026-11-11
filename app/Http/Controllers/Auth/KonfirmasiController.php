@@ -9,6 +9,7 @@ use App\Services\WajahService;
 use App\Support\SesiStaf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\View\View;
 
@@ -31,7 +32,7 @@ class KonfirmasiController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request): RedirectResponse|Response
     {
         $user = $request->user();
         $request->validate(['password' => ['required', 'string']], ['password.required' => 'Masukkan password kamu.']);
@@ -63,6 +64,36 @@ class KonfirmasiController extends Controller
         $request->session()->put('konfirmasi_at', now()->timestamp);
         LogAktivitas::catat('akun.konfirmasi', "{$user->nama} mengonfirmasi identitas untuk aksi sensitif".($user->wajah()->exists() ? ' (wajah + password)' : ' (password)'), $user);
 
-        return redirect()->to($request->session()->pull('konfirmasi_tujuan', route($user->homeRoute())));
+        $tujuan = $request->session()->pull('konfirmasi_tujuan', route($user->homeRoute()));
+        $aksi = $request->session()->pull('konfirmasi_aksi');
+        if ($aksi && $aksi['sampai'] >= now()->timestamp) {
+            // kirim ulang otomatis aksi yang tadi tertahan (dengan token CSRF baru); back() sesudahnya kembali ke halaman asal
+            $request->session()->setPreviousUrl($tujuan);
+
+            return response()->view('auth.ulangi-aksi', ['aksi' => $aksi, 'isian' => self::ratakan($aksi['input'])]);
+        }
+
+        return redirect()->to($tujuan);
+    }
+
+    /**
+     * ['hari' => [1 => ['mulai' => '08:00']]] → ['hari[1][mulai]' => '08:00'] untuk form tersembunyi.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, string>
+     */
+    private static function ratakan(array $data, string $awal = ''): array
+    {
+        $hasil = [];
+        foreach ($data as $k => $v) {
+            $nama = $awal === '' ? (string) $k : "{$awal}[{$k}]";
+            if (is_array($v)) {
+                $hasil += self::ratakan($v, $nama);
+            } elseif ($v !== null) {
+                $hasil[$nama] = is_bool($v) ? (string) (int) $v : (string) $v;
+            }
+        }
+
+        return $hasil;
     }
 }

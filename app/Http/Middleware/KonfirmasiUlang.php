@@ -29,7 +29,14 @@ class KonfirmasiUlang
 
         $get = $request->isMethod('GET');
         $request->session()->put('konfirmasi_tujuan', $get ? $request->fullUrl() : url()->previous());
-        $pesan = $get ? 'Konfirmasi identitas dulu untuk melanjutkan.' : 'Demi keamanan, konfirmasi identitas dulu, lalu ulangi aksinya.';
+        // aksi yang tertahan (simpan/hapus) dijalankan otomatis setelah konfirmasi berhasil; password tidak ikut disimpan
+        $request->session()->put('konfirmasi_aksi', $get || $request->allFiles() ? null : [
+            'url' => $request->fullUrl(),
+            'method' => $request->method(),
+            'input' => $request->except(['_token', '_method', 'password', 'password_confirmation']),
+            'sampai' => now()->addMinutes(self::BERLAKU_MENIT)->timestamp,
+        ]);
+        $pesan = $get ? 'Konfirmasi identitas dulu untuk melanjutkan.' : 'Demi keamanan, konfirmasi identitas dulu. Setelah itu perubahanmu langsung disimpan.';
 
         if ($request->expectsJson()) {
             return response()->json(['message' => $pesan, 'konfirmasi' => route('konfirmasi')], 423);
