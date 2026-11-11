@@ -4,6 +4,8 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Models\Concerns\IdTerenkripsiDiUrl;
+use App\Models\Concerns\TercatatDiLog;
+use App\Notifications\AkunTerkunciNotification;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -11,11 +13,20 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Notification;
 
 #[Fillable(['nama', 'email', 'password', 'role', 'no_hp', 'alamat'])]
-#[Hidden(['password', 'remember_token'])]
+#[Hidden(['password', 'remember_token', 'token_sesi'])]
 class User extends Authenticatable
 {
+    use TercatatDiLog;
+
+    public const LOG_KODE = 'pengguna';
+
+    public const LOG_JENIS = 'Pengguna';
+
+    public const LOG_JUDUL = 'nama';
+
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
@@ -52,6 +63,7 @@ class User extends Authenticatable
         return [
             'password' => 'hashed',
             'email_verified_at' => 'datetime',
+            'terkunci_at' => 'datetime',
         ];
     }
 
@@ -75,6 +87,66 @@ class User extends Authenticatable
         self::ROLE_KURIR => 'Tugas pengiriman, status antar, dan foto bukti.',
         self::ROLE_PELANGGAN => 'Memesan menu, membayar, dan melacak pesanan.',
     ];
+
+    /**
+     * Password salah berturut-turut (dari perangkat mana pun) sebelum akun dikunci.
+     */
+    public const MAKS_GAGAL_LOGIN = 10;
+
+    /**
+     * Staf = semua role selain pelanggan: berlaku kunci oleh Owner/Admin, satu perangkat, dan logout otomatis saat diam.
+     */
+    public function isStaf(): bool
+    {
+        return $this->role !== self::ROLE_PELANGGAN;
+    }
+
+    public function terkunci(): bool
+    {
+        return $this->terkunci_at !== null;
+    }
+
+    /**
+     * Catat satu password salah; kunci akun bila sudah mencapai batas.
+     */
+    public function catatGagalLogin(): void
+    {
+        $this->forceFill(['gagal_login' => $this->gagal_login + 1])->saveQuietly();
+
+        if ($this->isStaf()) {
+            LogAktivitas::catat('akun.login_gagal', "Password salah saat masuk ke akun {$this->nama} ({$this->gagal_login}/".self::MAKS_GAGAL_LOGIN.')', $this, pelaku: $this);
+        }
+        if ($this->gagal_login >= self::MAKS_GAGAL_LOGIN) {
+            $this->kunci();
+        }
+    }
+
+    /**
+     * Kunci akun dan beri tahu semua Owner lewat email.
+     */
+    public function kunci(): void
+    {
+        $this->forceFill(['terkunci_at' => now(), 'token_sesi' => null])->saveQuietly();
+        LogAktivitas::catat('akun.terkunci', "Akun {$this->nama} ({$this->roleLabel()}) terkunci otomatis setelah {$this->gagal_login} kali password salah", $this, pelaku: $this);
+
+        $owner = self::where('role', self::ROLE_OWNER)->get();
+        try {
+            Notification::send($owner, new AkunTerkunciNotification($this, request()->ip()));
+        } catch (\Throwable $e) {
+            report($e); // email gagal terkirim tidak boleh menggagalkan penguncian
+        }
+    }
+
+    /**
+     * Buka kunci oleh Owner/Admin (atau oleh pelanggan sendiri lewat reset password dengan OTP).
+     */
+    public function bukaKunci(?self $oleh = null): void
+    {
+        $this->forceFill(['terkunci_at' => null, 'gagal_login' => 0])->saveQuietly();
+        LogAktivitas::catat('akun.buka_kunci', $oleh && ! $oleh->is($this)
+            ? "Kunci akun {$this->nama} ({$this->roleLabel()}) dibuka oleh {$oleh->nama}"
+            : "Kunci akun {$this->nama} dibuka lewat reset password dengan kode OTP", $this, pelaku: $oleh ?? $this);
+    }
 
     public function roleLabel(): string
     {

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\IdTerenkripsiDiUrl;
+use App\Models\Concerns\TercatatDiLog;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Attributes\Table;
@@ -15,6 +16,17 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 #[Fillable(['nama_bahan', 'satuan', 'stok', 'rata_pemakaian', 'lead_time', 'safety_stock', 'rop'])]
 class BahanBaku extends Model
 {
+    use TercatatDiLog;
+
+    public const LOG_KODE = 'bahan';
+
+    public const LOG_JENIS = 'Bahan baku';
+
+    public const LOG_JUDUL = 'nama_bahan';
+
+    /** Kolom hasil hitungan sistem (stok, ROP): perubahannya dicatat lewat mutasi, bukan di sini. */
+    public const LOG_ABAIKAN = ['stok', 'rata_pemakaian', 'rop'];
+
     use IdTerenkripsiDiUrl;
     use SoftDeletes;
 

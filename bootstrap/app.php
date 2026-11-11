@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Pelanggan\CheckoutController;
+use App\Http\Middleware\AmankanSesiStaf;
 use App\Http\Middleware\EnsureUserHasRole;
 use App\Http\Middleware\JanganSimpanHalamanBerlogin;
 use App\Http\Middleware\PelangganAtauTamu;
@@ -21,7 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // webhook Midtrans tidak membawa token CSRF (keasliannya dicek lewat signature)
         $middleware->validateCsrfTokens(except: ['midtrans/notifikasi']);
 
-        $middleware->web(append: [JanganSimpanHalamanBerlogin::class]);
+        $middleware->web(append: [AmankanSesiStaf::class, JanganSimpanHalamanBerlogin::class]);
         // pilihan layanan di beranda disimpan JS sebagai cookie biasa
         $middleware->encryptCookies(except: [CheckoutController::COOKIE_LAYANAN]);
 

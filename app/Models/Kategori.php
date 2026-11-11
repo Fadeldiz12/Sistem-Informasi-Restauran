@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\IdTerenkripsiDiUrl;
+use App\Models\Concerns\TercatatDiLog;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Attributes\Table;
@@ -15,6 +16,14 @@ use Illuminate\Support\Str;
 #[Fillable(['nama_kategori', 'tampil_navbar', 'urutan_navbar'])]
 class Kategori extends Model
 {
+    use TercatatDiLog;
+
+    public const LOG_KODE = 'kategori';
+
+    public const LOG_JENIS = 'Kategori';
+
+    public const LOG_JUDUL = 'nama_kategori';
+
     use IdTerenkripsiDiUrl;
 
     /**

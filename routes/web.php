@@ -103,6 +103,7 @@ Route::middleware(['auth', 'role:'.User::ROLE_ADMIN])->prefix('admin')->name('ad
     Route::post('/pengguna', [Admin\PenggunaController::class, 'store'])->name('pengguna.store');
     Route::put('/pengguna/{user}', [Admin\PenggunaController::class, 'update'])->name('pengguna.update');
     Route::delete('/pengguna/{user}', [Admin\PenggunaController::class, 'destroy'])->name('pengguna.destroy');
+    Route::post('/pengguna/{user}/buka-kunci', [Admin\PenggunaController::class, 'bukaKunci'])->name('pengguna.buka-kunci');
 
     Route::get('/menu', [Admin\MenuController::class, 'index'])->name('menu');
     Route::post('/menu', [Admin\MenuController::class, 'store'])->name('menu.store');
@@ -190,6 +191,9 @@ Route::middleware(['auth', 'role:'.User::ROLE_OWNER])->prefix('owner')->name('ow
     Route::post('/pengguna', [Admin\PenggunaController::class, 'store'])->name('pengguna.store');
     Route::put('/pengguna/{user}', [Admin\PenggunaController::class, 'update'])->name('pengguna.update');
     Route::delete('/pengguna/{user}', [Admin\PenggunaController::class, 'destroy'])->name('pengguna.destroy');
+    Route::post('/pengguna/{user}/buka-kunci', [Admin\PenggunaController::class, 'bukaKunci'])->name('pengguna.buka-kunci');
+
+    Route::get('/aktivitas', Owner\AktivitasController::class)->name('aktivitas');
 
     Route::get('/pengeluaran', [Owner\PengeluaranController::class, 'index'])->name('pengeluaran');
     Route::post('/pengeluaran', [Owner\PengeluaranController::class, 'store'])->name('pengeluaran.store');

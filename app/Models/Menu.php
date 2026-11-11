@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\IdTerenkripsiDiUrl;
+use App\Models\Concerns\TercatatDiLog;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Attributes\Table;
@@ -16,6 +17,14 @@ use Illuminate\Support\Str;
 #[Fillable(['id_kategori', 'nama_menu', 'harga', 'foto', 'tersedia'])]
 class Menu extends Model
 {
+    use TercatatDiLog;
+
+    public const LOG_KODE = 'menu';
+
+    public const LOG_JENIS = 'Menu';
+
+    public const LOG_JUDUL = 'nama_menu';
+
     use IdTerenkripsiDiUrl;
 
     /**

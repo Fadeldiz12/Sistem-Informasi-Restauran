@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\KodeOtp;
+use App\Models\LogAktivitas;
 use App\Models\User;
 use App\Services\OtpService;
 use Illuminate\Http\RedirectResponse;
@@ -67,11 +68,22 @@ class PasswordController extends Controller
         $user->forceFill([
             'password' => $data['password'],
             'remember_token' => Str::random(60),
+            'token_sesi' => $user->isStaf() ? Str::random(64) : null, // sesi lain (mungkin milik penyusup) ikut berakhir
             'email_verified_at' => $user->email_verified_at ?? now(), // kode OTP membuktikan email miliknya
         ])->save();
         $request->session()->forget('reset');
 
-        return to_route('login')->with('status', 'Password berhasil diubah. Silakan masuk dengan password baru.');
+        $terbuka = false;
+        if ($user->terkunci() && ! $user->isStaf()) {
+            $user->bukaKunci(); // kode OTP membuktikan pemilik email: pelanggan bisa membuka kuncinya sendiri
+            $terbuka = true;
+        }
+        if ($user->isStaf()) {
+            LogAktivitas::catat('akun.reset_password', "{$user->nama} mengganti password lewat Lupa password (kode OTP email)", $user, pelaku: $user);
+        }
+
+        return to_route('login')->with('status', 'Password berhasil diubah.'.($terbuka ? ' Kunci akun sudah dibuka.' : '')
+            .($user->terkunci() ? ' Akun masih terkunci: minta Owner atau Admin membukanya.' : ' Silakan masuk dengan password baru.'));
     }
 
     private function izinReset(Request $request): bool

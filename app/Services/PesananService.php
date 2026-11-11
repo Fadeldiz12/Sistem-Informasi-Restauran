@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\LogAktivitas;
 use App\Models\Menu;
 use App\Models\Pembayaran;
 use App\Models\PengaturanSistem;
@@ -200,6 +201,7 @@ class PesananService
             $pesanan = Pesanan::whereKey($pesanan->getKey())->lockForUpdate()->firstOrFail();
             $tiket = TiketDapur::where('id_pesanan', $pesanan->id)->lockForUpdate()->first();
             $this->pastikanBisaDiubah($pesanan, $tiket);
+            $totalLama = (float) $pesanan->total;
 
             [$baris, $subtotal] = $this->barisPesanan($items);
             $zona = $jenisLayanan === Pesanan::LAYANAN_DELIVERY ? ZonaPengiriman::find($data['id_zona'] ?? null) : null;
@@ -237,6 +239,8 @@ class PesananService
                 $pesanan->pengiriman()->delete();
             }
             $this->aturBayarDeliveryKasir($pesanan, $data['bayar'] ?? null);
+            LogAktivitas::catat('pesanan.ubah', "Pesanan {$pesanan->kode()} diubah: total Rp ".number_format($totalLama, 0, ',', '.')
+                .' → Rp '.number_format((float) $pesanan->total, 0, ',', '.'), $pesanan);
 
             return $pesanan;
         });
@@ -314,6 +318,8 @@ class PesananService
 
             $pesanan->tiketDapur()->delete();
             $pesanan->update(['status' => Pesanan::STATUS_DIBATALKAN, 'alasan_batal' => $alasan, 'id_kasir' => $pesanan->id_kasir ?? $kasir->id]);
+            LogAktivitas::catat('pesanan.batal', "Pesanan {$pesanan->kode()} (Rp ".number_format((float) $pesanan->total, 0, ',', '.').") dibatalkan. Alasan: {$alasan}"
+                .($dikembalikan ? " · stok {$dikembalikan} bahan dikembalikan" : ''), $pesanan, pelaku: $kasir);
 
             return ['stok_dikembalikan' => $dikembalikan];
         });
@@ -356,6 +362,7 @@ class PesananService
         $this->pastikanMenunggu($pesanan);
 
         $pesanan->update(['status' => Pesanan::STATUS_DIBATALKAN, 'id_kasir' => $kasir->id, 'alasan_batal' => $alasan]);
+        LogAktivitas::catat('pesanan.tolak', "Pesanan online {$pesanan->kode()} ditolak".($alasan ? ". Alasan: {$alasan}" : ''), $pesanan, pelaku: $kasir);
     }
 
     /**
@@ -482,7 +489,7 @@ class PesananService
             throw ValidationException::withMessages(['uang_diterima' => 'Uang diterima kurang dari total tagihan.']);
         }
 
-        return $pesanan->pembayaran()->updateOrCreate([], [
+        $bayar = $pesanan->pembayaran()->updateOrCreate([], [
             'id_kasir' => $kasir->id,
             'metode' => $metode,
             'jumlah' => $pesanan->total,
@@ -490,6 +497,10 @@ class PesananService
             'status_bayar' => Pembayaran::STATUS_LUNAS,
             'waktu_bayar' => now(),
         ]);
+        LogAktivitas::catat('pembayaran.lunas', "Pesanan {$pesanan->kode()} ditandai lunas: Rp ".number_format((float) $pesanan->total, 0, ',', '.')
+            ." ({$bayar->metodeLabel()})", $pesanan, ['metode' => $metode, 'jumlah' => (float) $pesanan->total, 'uang_diterima' => $uangDiterima], $kasir);
+
+        return $bayar;
     }
 
     /**

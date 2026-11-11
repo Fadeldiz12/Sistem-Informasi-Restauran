@@ -2,15 +2,24 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\TercatatDiLog;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Table;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
 #[Table('pengaturan_sistem')]
-#[Fillable(['pajak', 'biaya_layanan', 'jam_buka', 'jam_tutup', 'lat_resto', 'lng_resto'])]
+#[Fillable(['pajak', 'biaya_layanan', 'jam_buka', 'jam_tutup', 'lat_resto', 'lng_resto', 'batas_diam_menit'])]
 class PengaturanSistem extends Model
 {
+    use TercatatDiLog;
+
+    public const LOG_KODE = 'pengaturan';
+
+    public const LOG_JENIS = 'Pengaturan sistem';
+
+    public const LOG_JUDUL = null;
+
     protected function casts(): array
     {
         return [

@@ -4,6 +4,7 @@
     ['owner.laporan', 'i-file', 'Laporan Keuangan', 'Laporan'],
     ['owner.pengeluaran', 'i-wallet', 'Pengeluaran', 'Pengeluaran'],
     ['owner.pengguna', 'i-users', 'Pengguna & Role', 'Pengguna'],
+    ['owner.aktivitas', 'i-lock', 'Log Aktivitas', 'Log'],
   ];
 @endphp
 <aside class="side"><div class="side-in">

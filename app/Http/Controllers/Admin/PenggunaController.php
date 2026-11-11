@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Support\AturanAkun;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
@@ -30,6 +31,7 @@ class PenggunaController extends Controller
             ->paginate(10)
             ->withQueryString();
 
+        $terkunci = User::whereNotNull('terkunci_at')->orderByDesc('terkunci_at')->get();
         $perRole = User::query()->selectRaw('role, count(*) as total')->groupBy('role')->pluck('total', 'role');
 
         return view('admin.pengguna', [
@@ -39,6 +41,7 @@ class PenggunaController extends Controller
             'role' => $role,
             'q' => $q,
             'perRole' => $perRole,
+            'terkunci' => $terkunci,
             'total' => $perRole->sum(),
             'pelangganBaru' => User::where('role', User::ROLE_PELANGGAN)->where('created_at', '>=', now()->startOfMonth())->count(),
         ]);
@@ -70,6 +73,8 @@ class PenggunaController extends Controller
 
         if (blank($data['password'] ?? null)) {
             unset($data['password']);
+        } elseif ($user->isStaf()) {
+            $user->forceFill(['token_sesi' => Str::random(64)]); // password diganti: sesi yang sedang aktif berakhir
         }
 
         $user->update($data);
@@ -100,6 +105,20 @@ class PenggunaController extends Controller
         $user->delete();
 
         return back()->with('status', 'Pengguna berhasil dihapus.');
+    }
+
+    /**
+     * Buka kunci akun yang terkunci karena password salah berulang kali.
+     */
+    public function bukaKunci(Request $request, User $user): RedirectResponse
+    {
+        $this->pastikanBolehKelola($request, $user);
+
+        if ($user->terkunci()) {
+            $user->bukaKunci($request->user());
+        }
+
+        return back()->with('status', "Kunci akun {$user->nama} sudah dibuka. Ia bisa masuk lagi dengan password-nya.");
     }
 
     private function validated(Request $request, ?User $user = null): array

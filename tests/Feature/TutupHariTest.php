@@ -67,6 +67,7 @@ class TutupHariTest extends TestCase
         $this->actingAs($this->kasir)->get('/kasir/tutup-hari')->assertOk()->assertSee('Rp 125.350')->assertSee('Tutup Hari &amp; Cetak Rekap', false);
 
         Carbon::setTestNow(today()->setTime(22, 0));
+        $this->flushSession(); // berjam-jam kemudian = login baru (sesi lama sudah keluar otomatis)
         $tutup = $this->actingAs($this->kasir)->post('/kasir/tutup-hari');
         $eod = TutupKasir::sole();
         $tutup->assertRedirect(route('kasir.eod.cetak', $eod));
@@ -85,6 +86,7 @@ class TutupHariTest extends TestCase
 
         // penjualan baru setelah EOD terhitung lagi dari nol
         Carbon::setTestNow(today()->setTime(22, 30));
+        $this->flushSession(); // 30 menit tanpa aktivitas = sudah keluar otomatis, login lagi
         $baru = $this->penjualan();
         $this->actingAs($this->kasir)->get('/kasir/pembayaran?tab=lunas')->assertSee($baru->kode())->assertDontSee($p->kode());
         $this->actingAs($this->kasir)->get('/kasir/dashboard')->assertSee('1 pembayaran lunas');
@@ -100,6 +102,7 @@ class TutupHariTest extends TestCase
         $this->actingAs($this->kasir)->get('/kasir/dashboard')->assertSee('1 pembayaran lunas');
 
         Carbon::setTestNow(today()->addDay()->setTime(9, 0));
+        $this->flushSession(); // besok pagi = login baru
         $this->actingAs($this->kasir)->get('/kasir/dashboard')->assertSee('0 pembayaran lunas')->assertDontSee('sejak tutup hari');
         $this->actingAs($this->kasir)->get('/kasir/pembayaran?tab=lunas')->assertDontSee($p->kode());
         $this->assertSame(today()->toDateTimeString(), TutupKasir::batas()->toDateTimeString());

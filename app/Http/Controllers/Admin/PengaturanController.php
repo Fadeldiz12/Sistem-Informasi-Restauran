@@ -29,7 +29,10 @@ class PengaturanController extends Controller
             'jam_tutup' => ['required', 'date_format:H:i', 'different:jam_buka'],
             'lat_resto' => ['required', 'numeric', 'between:-90,90'],
             'lng_resto' => ['required', 'numeric', 'between:-180,180'],
+            'batas_diam_menit' => ['sometimes', 'required', 'integer', 'min:5', 'max:240'],
         ], [
+            'batas_diam_menit.min' => 'Batas logout otomatis minimal 5 menit.',
+            'batas_diam_menit.max' => 'Batas logout otomatis maksimal 240 menit (4 jam).',
             'lat_resto.required' => 'Tentukan titik restoran di peta.',
             'jam_tutup.different' => 'Jam tutup tidak boleh sama dengan jam buka.',
         ]);

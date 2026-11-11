@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Kasir;
 
 use App\Http\Controllers\Controller;
+use App\Models\LogAktivitas;
 use App\Models\Pembayaran;
 use App\Models\Setoran;
 use App\Models\TutupKasir;
@@ -88,6 +89,8 @@ class SetoranController extends Controller
 
         [$jumlah, $setoran] = $hasil;
         $selisih = $setoran->selisih();
+        LogAktivitas::catat('setoran.terima', "Setoran tunai {$kurir->nama} diterima: {$jumlah} pesanan, Rp ".number_format((float) $setoran->jumlah_diterima, 0, ',', '.')
+            .' dari seharusnya Rp '.number_format((float) $setoran->jumlah_seharusnya, 0, ',', '.').($setoran->catatan ? ". Catatan: {$setoran->catatan}" : ''), $setoran);
 
         return back()->with('status', "Setoran {$kurir->nama} diterima · {$jumlah} pesanan · Rp ".number_format((float) $setoran->jumlah_diterima, 0, ',', '.')
             .($selisih != 0 ? ' · selisih '.($selisih < 0 ? '-' : '+').'Rp '.number_format(abs($selisih), 0, ',', '.').' dicatat' : ''));

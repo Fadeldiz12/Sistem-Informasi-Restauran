@@ -11,4 +11,7 @@
     });
   });
 </script>
+@if (auth()->user()->isStaf())
+  <script src="{{ asset('js/sesi-staf.js') }}?v={{ filemtime(public_path('js/sesi-staf.js')) }}" data-batas="{{ \App\Support\SesiStaf::batasDiamMenit() }}" data-mulai="{{ session('login_at', now()->timestamp) }}"></script>
+@endif
 @endauth

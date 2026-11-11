@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\KodeOtp;
+use App\Models\LogAktivitas;
 use App\Models\User;
 use App\Services\OtpService;
 use App\Support\AturanAkun;
 use App\Support\PesananTamu;
+use App\Support\SesiStaf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -43,6 +45,14 @@ class AuthController extends Controller
             'password.required' => 'Password wajib diisi.',
         ]);
 
+        $akun = User::where('email', $credentials['email'])->first();
+        // akun terkunci: pesan yang sama apa pun password-nya, supaya tebakan yang benar tidak ketahuan
+        if ($akun?->terkunci()) {
+            return back()->withErrors(['email' => $akun->isStaf()
+                ? 'Akun ini terkunci karena terlalu banyak percobaan masuk yang salah. Hubungi Owner atau Admin untuk membukanya.'
+                : 'Akun ini terkunci karena terlalu banyak percobaan masuk yang salah. Buka kuncinya dengan "Lupa password?".'])->onlyInput('email');
+        }
+
         // hanya percobaan GAGAL yang dihitung, per email + IP: staf yang login bergantian di wifi yang sama tidak terblokir
         $kunci = 'login:'.$credentials['email'].'|'.$request->ip();
         if (RateLimiter::tooManyAttempts($kunci, self::MAKS_GAGAL_LOGIN)) {
@@ -53,9 +63,16 @@ class AuthController extends Controller
 
         if (! Auth::validate($credentials)) {
             RateLimiter::hit($kunci, 60);
+            $akun?->catatGagalLogin();
+
+            if ($akun?->terkunci()) {
+                return back()->withErrors(['email' => 'Password salah '.User::MAKS_GAGAL_LOGIN.' kali, akun ini sekarang terkunci. '
+                    .($akun->isStaf() ? 'Hubungi Owner atau Admin untuk membukanya.' : 'Buka kuncinya dengan "Lupa password?".')])->onlyInput('email');
+            }
+            $sisa = $akun ? User::MAKS_GAGAL_LOGIN - $akun->gagal_login : 0;
 
             return back()
-                ->withErrors(['email' => 'Email atau password salah.'])
+                ->withErrors(['email' => 'Email atau password salah.'.($akun && $sisa <= 3 ? " Sisa {$sisa} kali percobaan sebelum akun dikunci." : '')])
                 ->onlyInput('email');
         }
         RateLimiter::clear($kunci);
@@ -68,8 +85,10 @@ class AuthController extends Controller
             return $this->mulaiOtp($request, $user->email, 'Akunmu belum diverifikasi. Masukkan kode OTP yang kami kirim ke email.');
         }
 
-        Auth::login($user, $request->boolean('remember'));
+        // "Ingat saya" hanya untuk pelanggan: komputer outlet dipakai bergantian, staf harus login ulang
+        Auth::login($user, $request->boolean('remember') && ! $user->isStaf());
         $request->session()->regenerate();
+        SesiStaf::mulai($request, $user);
 
         $redirect = redirect()->to($this->tujuanSetelahLogin($request, $user));
         // pesanan tanpa akun dari browser ini masuk ke riwayat akun
@@ -183,10 +202,17 @@ class AuthController extends Controller
 
     public function logout(Request $request): RedirectResponse
     {
-        Auth::logout();
+        $user = $request->user();
 
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+        // dikirim script panel saat staf lama tidak beraktivitas
+        if ($request->input('alasan') === SesiStaf::ALASAN_DIAM && $user->isStaf()) {
+            return redirect()->route('login')->with('status', SesiStaf::akhiri($request, $user, SesiStaf::ALASAN_DIAM));
+        }
+
+        if ($user->isStaf()) {
+            LogAktivitas::catat('akun.logout', "{$user->nama} keluar", $user);
+        }
+        SesiStaf::keluar($request, $user);
 
         return redirect()->route('login')->with('status', 'Anda sudah keluar.');
     }
