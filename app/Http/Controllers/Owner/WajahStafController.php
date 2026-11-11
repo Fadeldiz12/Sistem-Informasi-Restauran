@@ -28,7 +28,6 @@ class WajahStafController extends Controller
         return view('owner.wajah', [
             'staf' => $user,
             'tantangan' => $this->wajah->buatTantangan($request, 'daftar'),
-            'tertunda' => $request->session()->get('wajah_tertunda.id') === $user->id ? $request->session()->get('wajah_tertunda') : null,
         ]);
     }
 
@@ -36,14 +35,6 @@ class WajahStafController extends Controller
     {
         abort_unless($user->isStaf(), 404);
         $request->validate(['setuju' => ['accepted']], ['setuju.accepted' => 'Centang pernyataan bahwa staf sudah memberi persetujuan tertulis.']);
-
-        // langkah kedua: wajah sangat mirip akun lain dan Owner sudah memastikan ini orang berbeda
-        $tertunda = $request->session()->get('wajah_tertunda');
-        if ($request->boolean('konfirmasi_mirip') && ($tertunda['id'] ?? null) === $user->id && $tertunda['sampai'] >= now()->timestamp) {
-            $request->session()->forget('wajah_tertunda');
-
-            return $this->simpan($request, $user, $tertunda['ciri'], $tertunda['jumlah'], $tertunda['catatan']);
-        }
 
         $hasil = $this->wajah->periksaBukti($request, 'daftar', (array) json_decode((string) $request->input('bukti'), true), self::SAMPEL);
         if (! $hasil['ok']) {
@@ -57,18 +48,19 @@ class WajahStafController extends Controller
             }
         }
 
-        // 1:1 tetap dipakai saat login, tapi wajah yang terlalu mirip akun lain (mis. kembar) ditahan dulu
-        $mirip = WajahStaf::with('user')->where('id_user', '!=', $user->id)->get()
-            ->map(fn (WajahStaf $w) => ['nama' => $w->user?->nama, 'jarak' => $this->wajah->jarak($ciri, $w->ciri)])
+        // satu wajah hanya untuk satu akun (satu role): wajah yang sama / sangat mirip akun lain ditolak
+        $sudahAda = WajahStaf::with('user')->where('id_user', '!=', $user->id)->get()
+            ->map(fn (WajahStaf $w) => ['user' => $w->user, 'jarak' => $this->wajah->jarak($ciri, $w->ciri)])
             ->filter(fn ($m) => $m['jarak'] < WajahService::AMBANG_MIRIP)->sortBy('jarak')->first();
-        if ($mirip) {
-            $catatan = "Sangat mirip wajah {$mirip['nama']} (jarak ".number_format($mirip['jarak'], 2).'), disetujui Owner';
-            $request->session()->put('wajah_tertunda', ['id' => $user->id, 'ciri' => $ciri, 'jumlah' => count($hasil['ciri']), 'catatan' => $catatan, 'sampai' => now()->addMinutes(5)->timestamp]);
+        if ($sudahAda) {
+            $pemilik = $sudahAda['user'];
+            LogAktivitas::catat('wajah.ditolak', "Pendaftaran wajah untuk {$user->nama} ({$user->roleLabel()}) ditolak: wajah sudah terdaftar di akun {$pemilik?->nama} ({$pemilik?->roleLabel()})", $user);
 
-            return back()->with('status', "Wajah ini sangat mirip dengan wajah {$mirip['nama']}. Pastikan ini orang yang berbeda (mis. kembar), lalu setujui.");
+            return back()->withErrors(['wajah' => "Wajah ini sudah terdaftar untuk akun {$pemilik?->nama} ({$pemilik?->roleLabel()}). Satu wajah hanya boleh dipakai satu akun. "
+                .'Bila orang ini pindah tugas, hapus dulu data wajah di akun lamanya (atau ubah role akun lamanya) lalu daftarkan lagi.']);
         }
 
-        return $this->simpan($request, $user, $ciri, count($hasil['ciri']), null);
+        return $this->simpan($request, $user, $ciri, count($hasil['ciri']));
     }
 
     /** Tantangan baru setelah percobaan di browser gagal. */
@@ -88,13 +80,13 @@ class WajahStafController extends Controller
     /**
      * @param  array<int, float>  $ciri
      */
-    private function simpan(Request $request, User $user, array $ciri, int $jumlah, ?string $catatan): RedirectResponse
+    private function simpan(Request $request, User $user, array $ciri, int $jumlah): RedirectResponse
     {
         WajahStaf::updateOrCreate(['id_user' => $user->id], [
-            'ciri' => $ciri, 'jumlah_sampel' => $jumlah, 'id_pendaftar' => $request->user()->id, 'persetujuan_at' => now(), 'catatan_mirip' => $catatan,
+            'ciri' => $ciri, 'jumlah_sampel' => $jumlah, 'id_pendaftar' => $request->user()->id, 'persetujuan_at' => now(), 'catatan_mirip' => null,
         ]);
         $user->forceFill(['gagal_wajah' => 0])->saveQuietly();
-        LogAktivitas::catat('wajah.daftar', "Wajah {$user->nama} ({$user->roleLabel()}) didaftarkan, {$jumlah} sampel, persetujuan tertulis dikonfirmasi".($catatan ? " · {$catatan}" : ''), $user);
+        LogAktivitas::catat('wajah.daftar', "Wajah {$user->nama} ({$user->roleLabel()}) didaftarkan, {$jumlah} sampel, persetujuan tertulis dikonfirmasi", $user);
 
         return to_route('owner.keamanan')->with('status', "Wajah {$user->nama} berhasil didaftarkan.");
     }

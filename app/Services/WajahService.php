@@ -19,7 +19,7 @@ class WajahService
     /** Jarak ciri wajah maksimal agar dianggap orang yang sama (face-api: 0,6 = longgar; dipakai 0,5). */
     public const AMBANG_COCOK = 0.5;
 
-    /** Saat pendaftaran: lebih dekat dari ini ke wajah akun lain = sangat mirip (mis. kembar), perlu konfirmasi Owner. */
+    /** Saat pendaftaran: lebih dekat dari ini ke wajah akun lain = dianggap wajah yang sama, ditolak (satu wajah satu akun). */
     public const AMBANG_MIRIP = 0.55;
 
     public const MAKS_GAGAL = 3;

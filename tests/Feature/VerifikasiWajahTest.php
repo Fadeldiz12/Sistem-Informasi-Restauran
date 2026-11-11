@@ -91,15 +91,29 @@ class VerifikasiWajahTest extends TestCase
         $this->assertStringNotContainsString((string) $w->ciri[0], $mentah); // tersimpan terenkripsi
         $this->assertDatabaseHas('log_aktivitas', ['aksi' => 'wajah.daftar', 'id_user' => $this->owner->id]);
 
-        // kembar: wajah sangat mirip ditahan sampai Owner menyetujui
-        $kembar = User::factory()->create(['role' => User::ROLE_KASIR, 'nama' => 'Bimo Kasir']);
-        $this->get("/owner/wajah/{$kembar->getRouteKey()}");
-        $this->post("/owner/wajah/{$kembar->getRouteKey()}", ['setuju' => 1, 'bukti' => $this->bukti('daftar', $this->sampel($bima, 5))])
-            ->assertSessionHas('status', fn ($s) => str_contains($s, 'sangat mirip dengan wajah Bima Kasir'));
-        $this->assertNull($kembar->fresh()->wajah);
-        $this->get("/owner/wajah/{$kembar->getRouteKey()}")->assertSee('Wajah Sangat Mirip Akun Lain');
-        $this->post("/owner/wajah/{$kembar->getRouteKey()}", ['setuju' => 1, 'konfirmasi_mirip' => 1])->assertRedirect('/owner/keamanan');
-        $this->assertStringContainsString('Sangat mirip wajah Bima Kasir', $kembar->fresh()->wajah->catatan_mirip);
+        // satu wajah hanya untuk satu akun: wajah Bima tidak bisa didaftarkan ke akun lain (role apa pun)
+        $akunLain = User::factory()->create(['role' => User::ROLE_ADMIN, 'nama' => 'Bima Admin']);
+        $this->get("/owner/wajah/{$akunLain->getRouteKey()}");
+        $this->post("/owner/wajah/{$akunLain->getRouteKey()}", ['setuju' => 1, 'bukti' => $this->bukti('daftar', $this->sampel($bima, 5))])
+            ->assertSessionHasErrors('wajah');
+        $this->assertStringContainsString('sudah terdaftar untuk akun Bima Kasir (Kasir)', session('errors')->first('wajah'));
+        $this->assertNull($akunLain->fresh()->wajah);
+        $this->assertDatabaseHas('log_aktivitas', ['aksi' => 'wajah.ditolak']);
+
+        // daftar ulang wajah sendiri tetap boleh; wajah orang lain ke akun lain juga boleh
+        $this->get("/owner/wajah/{$this->kasir->getRouteKey()}");
+        $this->post("/owner/wajah/{$this->kasir->getRouteKey()}", ['setuju' => 1, 'bukti' => $this->bukti('daftar', $this->sampel($bima, 5))])->assertRedirect('/owner/keamanan');
+        $this->get("/owner/wajah/{$akunLain->getRouteKey()}");
+        $this->post("/owner/wajah/{$akunLain->getRouteKey()}", ['setuju' => 1, 'bukti' => $this->bukti('daftar', $this->sampel($this->orang(), 5))])->assertRedirect('/owner/keamanan');
+
+        // setelah wajah di akun lama dihapus, orang itu bisa didaftarkan di akun barunya
+        $this->delete("/owner/wajah/{$akunLain->getRouteKey()}");
+        $this->delete("/owner/wajah/{$this->kasir->getRouteKey()}");
+        $this->get("/owner/wajah/{$akunLain->getRouteKey()}");
+        $this->post("/owner/wajah/{$akunLain->getRouteKey()}", ['setuju' => 1, 'bukti' => $this->bukti('daftar', $this->sampel($bima, 5))])->assertRedirect('/owner/keamanan');
+        $this->delete("/owner/wajah/{$akunLain->getRouteKey()}");
+        $this->get("/owner/wajah/{$this->kasir->getRouteKey()}");
+        $this->post("/owner/wajah/{$this->kasir->getRouteKey()}", ['setuju' => 1, 'bukti' => $this->bukti('daftar', $this->sampel($bima, 5))]);
 
         // hapus saat staf berhenti
         $this->delete("/owner/wajah/{$this->kasir->getRouteKey()}")->assertSessionHas('status');

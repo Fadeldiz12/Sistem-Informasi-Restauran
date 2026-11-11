@@ -42,6 +42,9 @@ Route::view('/syarat-ketentuan', 'syarat')->name('syarat');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+    // pemasangan pertama: buat Owner pertama (hanya dari komputer server & selama belum ada Owner)
+    Route::get('/setup', [Auth\SetupController::class, 'show'])->name('setup');
+    Route::post('/setup', [Auth\SetupController::class, 'store'])->middleware('throttle:5,1,setup')->name('setup.submit');
     Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:30,1,login')->name('login.submit');
     // staf di luar outlet / perangkat tidak terdaftar: cek GPS atau kode darurat dari Owner
     Route::get('/verifikasi-outlet', [AuthController::class, 'showVerifikasiOutlet'])->name('outlet.verifikasi');
