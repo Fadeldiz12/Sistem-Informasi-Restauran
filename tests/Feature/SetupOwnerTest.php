@@ -48,4 +48,16 @@ class SetupOwnerTest extends TestCase
             ->expectsOutputToContain('Email sudah dipakai')->assertFailed();
         $this->post('/login', ['email' => 'reza@resto.id', 'password' => 'rahasia123'])->assertRedirect('/owner/dashboard');
     }
+
+    public function test_perintah_reset_password_membuka_kunci(): void
+    {
+        $kasir = User::factory()->create(['role' => User::ROLE_KASIR, 'email' => 'bima@resto.id', 'terkunci_at' => now(), 'gagal_login' => 10]);
+
+        $this->artisan('resto:password')->expectsOutputToContain('bima@resto.id')->assertSuccessful();
+        $this->artisan('resto:password', ['email' => 'tidak@ada.id', '--password' => 'rahasia123'])->assertFailed();
+        $this->artisan('resto:password', ['email' => 'Bima@Resto.id', '--password' => 'rahasia123'])->assertSuccessful();
+
+        $this->assertFalse($kasir->fresh()->terkunci());
+        $this->post('/login', ['email' => 'bima@resto.id', 'password' => 'rahasia123'])->assertRedirect('/kasir/dashboard');
+    }
 }

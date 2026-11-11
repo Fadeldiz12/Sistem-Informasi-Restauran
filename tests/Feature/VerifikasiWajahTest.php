@@ -297,13 +297,41 @@ class VerifikasiWajahTest extends TestCase
             ->assertRedirect($url);
         $this->get($url)->assertOk();
 
-        // admin tanpa data wajah (sesi lain): cukup password, lalu ulangi aksinya
+        // admin tanpa data wajah (sesi lain): cukup password; aksi hapus yang tertahan dikirim ulang otomatis
         $this->flushSession();
         $korban = User::factory()->create(['role' => User::ROLE_DAPUR]);
-        $this->actingAs($this->admin)->from('/admin/pengguna')->delete("/admin/pengguna/{$korban->getRouteKey()}")->assertRedirect('/konfirmasi-identitas');
+        $hapus = "/admin/pengguna/{$korban->getRouteKey()}";
+        $this->actingAs($this->admin)->from('/admin/pengguna')->delete($hapus)->assertRedirect('/konfirmasi-identitas');
         $this->assertNotNull($korban->fresh());
-        $this->post('/konfirmasi-identitas', ['password' => 'password'])->assertRedirect('/admin/pengguna');
-        $this->actingAs($this->admin)->delete("/admin/pengguna/{$korban->getRouteKey()}")->assertSessionHas('status');
+        $this->post('/konfirmasi-identitas', ['password' => 'password'])->assertOk()
+            ->assertSee('Menyimpan perubahanmu')->assertSee('action="'.url($hapus).'"', false)->assertSee('name="_method" value="DELETE"', false);
+        $this->delete($hapus)->assertRedirect('/admin/pengguna')->assertSessionHas('status'); // = form otomatis dari browser
         $this->assertNull($korban->fresh());
+    }
+
+    public function test_setelan_keamanan_tetap_tersimpan_setelah_konfirmasi_identitas(): void
+    {
+        $owner = $this->orang();
+        $this->daftarkan($this->owner, $owner);
+        $this->wajibWajah();
+
+        $isian = ['radius_outlet_m' => 150, 'wajib_wajah' => 1, 'wajib_shift' => 1, 'ip_outlet' => '103.25.10.7'];
+        $this->actingAs($this->owner)->from('/owner/keamanan')->put('/owner/keamanan', $isian)->assertRedirect('/konfirmasi-identitas');
+        $this->assertFalse(PengaturanSistem::aktif()->wajib_shift); // belum tersimpan sebelum konfirmasi
+
+        $this->get('/konfirmasi-identitas');
+        $r = $this->post('/konfirmasi-identitas', ['password' => 'password', 'bukti' => $this->bukti('konfirmasi', $owner)])->assertOk();
+        $r->assertSee('name="wajib_shift" value="1"', false)->assertSee('name="radius_outlet_m" value="150"', false)->assertSee('name="_method" value="PUT"', false);
+
+        // browser mengirim form otomatis → tersimpan, kembali ke halaman Keamanan Outlet
+        $this->put('/owner/keamanan', $isian)->assertRedirect('/owner/keamanan')->assertSessionHas('status');
+        $p = PengaturanSistem::aktif();
+        $this->assertTrue($p->wajib_shift);
+        $this->assertSame(150, (int) $p->radius_outlet_m);
+        $this->assertSame('103.25.10.7', $p->ip_outlet);
+
+        // logout lalu masuk lagi: wajah Owner diminta
+        $this->post('/logout');
+        $this->post('/login', ['email' => $this->owner->email, 'password' => 'password'])->assertRedirect('/verifikasi-wajah');
     }
 }
