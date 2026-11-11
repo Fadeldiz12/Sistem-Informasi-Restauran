@@ -16,6 +16,13 @@ return [
     // path gambar QRIS di folder public, contoh: images/qris.png
     'qris_gambar' => env('RESTO_QRIS_GAMBAR'),
 
+    // backup database terenkripsi (php artisan resto:backup). Kunci bawaan = APP_KEY; isi BACKUP_KEY (teks bebas,
+    // minimal 16 karakter) dan simpan di tempat lain supaya backup tetap bisa dibuka walau file .env hilang.
+    'backup' => [
+        'kunci' => env('BACKUP_KEY'),
+        'simpan_hari' => (int) env('BACKUP_SIMPAN_HARI', 14),
+    ],
+
     'rekening' => [
         'bank' => env('RESTO_BANK', 'Bank Transfer'),
         'nomor' => env('RESTO_NO_REKENING', '1234 5678 9012'),

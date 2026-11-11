@@ -6,6 +6,7 @@ namespace App\Models;
 use App\Models\Concerns\IdTerenkripsiDiUrl;
 use App\Models\Concerns\TercatatDiLog;
 use App\Notifications\AkunTerkunciNotification;
+use App\Support\AturanAkun;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -16,7 +17,7 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Notification;
 
 #[Fillable(['nama', 'email', 'password', 'role', 'no_hp', 'alamat'])]
-#[Hidden(['password', 'remember_token', 'token_sesi'])]
+#[Hidden(['password', 'remember_token', 'token_sesi', 'no_hp_hash'])]
 class User extends Authenticatable
 {
     use TercatatDiLog;
@@ -64,6 +65,8 @@ class User extends Authenticatable
             'password' => 'hashed',
             'email_verified_at' => 'datetime',
             'terkunci_at' => 'datetime',
+            'no_hp' => 'encrypted',
+            'alamat' => 'encrypted',
         ];
     }
 
@@ -146,6 +149,23 @@ class User extends Authenticatable
         LogAktivitas::catat('akun.buka_kunci', $oleh && ! $oleh->is($this)
             ? "Kunci akun {$this->nama} ({$this->roleLabel()}) dibuka oleh {$oleh->nama}"
             : "Kunci akun {$this->nama} dibuka lewat reset password dengan kode OTP", $this, pelaku: $oleh ?? $this);
+    }
+
+    /**
+     * Nomor HP dan alamat disimpan terenkripsi, jadi pencarian nomor HP memakai sidik HMAC dari nomor yang dirapikan.
+     */
+    protected static function booted(): void
+    {
+        static::saving(function (self $user) {
+            if ($user->isDirty('no_hp')) {
+                $user->no_hp_hash = $user->no_hp ? self::hashHp($user->no_hp) : null;
+            }
+        });
+    }
+
+    public static function hashHp(string $hp): string
+    {
+        return hash_hmac('sha256', AturanAkun::rapikanHp($hp), (string) config('app.key'));
     }
 
     public function roleLabel(): string

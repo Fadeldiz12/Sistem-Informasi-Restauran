@@ -26,7 +26,8 @@ class PenggunaController extends Controller
             ->when($q !== '', fn ($query) => $query->where(fn ($w) => $w
                 ->where('nama', 'like', "%{$q}%")
                 ->orWhere('email', 'like', "%{$q}%")
-                ->orWhere('no_hp', 'like', "%{$q}%")))
+                // nomor HP terenkripsi: dicari utuh lewat sidiknya, bukan sebagian
+                ->when(preg_match('/^\+?\d{8,}$/', AturanAkun::rapikanHp($q)), fn ($w) => $w->orWhere('no_hp_hash', User::hashHp($q)))))
             ->orderBy('nama')
             ->paginate(10)
             ->withQueryString();

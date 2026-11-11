@@ -25,9 +25,9 @@ trait TercatatDiLog
     private static array $logSelaluAbaikan = ['created_at', 'updated_at', 'deleted_at', 'remember_token', 'gagal_login', 'terkunci_at', 'token_sesi', 'email_verified_at'];
 
     /**
-     * Kolom yang isinya rahasia: hanya dicatat "diganti".
+     * Kolom yang isinya rahasia atau data pribadi terenkripsi: hanya dicatat "diganti", isinya tidak masuk log.
      */
-    private static array $logRahasia = ['password', 'kode_hash'];
+    private static array $logRahasia = ['password', 'kode_hash', 'no_hp', 'no_hp_hash', 'alamat', 'patokan', 'no_hp_penerima', 'no_hp_pemesan'];
 
     /**
      * Kolom uang (ditulis Rp) dan label kolom yang lebih mudah dibaca.
