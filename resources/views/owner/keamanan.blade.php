@@ -137,6 +137,18 @@
       @endforelse
     </tbody></table></div>
   </div>
+  <div class="card" style="margin-top:18px" id="server"><div class="card-head"><div><h2>Pemeriksaan Server</h2><p>Pengaturan server yang perlu dibereskan sebelum dipakai sungguhan</p></div>
+      <span @class(['pill', 'b' => collect($cekServer)->every('ok'), 'm' => ! collect($cekServer)->every('ok')])>{{ collect($cekServer)->where('ok', true)->count() }} / {{ count($cekServer) }} aman</span></div>
+    <div class="daftar">
+      @foreach ($cekServer as $c)
+        <div class="it"><svg class="ic" style="color:{{ $c['ok'] ? 'inherit' : 'var(--m)' }}"><use href="#{{ $c['ok'] ? 'i-check' : 'i-alert' }}"/></svg>
+          <div><b>{{ $c['label'] }}</b>@unless ($c['ok'])<small>{{ $c['saran'] }}</small>@endunless</div>
+          <span @class(['pill', 'b' => $c['ok'], 'm' => ! $c['ok']])>{{ $c['ok'] ? 'Aman' : 'Perlu dibenahi' }}</span>
+        </div>
+      @endforeach
+    </div>
+  </div>
+
   <div class="card" style="margin-top:18px" id="wajah"><div class="card-head"><div><h2>Verifikasi Wajah</h2><p>Hanya angka ciri wajah (terenkripsi) yang disimpan, bukan foto. Daftarkan di outlet dengan staf hadir dan sudah memberi persetujuan tertulis.</p></div>
       <span class="pill b">{{ $semuaStaf->filter(fn ($u) => $u->wajah)->count() }} / {{ $semuaStaf->count() }} terdaftar</span></div>
     <div class="tbl-wrap"><table class="tbl-stack shift-tbl"><thead><tr><th>Staf</th><th>Peran</th><th>Data wajah</th><th>Aksi</th></tr></thead><tbody>

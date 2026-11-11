@@ -3,6 +3,7 @@
 use App\Http\Controllers\Pelanggan\CheckoutController;
 use App\Http\Middleware\AmankanSesiStaf;
 use App\Http\Middleware\EnsureUserHasRole;
+use App\Http\Middleware\HeaderKeamanan;
 use App\Http\Middleware\JanganSimpanHalamanBerlogin;
 use App\Http\Middleware\KonfirmasiUlang;
 use App\Http\Middleware\PelangganAtauTamu;
@@ -24,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->validateCsrfTokens(except: ['midtrans/notifikasi']);
 
         $middleware->web(append: [AmankanSesiStaf::class, JanganSimpanHalamanBerlogin::class]);
+        $middleware->append(HeaderKeamanan::class);
         // pilihan layanan di beranda disimpan JS sebagai cookie biasa
         $middleware->encryptCookies(except: [CheckoutController::COOKIE_LAYANAN]);
 

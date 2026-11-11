@@ -10,6 +10,7 @@ use App\Models\PengaturanSistem;
 use App\Models\PerangkatOutlet;
 use App\Models\User;
 use App\Services\AksesOutletService;
+use App\Support\PemeriksaanServer;
 use Closure;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -43,6 +44,7 @@ class KeamananOutletController extends Controller
             'tanpaJadwal' => $staf->filter(fn (User $u) => $u->jadwalShift->isEmpty())->count(),
             'kode' => KodeDarurat::aktif()->with('owner')->latest()->get(),
             'semuaStaf' => User::where('role', '!=', User::ROLE_PELANGGAN)->with('wajah')->orderBy('role')->orderBy('nama')->get(),
+            'cekServer' => PemeriksaanServer::daftar($request),
             'titikDefault' => (float) $this->akses->pengaturan()->lat_resto === PengaturanSistem::LAT_AWAL,
         ]);
     }

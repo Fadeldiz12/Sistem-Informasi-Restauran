@@ -8,6 +8,7 @@ use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\BuktiKirimController;
 use App\Http\Controllers\Dapur;
 use App\Http\Controllers\Kasir;
+use App\Http\Controllers\KeaslianDokumenController;
 use App\Http\Controllers\Kurir;
 use App\Http\Controllers\MidtransController;
 use App\Http\Controllers\Owner;
@@ -28,6 +29,12 @@ Route::get('/', function (Request $request) {
     return $request->user()
         ? redirect()->route($request->user()->homeRoute())
         : redirect()->route('pelanggan.beranda');
+});
+
+// Cek keaslian struk & laporan dari kode verifikasi / QR yang tercetak (tanpa login)
+Route::middleware('throttle:30,1,keaslian')->group(function () {
+    Route::get('/cek-keaslian/struk/{pesanan}', [KeaslianDokumenController::class, 'struk'])->name('keaslian.struk');
+    Route::get('/cek-keaslian/laporan', [KeaslianDokumenController::class, 'laporan'])->name('keaslian.laporan');
 });
 
 // Syarat & ketentuan (bisa dibaca tanpa login, ditautkan dari registrasi)
