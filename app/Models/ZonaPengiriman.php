@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\IdTerenkripsiDiUrl;
+use App\Models\Concerns\TercatatDiLog;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Table;
 use Illuminate\Database\Eloquent\Model;
@@ -13,6 +14,14 @@ use Illuminate\Validation\ValidationException;
 #[Fillable(['nama_zona', 'contoh_wilayah', 'radius_km', 'tarif_per_km'])]
 class ZonaPengiriman extends Model
 {
+    use TercatatDiLog;
+
+    public const LOG_KODE = 'zona';
+
+    public const LOG_JENIS = 'Zona';
+
+    public const LOG_JUDUL = 'nama_zona';
+
     use IdTerenkripsiDiUrl;
 
     protected function casts(): array

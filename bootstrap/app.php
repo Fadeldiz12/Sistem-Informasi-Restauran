@@ -1,8 +1,11 @@
 <?php
 
 use App\Http\Controllers\Pelanggan\CheckoutController;
+use App\Http\Middleware\AmankanSesiStaf;
 use App\Http\Middleware\EnsureUserHasRole;
+use App\Http\Middleware\HeaderKeamanan;
 use App\Http\Middleware\JanganSimpanHalamanBerlogin;
+use App\Http\Middleware\KonfirmasiUlang;
 use App\Http\Middleware\PelangganAtauTamu;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
@@ -21,13 +24,15 @@ return Application::configure(basePath: dirname(__DIR__))
         // webhook Midtrans tidak membawa token CSRF (keasliannya dicek lewat signature)
         $middleware->validateCsrfTokens(except: ['midtrans/notifikasi']);
 
-        $middleware->web(append: [JanganSimpanHalamanBerlogin::class]);
+        $middleware->web(append: [AmankanSesiStaf::class, JanganSimpanHalamanBerlogin::class]);
+        $middleware->append(HeaderKeamanan::class);
         // pilihan layanan di beranda disimpan JS sebagai cookie biasa
         $middleware->encryptCookies(except: [CheckoutController::COOKIE_LAYANAN]);
 
         $middleware->alias([
             'role' => EnsureUserHasRole::class,
             'pelanggan-atau-tamu' => PelangganAtauTamu::class,
+            'konfirmasi' => KonfirmasiUlang::class,
         ]);
 
         // Tamu yang membuka halaman berlogin: diberi tahu kenapa diarahkan ke halaman masuk

@@ -1,0 +1,11 @@
+# Untuk XAMPP: bila folder proyek ini dibuka langsung (http://localhost/nama-folder/), semua permintaan
+# diarahkan ke folder public, dan file rahasia (.env, storage, vendor, .git, kode program) tidak bisa dibuka dari browser.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^(\.env|\.git|composer\.(json|lock)|artisan|package(-lock)?\.json|phpunit\.xml|storage|vendor|database|app|config|routes|resources|tests|bootstrap|node_modules)(/|$) - [F,L]
+    RewriteRule ^(?!public/)(.*)$ public/$1 [L]
+</IfModule>
+
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>

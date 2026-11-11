@@ -25,6 +25,9 @@ class Pengiriman extends Model
     protected function casts(): array
     {
         return [
+            'alamat' => 'encrypted',
+            'no_hp_penerima' => 'encrypted',
+            'patokan' => 'encrypted',
             'berangkat_pada' => 'datetime',
             'diterima_pada' => 'datetime',
             'jarak_km' => 'decimal:2',

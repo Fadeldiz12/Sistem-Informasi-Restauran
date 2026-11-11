@@ -20,6 +20,25 @@
     <div class="card stat p"><div class="top"><span class="eyebrow">Pelanggan baru</span><span class="ico"><svg class="ic"><use href="#i-plus"/></svg></span></div><div class="v">{{ $pelangganBaru }}</div><div class="t">Mendaftar bulan ini</div></div>
   </div>
 
+  @if ($terkunci->isNotEmpty())
+    <div class="card" id="akunTerkunci" style="margin-bottom:18px;border:2px solid var(--m)">
+      <div class="card-head"><div><h2>Akun Terkunci</h2><p>Terkunci otomatis setelah {{ User::MAKS_GAGAL_LOGIN }} kali password salah. Pastikan itu memang staf yang lupa password sebelum membuka kunci; cek Log Aktivitas bila ragu.</p></div><span class="pill m">{{ $terkunci->count() }} akun</span></div>
+      <div style="display:grid;gap:10px">
+        @foreach ($terkunci as $t)
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 14px;border-radius:14px;background:var(--pp)">
+            <svg class="ic" style="color:var(--m)"><use href="#i-lock"/></svg>
+            <div style="flex:1;min-width:200px"><b>{{ $t->nama }}</b> <span class="pill b">{{ $t->roleLabel() }}</span><div style="font-size:13px;opacity:.7">{{ $t->email }} · terkunci {{ $t->terkunci_at->translatedFormat('d M Y, H.i') }}</div></div>
+            @if (auth()->user()->bolehKelola($t))
+              <form method="post" action="{{ route($rute.'.buka-kunci', $t) }}">@csrf<button class="btn sm" type="submit"><svg class="ic"><use href="#i-check"/></svg>Buka kunci</button></form>
+            @else
+              <span style="font-size:13px;opacity:.7">Hanya owner yang bisa membuka</span>
+            @endif
+          </div>
+        @endforeach
+      </div>
+    </div>
+  @endif
+
   <div class="card">
     <div class="card-head">
       <div class="chips">
@@ -41,7 +60,7 @@
       <tbody id="tbUser">
         @forelse ($users as $u)
           <tr data-id="{{ $u->getRouteKey() }}" data-url="{{ route($rute.'.update', $u) }}" data-nama="{{ $u->nama }}" data-email="{{ $u->email }}" data-hp="{{ $u->no_hp }}" data-role="{{ $u->role }}">
-            <td><div class="who"><span @class(['av', 'm' => $u->hasRole(User::ROLE_ADMIN, User::ROLE_OWNER)])>{{ $u->inisial() }}</span><b>{{ $u->nama }}</b>@if ($u->is(auth()->user()))<span class="pill c">Anda</span>@endif</div></td>
+            <td><div class="who"><span @class(['av', 'm' => $u->hasRole(User::ROLE_ADMIN, User::ROLE_OWNER)])>{{ $u->inisial() }}</span><b>{{ $u->nama }}</b>@if ($u->is(auth()->user()))<span class="pill c">Anda</span>@endif @if ($u->terkunci())<span class="pill m" title="Terkunci sejak {{ $u->terkunci_at->translatedFormat('d M Y, H.i') }}">Terkunci</span>@endif</div></td>
             <td>{{ $u->email }}</td>
             <td>{{ $u->no_hp }}</td>
             <td><span @class(['pill', 'm' => $u->role === User::ROLE_OWNER, 'b' => $u->role !== User::ROLE_OWNER])>{{ $u->roleLabel() }}</span></td>

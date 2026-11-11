@@ -42,11 +42,12 @@
             <div style="display:flex;justify-content:space-between;border-top:1.5px dashed var(--m60);padding-top:8px;margin-top:4px;font:700 18px var(--f-title)"><span>Total</span><span id="gV">Rp 0</span></div></div></div></div>
       </div>
 
-      <div class="card"><div class="card-head"><div><h2>Jam Operasional</h2><p>Di luar jam ini pesanan baru tidak dapat dibuat</p></div><span class="pill b">buka / tutup</span></div>
+      <div class="card"><div class="card-head"><div><h2>Jam Operasional &amp; Sesi</h2><p>Di luar jam ini pesanan baru tidak dapat dibuat</p></div><span class="pill b">buka / tutup</span></div>
         <div class="fgrid">
           <div class="field"><label for="jamBuka">Jam buka</label><div class="in"><svg class="ic"><use href="#i-clock"/></svg><input type="time" id="jamBuka" name="jam_buka" value="{{ old('jam_buka', substr($pengaturan->jam_buka, 0, 5)) }}" required></div></div>
           <div class="field"><label for="jamTutup">Jam tutup</label><div class="in"><svg class="ic"><use href="#i-clock"/></svg><input type="time" id="jamTutup" name="jam_tutup" value="{{ old('jam_tutup', substr($pengaturan->jam_tutup, 0, 5)) }}" required></div></div>
         </div>
+        <div class="field" style="margin-top:16px"><label for="diam">Logout otomatis staf bila tidak ada aktivitas</label><div class="in"><svg class="ic"><use href="#i-lock"/></svg><input id="diam" name="batas_diam_menit" type="number" value="{{ old('batas_diam_menit', $pengaturan->batas_diam_menit ?? 30) }}" min="5" max="240" step="1" required><span class="suf">menit</span></div></div>
         <div class="note" style="margin-top:16px"><svg class="ic"><use href="#i-info"/></svg><span>Jam operasional berlaku untuk setiap hari dan tampil di sidebar semua panel. Jam tutup yang lebih awal dari jam buka berarti tutup <b>keesokan harinya</b> (contoh 16:00 – 02:00).@if ($pengaturan->lewatTengahMalam()) Saat ini restoran tutup keesokan harinya pukul {{ substr($pengaturan->jam_tutup, 0, 5) }}.@endif</span></div>
       </div>
     </div>

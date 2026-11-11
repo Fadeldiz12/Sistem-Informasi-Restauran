@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\LogAktivitas;
 use App\Models\Pembayaran;
 use App\Models\Pesanan;
 use App\Models\Setoran;
@@ -73,7 +74,7 @@ class TutupKasirService
             $sampai = now();
             $r = $this->rekap($dari, $sampai);
 
-            return TutupKasir::create([
+            $eod = TutupKasir::create([
                 'id_kasir' => $kasir->id,
                 'mulai_dari' => $dari,
                 'waktu_tutup' => $sampai,
@@ -84,6 +85,9 @@ class TutupKasirService
                 'total_nontunai' => $r['total_nontunai'],
                 'total_setoran' => $r['total_setoran'],
             ]);
+            LogAktivitas::catat('eod.tutup', "Tutup hari (EOD): {$r['jumlah_pesanan']} pesanan, pemasukan Rp ".number_format((float) $r['total_pemasukan'], 0, ',', '.'), $eod, pelaku: $kasir);
+
+            return $eod;
         });
     }
 }

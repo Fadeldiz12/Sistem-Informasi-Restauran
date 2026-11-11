@@ -162,6 +162,7 @@ class MidtransTest extends TestCase
 
         // tanpa login & tanpa CSRF; signature salah ditolak
         $this->postJson('/midtrans/notifikasi', $this->notifikasi('settlement', signature: 'palsu'))->assertForbidden();
+        $this->assertDatabaseHas('log_aktivitas', ['aksi' => 'pembayaran.palsu']);
         // nominal tidak cocok ditolak walaupun signature cocok
         $this->postJson('/midtrans/notifikasi', $this->notifikasi('settlement', gross: '1000.00'))->assertStatus(422);
         $this->assertSame(Pembayaran::STATUS_MENUNGGU, $this->pesanan->fresh()->pembayaran->status_bayar);

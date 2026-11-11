@@ -23,3 +23,8 @@
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
 </IfModule>
+
+# File tersembunyi (mis. .env yang tidak sengaja tersalin ke folder public) tidak boleh dibuka dari browser
+<FilesMatch "^\.(?!well-known)">
+    Require all denied
+</FilesMatch>

@@ -45,6 +45,7 @@ class Pesanan extends Model
     protected function casts(): array
     {
         return [
+            'no_hp_pemesan' => 'encrypted',
             'selesai_pada' => 'datetime',
             'waktu_pesan' => 'datetime',
             'subtotal' => 'decimal:2',

@@ -1,12 +1,14 @@
 <?php
 
 use App\Http\Controllers\Admin;
+use App\Http\Controllers\Auth;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\OtpController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\BuktiKirimController;
 use App\Http\Controllers\Dapur;
 use App\Http\Controllers\Kasir;
+use App\Http\Controllers\KeaslianDokumenController;
 use App\Http\Controllers\Kurir;
 use App\Http\Controllers\MidtransController;
 use App\Http\Controllers\Owner;
@@ -29,12 +31,25 @@ Route::get('/', function (Request $request) {
         : redirect()->route('pelanggan.beranda');
 });
 
+// Cek keaslian struk & laporan dari kode verifikasi / QR yang tercetak (tanpa login)
+Route::middleware('throttle:30,1,keaslian')->group(function () {
+    Route::get('/cek-keaslian/struk/{pesanan}', [KeaslianDokumenController::class, 'struk'])->name('keaslian.struk');
+    Route::get('/cek-keaslian/laporan', [KeaslianDokumenController::class, 'laporan'])->name('keaslian.laporan');
+});
+
 // Syarat & ketentuan (bisa dibaca tanpa login, ditautkan dari registrasi)
 Route::view('/syarat-ketentuan', 'syarat')->name('syarat');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:30,1,login')->name('login.submit');
+    // staf di luar outlet / perangkat tidak terdaftar: cek GPS atau kode darurat dari Owner
+    Route::get('/verifikasi-outlet', [AuthController::class, 'showVerifikasiOutlet'])->name('outlet.verifikasi');
+    Route::post('/verifikasi-outlet', [AuthController::class, 'verifikasiOutlet'])->middleware('throttle:10,1,verifikasi-outlet')->name('outlet.verifikasi.submit');
+    // verifikasi wajah 1:1 (bila diaktifkan Owner); cadangan: persetujuan Owner/Admin yang hadir
+    Route::get('/verifikasi-wajah', [Auth\WajahController::class, 'show'])->name('wajah.verifikasi');
+    Route::post('/verifikasi-wajah', [Auth\WajahController::class, 'verifikasi'])->middleware('throttle:10,1,verifikasi-wajah')->name('wajah.verifikasi.submit');
+    Route::post('/verifikasi-wajah/persetujuan', [Auth\WajahController::class, 'setujui'])->middleware('throttle:10,1,setujui-wajah')->name('wajah.setujui');
     Route::get('/registrasi', [AuthController::class, 'showRegister'])->name('registrasi');
     Route::post('/registrasi', [AuthController::class, 'register'])->middleware('throttle:5,1,registrasi')->name('registrasi.submit');
 
@@ -51,6 +66,14 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
+Route::post('/wajah/tantangan', [Auth\WajahController::class, 'tantangan'])->middleware('throttle:20,1,tantangan-wajah')->name('wajah.tantangan');
+// konfirmasi identitas (wajah + password) sebelum aksi sensitif
+Route::middleware('auth')->group(function () {
+    Route::get('/konfirmasi-identitas', [Auth\KonfirmasiController::class, 'show'])->name('konfirmasi');
+    Route::post('/konfirmasi-identitas', [Auth\KonfirmasiController::class, 'store'])->middleware('throttle:10,1,konfirmasi')->name('konfirmasi.submit');
+});
+// posisi GPS berkala dari staf yang masuk lewat verifikasi GPS
+Route::post('/sesi/lokasi', [AuthController::class, 'perbaruiLokasi'])->middleware(['auth', 'throttle:12,1,sesi-lokasi'])->name('sesi.lokasi');
 
 /*
 |--------------------------------------------------------------------------
@@ -100,9 +123,12 @@ Route::middleware(['auth', 'role:'.User::ROLE_ADMIN])->prefix('admin')->name('ad
     Route::get('/dashboard', Admin\DashboardController::class)->name('dashboard');
 
     Route::get('/pengguna', [Admin\PenggunaController::class, 'index'])->name('pengguna');
-    Route::post('/pengguna', [Admin\PenggunaController::class, 'store'])->name('pengguna.store');
-    Route::put('/pengguna/{user}', [Admin\PenggunaController::class, 'update'])->name('pengguna.update');
-    Route::delete('/pengguna/{user}', [Admin\PenggunaController::class, 'destroy'])->name('pengguna.destroy');
+    Route::middleware('konfirmasi')->group(function () {
+        Route::post('/pengguna', [Admin\PenggunaController::class, 'store'])->name('pengguna.store');
+        Route::put('/pengguna/{user}', [Admin\PenggunaController::class, 'update'])->name('pengguna.update');
+        Route::delete('/pengguna/{user}', [Admin\PenggunaController::class, 'destroy'])->name('pengguna.destroy');
+        Route::post('/pengguna/{user}/buka-kunci', [Admin\PenggunaController::class, 'bukaKunci'])->name('pengguna.buka-kunci');
+    });
 
     Route::get('/menu', [Admin\MenuController::class, 'index'])->name('menu');
     Route::post('/menu', [Admin\MenuController::class, 'store'])->name('menu.store');
@@ -120,7 +146,7 @@ Route::middleware(['auth', 'role:'.User::ROLE_ADMIN])->prefix('admin')->name('ad
     Route::delete('/zona/{zona}', [Admin\ZonaController::class, 'destroy'])->name('zona.destroy');
 
     Route::get('/pengaturan', [Admin\PengaturanController::class, 'edit'])->name('pengaturan');
-    Route::put('/pengaturan', [Admin\PengaturanController::class, 'update'])->name('pengaturan.update');
+    Route::put('/pengaturan', [Admin\PengaturanController::class, 'update'])->middleware('konfirmasi')->name('pengaturan.update');
 });
 
 // Kasir
@@ -182,14 +208,36 @@ Route::middleware(['auth', 'role:'.User::ROLE_OWNER])->prefix('owner')->name('ow
     Route::get('/dashboard', Owner\DashboardController::class)->name('dashboard');
 
     Route::get('/laporan', [Owner\LaporanController::class, 'index'])->name('laporan');
-    Route::get('/laporan/pdf', [Owner\LaporanController::class, 'pdf'])->name('laporan.pdf');
-    Route::get('/laporan/excel', [Owner\LaporanController::class, 'excel'])->name('laporan.excel');
+    Route::get('/laporan/pdf', [Owner\LaporanController::class, 'pdf'])->middleware('konfirmasi')->name('laporan.pdf');
+    Route::get('/laporan/excel', [Owner\LaporanController::class, 'excel'])->middleware('konfirmasi')->name('laporan.excel');
 
     // Owner mengatur semua pengguna & role, termasuk owner lain
     Route::get('/pengguna', [Admin\PenggunaController::class, 'index'])->name('pengguna');
-    Route::post('/pengguna', [Admin\PenggunaController::class, 'store'])->name('pengguna.store');
-    Route::put('/pengguna/{user}', [Admin\PenggunaController::class, 'update'])->name('pengguna.update');
-    Route::delete('/pengguna/{user}', [Admin\PenggunaController::class, 'destroy'])->name('pengguna.destroy');
+    Route::middleware('konfirmasi')->group(function () {
+        Route::post('/pengguna', [Admin\PenggunaController::class, 'store'])->name('pengguna.store');
+        Route::put('/pengguna/{user}', [Admin\PenggunaController::class, 'update'])->name('pengguna.update');
+        Route::delete('/pengguna/{user}', [Admin\PenggunaController::class, 'destroy'])->name('pengguna.destroy');
+        Route::post('/pengguna/{user}/buka-kunci', [Admin\PenggunaController::class, 'bukaKunci'])->name('pengguna.buka-kunci');
+    });
+
+    Route::get('/aktivitas', Owner\AktivitasController::class)->name('aktivitas');
+
+    // Keamanan outlet: lokasi, perangkat terdaftar, jadwal shift, kode darurat
+    Route::get('/keamanan', [Owner\KeamananOutletController::class, 'index'])->name('keamanan');
+    Route::middleware('konfirmasi')->group(function () {
+        Route::put('/keamanan', [Owner\KeamananOutletController::class, 'simpanAturan'])->name('keamanan.aturan');
+        Route::post('/keamanan/perangkat', [Owner\KeamananOutletController::class, 'daftarPerangkat'])->name('keamanan.perangkat');
+        Route::delete('/keamanan/perangkat/{perangkat}', [Owner\KeamananOutletController::class, 'hapusPerangkat'])->name('keamanan.perangkat.hapus');
+        Route::put('/keamanan/shift/{user}', [Owner\KeamananOutletController::class, 'simpanShift'])->name('keamanan.shift');
+        Route::post('/keamanan/kode', [Owner\KeamananOutletController::class, 'buatKode'])->name('keamanan.kode');
+        Route::delete('/keamanan/kode/{kode}', [Owner\KeamananOutletController::class, 'cabutKode'])->name('keamanan.kode.cabut');
+
+        // pendaftaran wajah staf (Owner di outlet, staf hadir, dengan persetujuan tertulis)
+        Route::get('/wajah/{user}', [Owner\WajahStafController::class, 'create'])->name('wajah');
+        Route::post('/wajah/{user}', [Owner\WajahStafController::class, 'store'])->name('wajah.store');
+        Route::post('/wajah/{user}/tantangan', [Owner\WajahStafController::class, 'tantangan'])->name('wajah.tantangan');
+        Route::delete('/wajah/{user}', [Owner\WajahStafController::class, 'destroy'])->name('wajah.hapus');
+    });
 
     Route::get('/pengeluaran', [Owner\PengeluaranController::class, 'index'])->name('pengeluaran');
     Route::post('/pengeluaran', [Owner\PengeluaranController::class, 'store'])->name('pengeluaran.store');

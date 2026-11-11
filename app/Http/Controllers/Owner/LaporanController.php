@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Owner;
 
 use App\Exports\LaporanKeuanganExport;
 use App\Http\Controllers\Controller;
+use App\Models\LogAktivitas;
 use App\Services\LaporanService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\CarbonImmutable;
@@ -83,7 +84,11 @@ class LaporanController extends Controller
 
         @set_time_limit(120); // laporan setahun bisa lebih lama dari batas bawaan 30 detik
         try {
-            return $buat();
+            $file = $buat();
+            [$dari, $sampai] = $this->periode($request);
+            LogAktivitas::catat('laporan.unduh', "Laporan keuangan {$jenis} diunduh: periode {$dari->format('d/m/Y')} – {$sampai->format('d/m/Y')}");
+
+            return $file;
         } catch (\Throwable $e) {
             report($e);
 

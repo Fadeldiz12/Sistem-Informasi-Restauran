@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Dapur;
 
 use App\Http\Controllers\Controller;
 use App\Models\BahanBaku;
+use App\Models\LogAktivitas;
 use App\Models\MutasiBahanBaku;
 use App\Services\BahanBakuService;
 use Closure;
@@ -92,6 +93,8 @@ class BahanBakuController extends Controller
         $b = BahanBaku::findOrFail($data['id_bahan']);
         $this->bahan->catatMutasi($b, $data['jenis'], (float) $data['jumlah'], $data['tanggal']);
         $b->refresh();
+        LogAktivitas::catat('bahan.mutasi', ($data['jenis'] === MutasiBahanBaku::JENIS_MASUK ? 'Stok masuk' : 'Pemakaian manual')
+            ." {$b->nama_bahan} ".BahanBakuService::angka((float) $data['jumlah'])." {$b->satuan} (tanggal {$data['tanggal']}) · stok jadi ".BahanBakuService::angka($b->stok)." {$b->satuan}", $b);
 
         return back()->with('status', ($data['jenis'] === MutasiBahanBaku::JENIS_MASUK ? 'Stok masuk' : 'Pemakaian')." {$b->nama_bahan} dicatat · stok "
             .BahanBakuService::angka($b->stok).' '.$b->satuan.($b->isStokKritis() ? ' · KRITIS' : ''));

@@ -4,18 +4,31 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Models\Concerns\IdTerenkripsiDiUrl;
+use App\Models\Concerns\TercatatDiLog;
+use App\Notifications\AkunTerkunciNotification;
+use App\Support\AturanAkun;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Notification;
 
 #[Fillable(['nama', 'email', 'password', 'role', 'no_hp', 'alamat'])]
-#[Hidden(['password', 'remember_token'])]
+#[Hidden(['password', 'remember_token', 'token_sesi', 'no_hp_hash'])]
 class User extends Authenticatable
 {
+    use TercatatDiLog;
+
+    public const LOG_KODE = 'pengguna';
+
+    public const LOG_JENIS = 'Pengguna';
+
+    public const LOG_JUDUL = 'nama';
+
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
@@ -52,6 +65,9 @@ class User extends Authenticatable
         return [
             'password' => 'hashed',
             'email_verified_at' => 'datetime',
+            'terkunci_at' => 'datetime',
+            'no_hp' => 'encrypted',
+            'alamat' => 'encrypted',
         ];
     }
 
@@ -75,6 +91,84 @@ class User extends Authenticatable
         self::ROLE_KURIR => 'Tugas pengiriman, status antar, dan foto bukti.',
         self::ROLE_PELANGGAN => 'Memesan menu, membayar, dan melacak pesanan.',
     ];
+
+    /**
+     * Password salah berturut-turut (dari perangkat mana pun) sebelum akun dikunci.
+     */
+    public const MAKS_GAGAL_LOGIN = 10;
+
+    /**
+     * Staf = semua role selain pelanggan: berlaku kunci oleh Owner/Admin, satu perangkat, dan logout otomatis saat diam.
+     */
+    public function isStaf(): bool
+    {
+        return $this->role !== self::ROLE_PELANGGAN;
+    }
+
+    public function terkunci(): bool
+    {
+        return $this->terkunci_at !== null;
+    }
+
+    /**
+     * Catat satu password salah; kunci akun bila sudah mencapai batas.
+     */
+    public function catatGagalLogin(): void
+    {
+        $this->forceFill(['gagal_login' => $this->gagal_login + 1])->saveQuietly();
+
+        if ($this->isStaf()) {
+            LogAktivitas::catat('akun.login_gagal', "Password salah saat masuk ke akun {$this->nama} ({$this->gagal_login}/".self::MAKS_GAGAL_LOGIN.')', $this, pelaku: $this);
+        }
+        if ($this->gagal_login >= self::MAKS_GAGAL_LOGIN) {
+            $this->kunci();
+        }
+    }
+
+    /**
+     * Kunci akun dan beri tahu semua Owner lewat email.
+     */
+    public function kunci(?string $sebab = null): void
+    {
+        $sebab ??= "{$this->gagal_login} kali password salah";
+        $this->forceFill(['terkunci_at' => now(), 'token_sesi' => null])->saveQuietly();
+        LogAktivitas::catat('akun.terkunci', "Akun {$this->nama} ({$this->roleLabel()}) terkunci otomatis setelah {$sebab}", $this, pelaku: $this);
+
+        $owner = self::where('role', self::ROLE_OWNER)->get();
+        try {
+            Notification::send($owner, new AkunTerkunciNotification($this, request()->ip(), $sebab));
+        } catch (\Throwable $e) {
+            report($e); // email gagal terkirim tidak boleh menggagalkan penguncian
+        }
+    }
+
+    /**
+     * Buka kunci oleh Owner/Admin (atau oleh pelanggan sendiri lewat reset password dengan OTP).
+     */
+    public function bukaKunci(?self $oleh = null): void
+    {
+        $this->forceFill(['terkunci_at' => null, 'gagal_login' => 0, 'gagal_wajah' => 0])->saveQuietly();
+        LogAktivitas::catat('akun.buka_kunci', $oleh && ! $oleh->is($this)
+            ? "Kunci akun {$this->nama} ({$this->roleLabel()}) dibuka oleh {$oleh->nama}"
+            : "Kunci akun {$this->nama} dibuka lewat reset password dengan kode OTP", $this, pelaku: $oleh ?? $this);
+    }
+
+    /**
+     * Nomor HP dan alamat disimpan terenkripsi, jadi pencarian nomor HP memakai sidik HMAC dari nomor yang dirapikan.
+     */
+    protected static function booted(): void
+    {
+        static::saving(function (self $user) {
+            if ($user->isDirty('no_hp')) {
+                $user->no_hp_hash = $user->no_hp ? self::hashHp($user->no_hp) : null;
+            }
+        });
+    }
+
+    public static function hashHp(string $hp): string
+    {
+        return hash_hmac('sha256', AturanAkun::rapikanHp($hp), (string) config('app.key'));
+    }
 
     public function roleLabel(): string
     {
@@ -161,6 +255,18 @@ class User extends Authenticatable
     public function tugasPengiriman(): HasMany
     {
         return $this->hasMany(Pengiriman::class, 'id_kurir');
+    }
+
+    /** Ciri wajah untuk verifikasi wajah (tanpa foto). */
+    public function wajah(): HasOne
+    {
+        return $this->hasOne(WajahStaf::class, 'id_user');
+    }
+
+    /** Jadwal shift mingguan staf. */
+    public function jadwalShift(): HasMany
+    {
+        return $this->hasMany(JadwalShift::class, 'id_user')->orderBy('hari');
     }
 
     /** Pengeluaran yang dicatat owner. */

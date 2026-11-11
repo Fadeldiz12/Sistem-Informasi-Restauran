@@ -26,4 +26,9 @@
   @if ($bayar?->kembalian() !== null)<div class="sr"><span class="mut">Kembalian</span><span>{{ $rp($bayar->kembalian()) }}</span></div>@endif
   <div style="text-align:center;margin-top:12px"><span class="pill m">LUNAS</span></div>
   <div style="text-align:center;font-size:11.5px;opacity:.65;margin-top:10px">Terima kasih atas kunjungan Anda</div>
+  @php $ttd = \App\Support\TandaTanganDigital::struk($pesanan); $qr = \App\Support\TandaTanganDigital::qr($ttd['url']); @endphp
+  <div class="struk-ttd" style="text-align:center;font-size:10.5px;opacity:.75;margin-top:10px;line-height:1.45">
+    @if ($qr)<img src="{{ $qr }}" alt="QR cek keaslian struk" width="96" height="96" style="display:block;margin:0 auto 4px">@endif
+    Kode verifikasi <b style="letter-spacing:.04em">{{ $ttd['kode'] }}</b><br>Cek keaslian: <span style="word-break:break-all">{{ $ttd['url'] }}</span>
+  </div>
 </div>
