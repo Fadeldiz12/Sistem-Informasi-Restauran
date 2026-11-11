@@ -11,6 +11,7 @@ use App\Services\PesananService;
 use Database\Seeders\MasterDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Maatwebsite\Excel\Facades\Excel;
 use Tests\TestCase;
 
 class OwnerTest extends TestCase
@@ -123,6 +124,17 @@ class OwnerTest extends TestCase
         $xls = $this->actingAs($this->owner)->get('/owner/laporan/excel'.$q)->assertOk();
         $this->assertStringContainsString('laporan-keuangan-20261101-20261104.xlsx', $xls->headers->get('content-disposition'));
         $this->assertStringStartsWith('PK', file_get_contents($xls->getFile()->getPathname()));
+    }
+
+    public function test_unduhan_gagal_kembali_ke_laporan_dengan_pesan(): void
+    {
+        $q = '?dari=2026-11-01&sampai=2026-11-04';
+        Excel::shouldReceive('download')->andThrow(new \RuntimeException('Could not close zip file'));
+
+        $this->actingAs($this->owner)->get('/owner/laporan/excel'.$q)
+            ->assertRedirect('/owner/laporan'.$q)
+            ->assertSessionHasErrors(['unduh' => 'Gagal membuat file Excel: Could not close zip file. Coba rentang tanggal lebih pendek, atau lihat storage/logs/laravel.log.']);
+        $this->actingAs($this->owner)->followingRedirects()->get('/owner/laporan/excel'.$q)->assertSee('Gagal membuat file Excel');
     }
 
     public function test_crud_pengeluaran(): void

@@ -179,11 +179,12 @@ class DapurTest extends TestCase
     {
         $this->seed([BahanBakuSeeder::class, ResepSeeder::class]);
         $lemon = BahanBaku::firstWhere('nama_bahan', 'Lemon');
+        $dipakai = $lemon->resep()->count(); // Lemon Iced Tea & Lemonade Mint
 
         $this->actingAs($this->dapur)->delete("/dapur/bahan-baku/{$lemon->getRouteKey()}")
             ->assertSessionHas('error', fn ($m) => str_contains($m, 'Lemon Iced Tea'));
         $this->assertNotSoftDeleted($lemon);
-        $this->assertSame(1, $lemon->resep()->count());
+        $this->assertSame($dipakai, $lemon->resep()->count());
     }
 
     public function test_nama_bahan_unik_tanpa_peduli_huruf_besar_dan_satuan_dari_daftar(): void

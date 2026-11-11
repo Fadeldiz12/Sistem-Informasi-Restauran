@@ -29,7 +29,8 @@
 </head>
 <body>
   <table class="kop" width="100%"><tr>
-    <td width="64"><img src="{{ public_path('images/logo-192.png') }}" alt=""></td>
+    {{-- logo PNG butuh ekstensi PHP gd; tanpa gd PDF tetap dibuat tanpa logo --}}
+    <td width="64">@if ($pakaiLogo ?? false)<img src="{{ public_path('images/logo-192.png') }}" alt="">@endif</td>
     <td><div class="nama">{{ strtoupper(config('resto.nama', 'Resto Flow')) }}</div><div class="kecil">{{ config('resto.alamat') }}@if (config('resto.telepon')) · {{ config('resto.telepon') }}@endif</div></td>
     <td style="text-align:right" class="kecil">Dicetak {{ now()->translatedFormat('d F Y, H:i') }}<br>oleh {{ auth()->user()?->nama }}</td>
   </tr></table>
