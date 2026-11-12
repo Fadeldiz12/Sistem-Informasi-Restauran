@@ -8,6 +8,7 @@
 @section('crumb', 'Owner / Keamanan Outlet')
 @section('heading', 'Keamanan Outlet')
 @section('sub', 'Staf hanya bisa masuk dari outlet, dari perangkat terdaftar, dan sesuai jadwal shift')
+@section('error-sendiri', '1')
 @section('delete-title', 'Hapus data ini?')
 @section('delete-text', 'Perangkat yang dihapus tidak bisa dipakai staf lagi; data wajah yang dihapus harus didaftarkan ulang.')
 
@@ -31,8 +32,21 @@
   .hari-row { display: grid; grid-template-columns: 110px 1fr 1fr; gap: 10px; align-items: center; padding: 6px 0; }
   .hari-row label.cek { display: flex; align-items: center; gap: 8px; font-weight: 700; }
   .hari-row .in { height: 42px; }
+  .roster { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px; margin-bottom: 16px; }
+  .roster .hr { padding: 10px 12px; border-radius: 14px; background: var(--pp); min-width: 0; }
+  .roster .hr.kini { outline: 2px solid var(--m); }
+  .roster .hr > b { display: flex; justify-content: space-between; gap: 6px; font-size: 13px; margin-bottom: 6px; }
+  .roster .hr > b span { opacity: .6; font-weight: 600; }
+  .roster ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; font-size: 12.5px; line-height: 1.3; }
+  .roster li small { display: block; opacity: .7; }
+  .roster .kosong { font-size: 12.5px; opacity: .55; }
+  .modal.shift { display: flex; flex-direction: column; max-height: calc(100vh - 40px); }
+  .modal.shift .mh { padding-bottom: 14px; border-bottom: 1.5px solid var(--m15); }
+  .modal.shift .mb { overflow-y: auto; }
+  .hari-row .rekan { grid-column: 2 / -1; font-size: 12px; opacity: .7; margin-top: -2px; }
+  @media (max-width: 1100px) { .roster { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
   @media (max-width: 900px) { .sec-grid { grid-template-columns: 1fr; } }
-  @media (max-width: 520px) { .hari-row { grid-template-columns: 1fr 1fr; } .hari-row label.cek { grid-column: 1 / -1; } }
+  @media (max-width: 520px) { .hari-row { grid-template-columns: 1fr 1fr; } .hari-row label.cek, .hari-row .rekan { grid-column: 1 / -1; } .roster { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 </style>
 @endpush
 
@@ -124,6 +138,18 @@
   </div>
 
   <div class="card" style="margin-top:18px"><div class="card-head"><div><h2>Jadwal Shift</h2><p>Sekaligus absensi: jam masuk dan keterlambatan tercatat di Log Aktivitas</p></div></div>
+    <div class="roster" aria-label="Siapa masuk tiap hari">
+      @foreach (JadwalShift::HARI as $h => $namaHari)
+        <div @class(['hr', 'kini' => now()->dayOfWeekIso === $h])>
+          <b>{{ $namaHari }}<span>{{ count($shiftPerHari[$h]) }} staf</span></b>
+          @if ($shiftPerHari[$h])
+            <ul>@foreach ($shiftPerHari[$h] as $s)<li><b>{{ $s['nama'] }}</b><small>{{ $s['peran'] }} · {{ $s['jam'] }}</small></li>@endforeach</ul>
+          @else
+            <div class="kosong">Belum ada yang dijadwalkan</div>
+          @endif
+        </div>
+      @endforeach
+    </div>
     <div class="tbl-wrap"><table class="tbl-stack shift-tbl"><thead><tr><th>Staf</th><th>Peran</th><th>Jadwal mingguan</th><th>Aksi</th></tr></thead><tbody>
       @forelse ($staf as $u)
         <tr>
@@ -170,11 +196,11 @@
 @push('modals')
 @foreach ($staf as $u)
   @php $jadwal = $u->jadwalShift->keyBy('hari'); $modal = 'mShift'.$u->id; $pakaiOld = old('_modal') === $modal; @endphp
-  <div class="ovl" id="{{ $modal }}"><form class="modal" method="post" action="{{ route('owner.keamanan.shift', $u) }}">
+  <div class="ovl" id="{{ $modal }}"><form class="modal shift" method="post" action="{{ route('owner.keamanan.shift', $u) }}">
     @csrf
     @method('PUT')
     <input type="hidden" name="_modal" value="{{ $modal }}">
-    <div class="mh"><div><div class="eyebrow" style="opacity:.7">Jadwal shift · {{ $u->roleLabel() }}</div><h3>{{ $u->nama }}</h3></div><button type="button" class="icon-btn" data-close><svg class="ic"><use href="#i-x"/></svg></button></div>
+    <div class="mh"><div><div class="eyebrow" style="opacity:.7">Atur jadwal shift untuk</div><h3>{{ $u->nama }} <span class="pill b" style="vertical-align:middle">{{ $u->roleLabel() }}</span></h3></div><button type="button" class="icon-btn" data-close><svg class="ic"><use href="#i-x"/></svg></button></div>
     <div class="mb">
       @if ($pakaiOld) @include('partials.panel.form-errors', ['modal' => $modal]) @endif
       @foreach (JadwalShift::HARI as $h => $nama)
@@ -183,11 +209,13 @@
           $cek = $pakaiOld ? (bool) old("hari.$h.aktif") : (bool) $ada;
           $mulai = $pakaiOld ? old("hari.$h.mulai") : ($ada ? substr($ada->jam_mulai, 0, 5) : '08:00');
           $selesai = $pakaiOld ? old("hari.$h.selesai") : ($ada ? substr($ada->jam_selesai, 0, 5) : '16:00');
+          $rekan = collect($shiftPerHari[$h])->reject(fn ($s) => $s['id'] === $u->id);
         @endphp
         <div class="hari-row">
           <label class="cek"><input type="checkbox" name="hari[{{ $h }}][aktif]" value="1" @checked($cek)>{{ $nama }}</label>
           <div class="in"><input type="time" name="hari[{{ $h }}][mulai]" value="{{ $mulai }}" aria-label="Jam mulai {{ $nama }}"></div>
           <div class="in"><input type="time" name="hari[{{ $h }}][selesai]" value="{{ $selesai }}" aria-label="Jam selesai {{ $nama }}"></div>
+          <div class="rekan">{{ $rekan->isEmpty() ? 'Belum ada staf lain yang masuk' : 'Juga masuk: '.$rekan->map(fn ($s) => "{$s['nama']} ({$s['peran']}) {$s['jam']}")->implode(', ') }}</div>
         </div>
       @endforeach
       <div class="note" style="margin-top:10px"><svg class="ic"><use href="#i-info"/></svg><span>Hari yang tidak dicentang = libur. Jam selesai lebih awal dari jam mulai berarti selesai keesokan harinya (contoh 22:00–06:00). Kosongkan semua centang agar staf bebas masuk.</span></div>

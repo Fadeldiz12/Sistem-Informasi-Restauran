@@ -111,6 +111,10 @@ class VerifikasiWajahTest extends TestCase
         $this->post("/owner/wajah/{$akunLain->getRouteKey()}", ['setuju' => 1, 'bukti' => $this->bukti('daftar', $bima)])
             ->assertSessionHasErrors('wajah');
         $this->assertStringContainsString('sudah terdaftar untuk akun Bima Kasir (Kasir)', session('errors')->first('wajah'));
+        $this->get("/owner/wajah/{$akunLain->getRouteKey()}");
+        $halaman = $this->from("/owner/wajah/{$akunLain->getRouteKey()}")->followingRedirects()
+            ->post("/owner/wajah/{$akunLain->getRouteKey()}", ['setuju' => 1, 'bukti' => $this->bukti('daftar', $bima)])->getContent();
+        $this->assertSame(1, substr_count($halaman, 'sudah terdaftar untuk akun Bima Kasir (Kasir)'), 'Pesan penolakan wajah tampil lebih dari sekali.');
         $this->assertNull($akunLain->fresh()->wajah);
         $this->assertDatabaseHas('log_aktivitas', ['aksi' => 'wajah.ditolak']);
 

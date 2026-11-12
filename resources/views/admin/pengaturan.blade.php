@@ -6,6 +6,7 @@
 @section('crumb', 'Admin / Pengaturan Sistem')
 @section('heading', 'Pengaturan Sistem')
 @section('sub', 'Pajak, biaya layanan, dan jam operasional restoran')
+@section('error-sendiri', '1')
 
 @php
   $contohSubtotal = 236000;

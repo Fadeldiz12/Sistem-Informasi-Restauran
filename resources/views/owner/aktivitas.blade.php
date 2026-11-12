@@ -6,6 +6,7 @@
 @section('crumb', 'Owner / Log Aktivitas')
 @section('heading', 'Log Aktivitas')
 @section('sub', 'Siapa melakukan apa dan kapan: login, ubah harga, hapus data, tandai lunas, dan lainnya')
+@section('error-sendiri', '1')
 
 @php
   $filter = fn (array $ubah) => route('owner.aktivitas', array_filter(array_merge(['dari' => $dari->toDateString(), 'sampai' => $sampai->toDateString(), 'kategori' => $kategori, 'q' => $q], $ubah)));

@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Services\AksesOutletService;
 use App\Support\PemeriksaanServer;
 use Closure;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -42,11 +43,30 @@ class KeamananOutletController extends Controller
             'perangkatIni' => $this->akses->perangkat($request),
             'staf' => $staf,
             'tanpaJadwal' => $staf->filter(fn (User $u) => $u->jadwalShift->isEmpty())->count(),
+            'shiftPerHari' => $this->shiftPerHari($staf),
             'kode' => KodeDarurat::aktif()->with('owner')->latest()->get(),
             'semuaStaf' => User::where('role', '!=', User::ROLE_PELANGGAN)->with('wajah')->orderBy('role')->orderBy('nama')->get(),
             'cekServer' => PemeriksaanServer::daftar($request),
             'titikDefault' => (float) $this->akses->pengaturan()->lat_resto === PengaturanSistem::LAT_AWAL,
         ]);
+    }
+
+    /**
+     * Siapa saja yang masuk tiap hari, urut jam mulai.
+     *
+     * @param  Collection<int, User>  $staf
+     * @return array<int, list<array{id: int, nama: string, peran: string, jam: string}>>
+     */
+    private function shiftPerHari(Collection $staf): array
+    {
+        $perHari = array_fill_keys(array_keys(JadwalShift::HARI), []);
+        foreach ($staf as $u) {
+            foreach ($u->jadwalShift as $s) {
+                $perHari[$s->hari][] = ['id' => $u->id, 'nama' => $u->nama, 'peran' => $u->roleLabel(), 'jam' => $s->label()];
+            }
+        }
+
+        return array_map(fn (array $daftar) => collect($daftar)->sortBy(['jam', 'nama'])->values()->all(), $perHari);
     }
 
     public function simpanAturan(Request $request): RedirectResponse

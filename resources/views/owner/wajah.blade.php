@@ -4,10 +4,10 @@
 @section('crumb', 'Owner / Keamanan Outlet / Daftarkan Wajah')
 @section('heading', 'Daftarkan Wajah '.$staf->nama)
 @section('sub', $staf->roleLabel().' · '.$staf->email)
+@section('error-sendiri', '1')
 
 @section('content')
-  @include('partials.auth-alert')
-  @if ($errors->has('wajah'))<div class="note" style="margin-bottom:14px;background:var(--m);color:var(--cr)"><svg class="ic"><use href="#i-alert"/></svg><span>{{ $errors->first('wajah') }}</span></div>@endif
+  @if ($errors->any())<div class="note" role="alert" style="margin-bottom:14px;background:var(--m);color:var(--cr)"><svg class="ic"><use href="#i-alert"/></svg><span>{{ $errors->first() }}</span></div>@endif
 
   <div class="grid split" style="grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);align-items:start">
     <div class="card">

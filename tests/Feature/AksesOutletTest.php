@@ -188,6 +188,11 @@ class AksesOutletTest extends TestCase
             3 => ['mulai' => '08:00', 'selesai' => '16:00'],
         ]])->assertSessionHasNoErrors();
         $this->assertSame(2, $this->kasir->jadwalShift()->count());
+        $dapur = User::factory()->create(['role' => User::ROLE_DAPUR, 'nama' => 'Sari Dapur']);
+        $this->put("/owner/keamanan/shift/{$dapur->getRouteKey()}", ['hari' => [1 => ['aktif' => 1, 'mulai' => '10:00', 'selesai' => '18:00']]]);
+        $this->get('/owner/keamanan')->assertOk()
+            ->assertSeeInOrder(['Senin', '2 staf', 'Bima Kasir', 'Kasir · 08:00–16:00', 'Sari Dapur', 'Dapur · 10:00–18:00', 'Selasa', '1 staf', 'Bima Kasir'])
+            ->assertSee('Juga masuk: Sari Dapur (Dapur) 10:00–18:00');
         $this->post('/logout');
 
         // Senin 9 Nov 2026 07.20: terlalu awal (masuk paling cepat 07.30)
