@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Models\ZonaPengiriman;
 use App\Support\Keranjang;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
@@ -36,6 +37,12 @@ class AppServiceProvider extends ServiceProvider
         // walaupun APP_LOCALE di .env lama masih "en".
         app()->setLocale('id');
         Carbon::setLocale('id');
+
+        // Di produksi dengan APP_URL https://, semua tautan & redirect dipaksa memakai HTTPS
+        // (mis. bila server berada di balik proxy yang meneruskan permintaan sebagai http).
+        if ($this->app->environment('production') && str_starts_with((string) config('app.url'), 'https://')) {
+            URL::forceScheme('https');
+        }
 
         // Semua password (pelanggan & staf): minimal 8 karakter, berisi huruf dan angka
         Password::defaults(fn () => Password::min(8)->letters()->numbers());

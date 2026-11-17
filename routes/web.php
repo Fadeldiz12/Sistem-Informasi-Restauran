@@ -35,6 +35,7 @@ Route::get('/', function (Request $request) {
 Route::middleware('throttle:30,1,keaslian')->group(function () {
     Route::get('/cek-keaslian/struk/{pesanan}', [KeaslianDokumenController::class, 'struk'])->name('keaslian.struk');
     Route::get('/cek-keaslian/laporan', [KeaslianDokumenController::class, 'laporan'])->name('keaslian.laporan');
+    Route::get('/cek-keaslian/kunci-publik', [KeaslianDokumenController::class, 'kunciPublik'])->name('keaslian.kunci-publik');
 });
 
 // Syarat & ketentuan (bisa dibaca tanpa login, ditautkan dari registrasi)
@@ -53,6 +54,9 @@ Route::middleware('guest')->group(function () {
     Route::get('/verifikasi-wajah', [Auth\WajahController::class, 'show'])->name('wajah.verifikasi');
     Route::post('/verifikasi-wajah', [Auth\WajahController::class, 'verifikasi'])->middleware('throttle:10,1,verifikasi-wajah')->name('wajah.verifikasi.submit');
     Route::post('/verifikasi-wajah/persetujuan', [Auth\WajahController::class, 'setujui'])->middleware('throttle:10,1,setujui-wajah')->name('wajah.setujui');
+    // verifikasi 2 langkah Owner & Admin (kode dari aplikasi authenticator atau kode cadangan)
+    Route::get('/verifikasi-2-langkah', [Auth\DuaFaktorController::class, 'show'])->name('dua-faktor');
+    Route::post('/verifikasi-2-langkah', [Auth\DuaFaktorController::class, 'verifikasi'])->middleware('throttle:10,1,dua-faktor')->name('dua-faktor.submit');
     Route::get('/registrasi', [AuthController::class, 'showRegister'])->name('registrasi');
     Route::post('/registrasi', [AuthController::class, 'register'])->middleware('throttle:5,1,registrasi')->name('registrasi.submit');
 
@@ -74,6 +78,15 @@ Route::post('/wajah/tantangan', [Auth\WajahController::class, 'tantangan'])->mid
 Route::middleware('auth')->group(function () {
     Route::get('/konfirmasi-identitas', [Auth\KonfirmasiController::class, 'show'])->name('konfirmasi');
     Route::post('/konfirmasi-identitas', [Auth\KonfirmasiController::class, 'store'])->middleware('throttle:10,1,konfirmasi')->name('konfirmasi.submit');
+});
+// pengaturan verifikasi 2 langkah milik sendiri (Owner & Admin)
+Route::middleware(['auth', 'role:'.User::ROLE_OWNER.','.User::ROLE_ADMIN])->prefix('akun')->name('akun.')->group(function () {
+    Route::get('/verifikasi-2-langkah', [Auth\DuaFaktorController::class, 'pengaturan'])->name('dua-faktor');
+    Route::post('/verifikasi-2-langkah', [Auth\DuaFaktorController::class, 'aktifkan'])->middleware('throttle:10,1,dua-faktor-aktif')->name('dua-faktor.aktifkan');
+    Route::middleware('konfirmasi')->group(function () {
+        Route::post('/verifikasi-2-langkah/cadangan', [Auth\DuaFaktorController::class, 'cadanganBaru'])->name('dua-faktor.cadangan');
+        Route::delete('/verifikasi-2-langkah', [Auth\DuaFaktorController::class, 'matikan'])->middleware('throttle:10,1,dua-faktor-mati')->name('dua-faktor.matikan');
+    });
 });
 // posisi GPS berkala dari staf yang masuk lewat verifikasi GPS
 Route::post('/sesi/lokasi', [AuthController::class, 'perbaruiLokasi'])->middleware(['auth', 'throttle:12,1,sesi-lokasi'])->name('sesi.lokasi');
@@ -221,6 +234,7 @@ Route::middleware(['auth', 'role:'.User::ROLE_OWNER])->prefix('owner')->name('ow
         Route::put('/pengguna/{user}', [Admin\PenggunaController::class, 'update'])->name('pengguna.update');
         Route::delete('/pengguna/{user}', [Admin\PenggunaController::class, 'destroy'])->name('pengguna.destroy');
         Route::post('/pengguna/{user}/buka-kunci', [Admin\PenggunaController::class, 'bukaKunci'])->name('pengguna.buka-kunci');
+        Route::post('/pengguna/{user}/reset-2-langkah', [Auth\DuaFaktorController::class, 'reset'])->name('pengguna.reset-2fa');
     });
 
     Route::get('/aktivitas', Owner\AktivitasController::class)->name('aktivitas');

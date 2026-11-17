@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Owner;
 use App\Http\Controllers\Controller;
 use App\Models\LogAktivitas;
 use App\Models\User;
+use App\Support\PeringatanKeamanan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\View\View;
@@ -29,10 +30,12 @@ class AktivitasController extends Controller
         $dari = $request->filled('dari') ? Carbon::parse($request->query('dari')) : $sampai->copy()->subDays(6);
         $kategori = array_key_exists((string) $request->query('kategori'), LogAktivitas::KATEGORI) ? $request->query('kategori') : null;
         $q = trim((string) $request->query('q'));
+        $peringatan = PeringatanKeamanan::KELOMPOK[(string) $request->query('peringatan')] ?? null;
 
         $log = LogAktivitas::query()
             ->whereBetween('created_at', [$dari->copy()->startOfDay(), $sampai->copy()->endOfDay()])
             ->when($kategori, fn ($w) => $w->kategori($kategori))
+            ->when($peringatan, fn ($w) => $w->whereIn('aksi', $peringatan['aksi']))
             ->when($q !== '', fn ($w) => $w->where(fn ($x) => $x->where('keterangan', 'like', "%{$q}%")->orWhere('nama_user', 'like', "%{$q}%")->orWhere('ip', $q)))
             ->latest('created_at')->latest('id')
             ->paginate(25)->withQueryString();
@@ -46,6 +49,8 @@ class AktivitasController extends Controller
             'loginHariIni' => LogAktivitas::where('aksi', 'akun.login')->where('created_at', '>=', today())->count(),
             'gagal7Hari' => LogAktivitas::where('aksi', 'akun.login_gagal')->where('created_at', '>=', today()->subDays(6))->count(),
             'terkunci' => User::whereNotNull('terkunci_at')->count(),
+            'ringkasan' => PeringatanKeamanan::ringkas(now()->subDay()),
+            'peringatan' => $peringatan,
         ]);
     }
 }

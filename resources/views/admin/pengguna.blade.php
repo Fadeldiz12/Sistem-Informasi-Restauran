@@ -60,7 +60,7 @@
       <tbody id="tbUser">
         @forelse ($users as $u)
           <tr data-id="{{ $u->getRouteKey() }}" data-url="{{ route($rute.'.update', $u) }}" data-nama="{{ $u->nama }}" data-email="{{ $u->email }}" data-hp="{{ $u->no_hp }}" data-role="{{ $u->role }}">
-            <td><div class="who"><span @class(['av', 'm' => $u->hasRole(User::ROLE_ADMIN, User::ROLE_OWNER)])>{{ $u->inisial() }}</span><b>{{ $u->nama }}</b>@if ($u->is(auth()->user()))<span class="pill c">Anda</span>@endif @if ($u->terkunci())<span class="pill m" title="Terkunci sejak {{ $u->terkunci_at->translatedFormat('d M Y, H.i') }}">Terkunci</span>@endif</div></td>
+            <td><div class="who"><span @class(['av', 'm' => $u->hasRole(User::ROLE_ADMIN, User::ROLE_OWNER)])>{{ $u->inisial() }}</span><b>{{ $u->nama }}</b>@if ($u->is(auth()->user()))<span class="pill c">Anda</span>@endif @if ($u->terkunci())<span class="pill m" title="Terkunci sejak {{ $u->terkunci_at->translatedFormat('d M Y, H.i') }}">Terkunci</span>@endif @if (\App\Support\DuaFaktor::aktif($u))<span class="pill b" title="Verifikasi 2 langkah aktif">2 langkah</span>@endif</div></td>
             <td>{{ $u->email }}</td>
             <td>{{ $u->no_hp }}</td>
             <td><span @class(['pill', 'm' => $u->role === User::ROLE_OWNER, 'b' => $u->role !== User::ROLE_OWNER])>{{ $u->roleLabel() }}</span></td>
@@ -68,6 +68,9 @@
             <td><div class="acts">
               @if (auth()->user()->bolehKelola($u))
                 <button class="ab js-edit" title="Ubah"><svg class="ic"><use href="#i-edit"/></svg></button>
+                @if (auth()->user()->hasRole(User::ROLE_OWNER) && ! $u->is(auth()->user()) && \App\Support\DuaFaktor::aktif($u))
+                  <form method="post" action="{{ route('owner.pengguna.reset-2fa', $u) }}" style="display:contents" data-konfirmasi="Reset verifikasi 2 langkah {{ $u->nama }}? Pakai ini hanya bila HP-nya hilang; ia bisa mengaktifkannya lagi setelah masuk.">@csrf<button class="ab" type="submit" title="Reset verifikasi 2 langkah"><svg class="ic"><use href="#i-refresh"/></svg></button></form>
+                @endif
                 @unless ($u->is(auth()->user()))
                   <button class="ab f js-del" data-url="{{ route($rute.'.destroy', $u) }}" data-name="{{ $u->nama }}" title="Hapus"><svg class="ic"><use href="#i-trash"/></svg></button>
                 @endunless

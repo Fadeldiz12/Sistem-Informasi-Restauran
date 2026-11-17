@@ -21,6 +21,19 @@ return [
     'backup' => [
         'kunci' => env('BACKUP_KEY'),
         'simpan_hari' => (int) env('BACKUP_SIMPAN_HARI', 14),
+        // folder kedua untuk salinan backup (flashdisk, NAS, folder OneDrive/Google Drive), contoh D:\\Backup-Resto
+        'salinan_folder' => env('BACKUP_SALINAN_FOLDER'),
+    ],
+
+    // masa simpan data pribadi (UU No. 27/2022 Perlindungan Data Pribadi). Dijalankan "php artisan resto:bersihkan-data-pribadi"
+    // (otomatis tiap malam). Angka penjualan & laporan keuangan tidak ikut dihapus.
+    'retensi' => [
+        // nama/HP/email pemesan, alamat & titik antar, foto bukti kirim dari pesanan yang sudah selesai/batal
+        'pesanan_hari' => (int) env('RETENSI_PESANAN_HARI', 365),
+        // data wajah staf yang tidak login selama ini (mis. sudah berhenti tapi akunnya belum dihapus)
+        'wajah_hari' => (int) env('RETENSI_WAJAH_HARI', 180),
+        // akun pelanggan yang tidak memesan selama ini dihapus
+        'pelanggan_hari' => (int) env('RETENSI_PELANGGAN_HARI', 730),
     ],
 
     'rekening' => [

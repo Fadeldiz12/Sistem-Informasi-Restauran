@@ -17,6 +17,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -37,6 +38,11 @@ class AuthController extends Controller
      * Percobaan masuk yang gagal per email + IP sebelum dikunci sementara.
      */
     public const MAKS_GAGAL_LOGIN = 5;
+
+    /** Kode darurat salah per akun / per IP sebelum diblokir sementara. */
+    public const MAKS_GAGAL_KODE_DARURAT = 5;
+
+    public const JEDA_KODE_DARURAT_MENIT = 15;
 
     public function login(Request $request): RedirectResponse
     {
@@ -84,6 +90,7 @@ class AuthController extends Controller
 
         /** @var User $user */
         $user = Auth::getLastAttempted();
+        $this->perbaruiHashPassword($user, $credentials['password']);
 
         // Akun yang belum memasukkan kode OTP registrasi: kirim kode lagi lalu ke halaman OTP
         if (! $user->email_verified_at) {
@@ -112,6 +119,17 @@ class AuthController extends Controller
         }
 
         return $this->masuk($request, $user, $request->boolean('remember'));
+    }
+
+    /**
+     * Password lama (bcrypt / parameter Argon2id lama) diganti hash baru sesuai config/hashing.php.
+     * Hanya bisa saat login karena password asli hanya diketahui saat itu.
+     */
+    private function perbaruiHashPassword(User $user, string $password): void
+    {
+        if (Hash::needsRehash($user->password)) {
+            $user->forceFill(['password' => Hash::make($password)])->saveQuietly();
+        }
     }
 
     /**
@@ -158,12 +176,34 @@ class AuthController extends Controller
         }
 
         if ($request->filled('kode')) {
+            // batas tebakan kode darurat, terpisah per akun dan per IP: menebak 8 angka secara acak tidak mungkin berhasil
+            $batas = ['kode-darurat:akun:'.$user->id, 'kode-darurat:ip:'.$request->ip()];
+            foreach ($batas as $kunci) {
+                if (RateLimiter::tooManyAttempts($kunci, self::MAKS_GAGAL_KODE_DARURAT)) {
+                    $request->session()->forget('login_outlet');
+
+                    return to_route('login')->withErrors(['email' => 'Terlalu banyak kode darurat salah. Coba lagi dalam '
+                        .ceil(RateLimiter::availableIn($kunci) / 60).' menit, atau minta Owner membuat kode baru.']);
+                }
+            }
+
             $kode = $this->akses->kodeDaruratCocok((string) $request->input('kode'));
             if (! $kode) {
-                LogAktivitas::catat('akun.ditolak', "{$user->nama} memasukkan kode darurat yang salah atau kedaluwarsa", $user, pelaku: $user);
+                foreach ($batas as $kunci) {
+                    RateLimiter::hit($kunci, self::JEDA_KODE_DARURAT_MENIT * 60);
+                }
+                $sisa = self::MAKS_GAGAL_KODE_DARURAT - RateLimiter::attempts($batas[0]);
+                LogAktivitas::catat('akun.ditolak', "{$user->nama} memasukkan kode darurat yang salah atau kedaluwarsa (IP {$request->ip()}, sisa {$sisa} percobaan)", $user, pelaku: $user);
+                if ($sisa <= 0) {
+                    $request->session()->forget('login_outlet');
 
-                return back()->withErrors(['kode' => 'Kode darurat salah atau sudah tidak berlaku. Minta kode baru ke Owner.']);
+                    return to_route('login')->withErrors(['email' => 'Kode darurat salah '.self::MAKS_GAGAL_KODE_DARURAT.' kali. Coba lagi dalam '
+                        .self::JEDA_KODE_DARURAT_MENIT.' menit, atau minta Owner membuat kode baru.']);
+                }
+
+                return back()->withErrors(['kode' => "Kode darurat salah atau sudah tidak berlaku. Sisa {$sisa} kali percobaan."]);
             }
+            RateLimiter::clear($batas[0]);
             $kode->increment('dipakai');
             LogAktivitas::catat('akun.kode_darurat', "{$user->nama} masuk memakai kode darurat (alasan Owner: {$kode->alasan})", $kode, pelaku: $user);
 

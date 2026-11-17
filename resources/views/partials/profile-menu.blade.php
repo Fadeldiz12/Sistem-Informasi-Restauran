@@ -10,6 +10,9 @@
   $links = $u->hasRole(\App\Models\User::ROLE_PELANGGAN)
     ? [['pelanggan.beranda', 'Beranda & Menu'], ['pelanggan.keranjang', 'Keranjang'], ['pelanggan.tracking', 'Lacak Pesanan'], ['pelanggan.profil', 'Profil saya']]
     : [[$u->homeRoute(), 'Dashboard']];
+  if (\App\Support\DuaFaktor::bisaDipakai($u)) {
+    $links[] = ['akun.dua-faktor', 'Verifikasi 2 Langkah'.(\App\Support\DuaFaktor::aktif($u) ? '' : ' (belum aktif)')];
+  }
 @endphp
 @once
 <style>

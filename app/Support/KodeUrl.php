@@ -13,38 +13,43 @@ class KodeUrl
 
     public static function enkripsi(int $id, string $jenis): string
     {
-        $blok = pack('J', $id).self::tanda($jenis);
-        $acak = openssl_encrypt($blok, self::CIPHER, self::kunci(), OPENSSL_RAW_DATA | OPENSSL_ZERO_PADDING);
+        $appKey = KunciAplikasi::sekarang();
+        $blok = pack('J', $id).self::tanda($jenis, $appKey);
+        $acak = openssl_encrypt($blok, self::CIPHER, self::kunci($appKey), OPENSSL_RAW_DATA | OPENSSL_ZERO_PADDING);
 
         return rtrim(strtr(base64_encode($acak), '+/', '-_'), '=');
     }
 
     /**
      * ID dari kode URL, atau null bila kode rusak / bukan untuk jenis data ini.
+     * Kode dari APP_KEY lama (APP_PREVIOUS_KEYS) tetap diterima, jadi tautan & QR lama tidak mati setelah kunci diganti.
      */
     public static function dekripsi(mixed $kode, string $jenis): ?int
     {
         if (! is_string($kode) || ! preg_match('/^[A-Za-z0-9_-]{22}$/', $kode)) {
             return null;
         }
-        $blok = openssl_decrypt(base64_decode(strtr($kode, '-_', '+/')), self::CIPHER, self::kunci(), OPENSSL_RAW_DATA | OPENSSL_ZERO_PADDING);
-        if ($blok === false || strlen($blok) !== 16 || ! hash_equals(self::tanda($jenis), substr($blok, 8))) {
-            return null;
+        $acak = base64_decode(strtr($kode, '-_', '+/'));
+        foreach (KunciAplikasi::semua() as $appKey) {
+            $blok = openssl_decrypt($acak, self::CIPHER, self::kunci($appKey), OPENSSL_RAW_DATA | OPENSSL_ZERO_PADDING);
+            if ($blok !== false && strlen($blok) === 16 && hash_equals(self::tanda($jenis, $appKey), substr($blok, 8))) {
+                $id = unpack('J', substr($blok, 0, 8))[1];
+
+                return $id > 0 ? $id : null;
+            }
         }
-        $id = unpack('J', substr($blok, 0, 8))[1];
 
-        return $id > 0 ? $id : null;
+        return null;
     }
 
-    private static function tanda(string $jenis): string
+    private static function tanda(string $jenis, string $appKey): string
     {
-        return substr(hash_hmac('sha256', $jenis, self::kunci(), true), 0, 8);
+        return substr(hash_hmac('sha256', $jenis, self::kunci($appKey), true), 0, 8);
     }
 
-    private static function kunci(): string
+    private static function kunci(string $appKey): string
     {
         static $kunci = [];
-        $appKey = (string) config('app.key');
 
         return $kunci[$appKey] ??= substr(hash_hmac('sha256', 'kode-url', $appKey, true), 0, 16);
     }

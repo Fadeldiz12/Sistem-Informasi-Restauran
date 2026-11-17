@@ -27,6 +27,9 @@
             @if ($laporan['waktu'])<div style="display:flex;justify-content:space-between"><span>Dibuat</span><b>{{ $laporan['waktu']->translatedFormat('d F Y, H:i') }}</b></div>@endif
           @endif
           <div style="display:flex;justify-content:space-between;opacity:.75;margin-top:6px"><span>Kode verifikasi</span><span>{{ $kode }}</span></div>
+          @if ($ed25519 ?? false)
+            <div style="display:flex;justify-content:space-between;opacity:.75"><span>Tanda tangan</span><span>Ed25519 · <a href="{{ route('keaslian.kunci-publik') }}">kunci publik</a></span></div>
+          @endif
         </div>
       @else
         <div class="alert" role="alert" style="font-size:15px">✗ TIDAK VALID · kode verifikasi tidak cocok</div>

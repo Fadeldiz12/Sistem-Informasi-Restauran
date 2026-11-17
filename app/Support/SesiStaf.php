@@ -35,7 +35,13 @@ class SesiStaf
      */
     public static function masukkan(Request $request, User $user, bool $ingat, string $via = AksesOutletService::VIA_BEBAS, ?KodeDarurat $kode = null): RedirectResponse
     {
-        $request->session()->forget(['login_outlet', 'login_wajah']);
+        // langkah terakhir untuk Owner/Admin yang memakai verifikasi 2 langkah
+        if ($tahan = DuaFaktor::tahanLogin($request, $user, $ingat, $via, $kode?->id)) {
+            $request->session()->forget(['login_outlet', 'login_wajah']);
+
+            return $tahan;
+        }
+        $request->session()->forget(['login_outlet', 'login_wajah', 'login_2fa', 'dua_faktor_lolos']);
         Auth::login($user, $ingat && ! $user->isStaf());
         $request->session()->regenerate();
         self::mulai($request, $user, $via, $kode);

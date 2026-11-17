@@ -27,7 +27,7 @@ trait TercatatDiLog
     /**
      * Kolom yang isinya rahasia atau data pribadi terenkripsi: hanya dicatat "diganti", isinya tidak masuk log.
      */
-    private static array $logRahasia = ['password', 'kode_hash', 'no_hp', 'no_hp_hash', 'alamat', 'patokan', 'no_hp_penerima', 'no_hp_pemesan'];
+    private static array $logRahasia = ['password', 'kode_hash', 'no_hp', 'no_hp_hash', 'alamat', 'patokan', 'no_hp_penerima', 'no_hp_pemesan', 'dua_faktor_rahasia', 'dua_faktor_cadangan', 'dua_faktor_langkah_terakhir'];
 
     /**
      * Kolom uang (ditulis Rp) dan label kolom yang lebih mudah dibaca.

@@ -8,6 +8,7 @@ use App\Models\Pesanan;
 use App\Models\User;
 use App\Support\BackupTerenkripsi;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Tests\TestCase;
@@ -58,6 +59,7 @@ class EnkripsiDataTest extends TestCase
 
     public function test_backup_terenkripsi_bisa_dipulihkan(): void
     {
+        config(['resto.backup.kunci' => 'kunci-backup-terpisah-123456']);
         $u = User::factory()->create(['nama' => 'Rina Amalia', 'no_hp' => '081234567890']);
 
         $this->artisan('resto:backup')->assertSuccessful();
@@ -73,9 +75,78 @@ class EnkripsiDataTest extends TestCase
         $this->assertSame('081234567890', User::firstWhere('nama', 'Rina Amalia')?->no_hp);
         $this->assertNull(User::firstWhere('nama', 'Data Baru'));
 
-        // kunci lain tidak bisa membuka
+        // backup dengan BACKUP_KEY tidak bisa dibuka dengan kunci lain, termasuk APP_KEY
         config(['resto.backup.kunci' => 'kunci-lain-yang-salah-123']);
         $this->artisan('resto:pulihkan', ['file' => $file, '--force' => true])->assertFailed()
             ->expectsOutputToContain('kuncinya berbeda');
+    }
+
+    public function test_backup_lama_dari_app_key_tetap_terbuka_setelah_backup_key_diisi(): void
+    {
+        User::factory()->create(['nama' => 'Rina Amalia']);
+        $this->artisan('resto:backup')->assertSuccessful(); // tanpa BACKUP_KEY: memakai APP_KEY
+        $file = File::glob(BackupTerenkripsi::folder().'/*.backup')[0];
+
+        config(['resto.backup.kunci' => 'kunci-backup-terpisah-123456']);
+        $this->assertSame('Rina Amalia', collect(BackupTerenkripsi::baca($file)['tabel']['users'])->firstWhere('nama', 'Rina Amalia')['nama']);
+
+        config(['resto.backup.kunci' => 'pendek']);
+        $this->artisan('resto:backup')->assertFailed();
+    }
+
+    public function test_rotasi_app_key_tidak_merusak_data_lama(): void
+    {
+        $u = User::factory()->create(['nama' => 'Rina Amalia', 'no_hp' => '081234567890', 'alamat' => 'Jl. Melati 7']);
+        $kodeLama = $u->getRouteKey();
+        $kunciLama = config('app.key');
+
+        $this->gantiAppKey('base64:'.base64_encode(random_bytes(32)), [$kunciLama]);
+
+        // sebelum rotasi: data, pencarian HP, dan tautan lama tetap jalan memakai kunci lama
+        $this->assertSame('081234567890', User::find($u->id)->no_hp);
+        $this->assertContains(DB::table('users')->where('id', $u->id)->value('no_hp_hash'), User::hashHpSemuaKunci('081234567890'));
+        $this->assertTrue(User::first()->resolveRouteBinding($kodeLama)?->is($u));
+
+        $this->artisan('resto:rotasi-kunci', ['--force' => true])->assertSuccessful();
+
+        // sesudah rotasi: data bisa dibaca tanpa kunci lama
+        $this->gantiAppKey(config('app.key'), []);
+        $baru = User::find($u->id);
+        $this->assertSame('081234567890', $baru->no_hp);
+        $this->assertSame('Jl. Melati 7', $baru->alamat);
+        $this->assertSame(User::hashHp('081234567890'), DB::table('users')->where('id', $u->id)->value('no_hp_hash'));
+    }
+
+    public function test_backup_disalin_ke_lokasi_lain_dan_uji_pemulihan_tidak_menyentuh_database_utama(): void
+    {
+        $salinan = storage_path('framework/testing/salinan-backup');
+        config(['resto.backup.salinan_folder' => $salinan]);
+        User::factory()->create(['nama' => 'Rina Amalia', 'no_hp' => '081234567890']);
+
+        $this->artisan('resto:backup')->assertSuccessful()->expectsOutputToContain('Salinan disimpan');
+        $this->assertCount(1, File::glob($salinan.'/resto-*.backup'));
+
+        User::factory()->create(['nama' => 'Data Sesudah Backup']);
+        $this->artisan('resto:uji-backup')->assertSuccessful()->expectsOutputToContain('berhasil dipulihkan');
+        $this->assertTrue(BackupTerenkripsi::hasilUjiTerakhir()['ok']);
+        $this->assertNotNull(User::firstWhere('nama', 'Data Sesudah Backup')); // database utama tetap utuh
+        $this->assertSame(2, User::count());
+
+        // file rusak → uji gagal dan tercatat
+        File::put(BackupTerenkripsi::terbaru(), "RESTOFLOW-BACKUP-1\nrusak");
+        $this->artisan('resto:uji-backup')->assertFailed();
+        $this->assertFalse(BackupTerenkripsi::hasilUjiTerakhir()['ok']);
+
+        File::deleteDirectory($salinan);
+    }
+
+    /**
+     * @param  list<string>  $lama
+     */
+    private function gantiAppKey(string $baru, array $lama): void
+    {
+        config(['app.key' => $baru, 'app.previous_keys' => $lama]);
+        $this->app->forgetInstance('encrypter');
+        Crypt::clearResolvedInstance('encrypter');
     }
 }

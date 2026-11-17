@@ -13,10 +13,23 @@ class BackupDatabase extends Command
 {
     public function handle(): int
     {
-        $hasil = BackupTerenkripsi::buat();
+        try {
+            $hasil = BackupTerenkripsi::buat();
+        } catch (\RuntimeException $e) {
+            $this->error($e->getMessage());
+
+            return self::FAILURE;
+        }
+        $this->info("Backup terenkripsi dibuat: {$hasil['path']} ({$hasil['tabel']} tabel, {$hasil['baris']} baris).");
+        try {
+            $salinan = BackupTerenkripsi::salin($hasil['path']);
+            $salinan ? $this->info("Salinan disimpan di {$salinan}.")
+                : $this->warn('Belum ada lokasi kedua: isi BACKUP_SALINAN_FOLDER di .env supaya backup tidak ikut hilang bila komputer rusak.');
+        } catch (\RuntimeException $e) {
+            $this->error($e->getMessage()); // backup utama tetap ada
+        }
         $dihapus = BackupTerenkripsi::bersihkan((int) config('resto.backup.simpan_hari', 14));
 
-        $this->info("Backup terenkripsi dibuat: {$hasil['path']} ({$hasil['tabel']} tabel, {$hasil['baris']} baris).");
         if ($dihapus) {
             $this->line("{$dihapus} backup lama dihapus.");
         }

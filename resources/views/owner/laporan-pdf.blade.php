@@ -60,7 +60,7 @@
   @endphp
   <table class="kaki" width="100%" style="margin-top:14px;border-top:1px solid #ddd;padding-top:8px"><tr>
     @if ($qr)<td width="80"><img src="{{ $qr }}" width="72" height="72" alt=""></td>@endif
-    <td>Tanda tangan digital: <b>{{ $ttd['kode'] }}</b><br>Cek keaslian laporan ini (angka yang diubah = tidak valid):<br><span style="font-size:8.5px">{{ $ttd['url'] }}</span></td>
+    <td>Tanda tangan digital: <b>{{ $ttd['kode'] }}</b>@if ($ttd['sidik']) · Ed25519, sidik kunci publik {{ $ttd['sidik'] }}@endif<br>Cek keaslian laporan ini (angka yang diubah = tidak valid):<br><span style="font-size:8.5px">{{ $ttd['url'] }}</span></td>
   </tr></table>
 </body>
 </html>

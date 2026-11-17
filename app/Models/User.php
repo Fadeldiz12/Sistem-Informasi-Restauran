@@ -7,6 +7,8 @@ use App\Models\Concerns\IdTerenkripsiDiUrl;
 use App\Models\Concerns\TercatatDiLog;
 use App\Notifications\AkunTerkunciNotification;
 use App\Support\AturanAkun;
+use App\Support\DuaFaktor;
+use App\Support\KunciAplikasi;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -18,7 +20,7 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Notification;
 
 #[Fillable(['nama', 'email', 'password', 'role', 'no_hp', 'alamat'])]
-#[Hidden(['password', 'remember_token', 'token_sesi', 'no_hp_hash'])]
+#[Hidden(['password', 'remember_token', 'token_sesi', 'no_hp_hash', 'dua_faktor_rahasia', 'dua_faktor_cadangan'])]
 class User extends Authenticatable
 {
     use TercatatDiLog;
@@ -68,6 +70,9 @@ class User extends Authenticatable
             'terkunci_at' => 'datetime',
             'no_hp' => 'encrypted',
             'alamat' => 'encrypted',
+            'dua_faktor_rahasia' => 'encrypted',
+            'dua_faktor_cadangan' => 'encrypted:array',
+            'dua_faktor_aktif_at' => 'datetime',
         ];
     }
 
@@ -163,11 +168,33 @@ class User extends Authenticatable
                 $user->no_hp_hash = $user->no_hp ? self::hashHp($user->no_hp) : null;
             }
         });
+
+        // bukan staf lagi: data wajah (data biometrik) langsung dihapus, dan verifikasi 2 langkah tidak berlaku lagi
+        static::saved(function (self $user) {
+            if ($user->wasChanged('role') && ! $user->isStaf() && $user->wajah()->exists()) {
+                $user->wajah()->delete();
+                LogAktivitas::catat('wajah.hapus', "Data wajah {$user->nama} dihapus otomatis karena akunnya bukan staf lagi", $user);
+            }
+            if ($user->wasChanged('role') && ! DuaFaktor::bisaDipakai($user) && $user->dua_faktor_aktif_at) {
+                DuaFaktor::matikan($user);
+            }
+        });
     }
 
-    public static function hashHp(string $hp): string
+    public static function hashHp(string $hp, ?string $kunci = null): string
     {
-        return hash_hmac('sha256', AturanAkun::rapikanHp($hp), (string) config('app.key'));
+        return hash_hmac('sha256', AturanAkun::rapikanHp($hp), $kunci ?? KunciAplikasi::sekarang());
+    }
+
+    /**
+     * Sidik nomor HP dengan APP_KEY sekarang dan semua kunci lama, untuk pencarian yang tetap jalan
+     * selama data belum diperbarui dengan "php artisan resto:rotasi-kunci".
+     *
+     * @return list<string>
+     */
+    public static function hashHpSemuaKunci(string $hp): array
+    {
+        return array_map(fn (string $kunci) => self::hashHp($hp, $kunci), KunciAplikasi::semua());
     }
 
     public function roleLabel(): string

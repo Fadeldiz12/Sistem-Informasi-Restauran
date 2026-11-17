@@ -34,6 +34,10 @@
       <div class="alert" role="alert">{{ $errors->first() }}</div>
     @endif
 
+    @if (\App\Support\DuaFaktor::bisaDipakai(auth()->user()) && ! \App\Support\DuaFaktor::aktif(auth()->user()) && ! request()->routeIs('akun.dua-faktor'))
+      <div class="note" style="margin-bottom:16px"><svg class="ic"><use href="#i-lock"/></svg><span>Akun {{ auth()->user()->roleLabel() }} belum memakai <b>verifikasi 2 langkah</b>. Bila password bocor, akun bisa langsung dibobol. <a href="{{ route('akun.dua-faktor') }}"><b>Aktifkan sekarang</b></a> (2 menit).</span></div>
+    @endif
+
     @yield('content')
   </main>
 </div>

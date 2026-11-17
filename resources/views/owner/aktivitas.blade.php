@@ -9,7 +9,7 @@
 @section('error-sendiri', '1')
 
 @php
-  $filter = fn (array $ubah) => route('owner.aktivitas', array_filter(array_merge(['dari' => $dari->toDateString(), 'sampai' => $sampai->toDateString(), 'kategori' => $kategori, 'q' => $q], $ubah)));
+  $filter = fn (array $ubah) => route('owner.aktivitas', array_filter(array_merge(['dari' => $dari->toDateString(), 'sampai' => $sampai->toDateString(), 'kategori' => $kategori, 'q' => $q, 'peringatan' => $peringatan ? request('peringatan') : null], $ubah)));
 @endphp
 
 @push('styles')
@@ -39,18 +39,36 @@
     <a class="card stat" href="{{ route('owner.pengguna') }}#akunTerkunci" style="text-decoration:none;color:inherit{{ $terkunci ? ';border:2px solid var(--m)' : '' }}"><div class="top"><span class="eyebrow">Akun terkunci</span><span class="ico"><svg class="ic"><use href="#i-lock"/></svg></span></div><div class="v">{{ $terkunci }}</div><div class="t">{{ $terkunci ? 'Buka di Pengguna & Role' : 'Tidak ada akun terkunci' }}</div></a>
   </div>
 
-  <div class="card" style="margin-top:18px">
+  <div class="card" style="margin-top:18px" id="peringatan">
+    <div class="card-head"><div><h2>Peringatan Keamanan 24 Jam Terakhir</h2><p>Ringkasan juga dikirim ke email Owner tiap pagi bila ada kejadian</p></div>
+      <span @class(['pill', 'm' => $ringkasan['total'], 'b' => ! $ringkasan['total']])>{{ $ringkasan['total'] }} kejadian</span></div>
+    @if ($ringkasan['beruntun'])
+      <div class="note" style="margin-bottom:12px;background:var(--m);color:var(--cr)"><svg class="ic"><use href="#i-alert"/></svg><span><b>Percobaan gagal beruntun:</b>
+        {!! collect($ringkasan['beruntun'])->map(fn ($b) => e($b['jenis']).' <b>'.e($b['nilai']).'</b> ('.$b['jumlah'].'×)')->implode(', ') !!}.
+        Bila bukan staf yang lupa password, ganti password akun terkait dan aktifkan verifikasi 2 langkah.</span></div>
+    @endif
+    @forelse ($ringkasan['kelompok'] as $k)
+      <a class="note" href="{{ route('owner.aktivitas', ['peringatan' => $k['kunci'], 'dari' => now()->subDay()->toDateString()]) }}#riwayat" style="margin-top:8px;text-decoration:none;color:inherit">
+        <svg class="ic"><use href="#i-alert"/></svg><span><b>{{ $k['label'] }}: {{ $k['jumlah'] }}×</b> · {{ $k['saran'] }}</span></a>
+    @empty
+      <div class="empty">Tidak ada kejadian keamanan dalam 24 jam terakhir.</div>
+    @endforelse
+  </div>
+
+  <div class="card" style="margin-top:18px" id="riwayat">
     <div class="card-head"><div><h2>Riwayat Aktivitas</h2><p>{{ $dari->translatedFormat('j M Y') }} – {{ $sampai->translatedFormat('j M Y') }} · catatan tidak bisa diubah atau dihapus</p></div>
       <form method="get" action="{{ route('owner.aktivitas') }}" class="log-tools">
         @if ($kategori)<input type="hidden" name="kategori" value="{{ $kategori }}">@endif
+        @if ($peringatan)<input type="hidden" name="peringatan" value="{{ request('peringatan') }}">@endif
         <div class="in"><input type="date" name="dari" value="{{ $dari->toDateString() }}" max="{{ today()->toDateString() }}" aria-label="Dari tanggal"></div>
         <div class="in"><input type="date" name="sampai" value="{{ $sampai->toDateString() }}" max="{{ today()->toDateString() }}" aria-label="Sampai tanggal"></div>
         <div class="search keep"><svg class="ic"><use href="#i-search"/></svg><input name="q" value="{{ $q }}" placeholder="Cari nama, aktivitas, atau IP…"></div>
         <button class="btn" type="submit">Tampilkan</button>
       </form></div>
     <div class="chips" style="margin-bottom:12px">
-      <a @class(['on' => ! $kategori]) href="{{ $filter(['kategori' => null]) }}">Semua</a>
-      @foreach (LogAktivitas::KATEGORI as $k => $info)<a @class(['on' => $kategori === $k]) href="{{ $filter(['kategori' => $k]) }}">{{ $info['label'] }}</a>@endforeach
+      @if ($peringatan)<a class="on" href="{{ $filter(['peringatan' => null]) }}">{{ $peringatan['label'] }} ✕</a>@endif
+      <a @class(['on' => ! $kategori && ! $peringatan]) href="{{ $filter(['kategori' => null, 'peringatan' => null]) }}">Semua</a>
+      @foreach (LogAktivitas::KATEGORI as $k => $info)<a @class(['on' => $kategori === $k]) href="{{ $filter(['kategori' => $k, 'peringatan' => null]) }}">{{ $info['label'] }}</a>@endforeach
     </div>
     <div class="tbl-wrap"><table class="tbl-stack"><thead><tr><th>Waktu</th><th>Pengguna</th><th>Aktivitas</th><th class="hide-md">Perangkat</th></tr></thead><tbody>
       @forelse ($log as $l)
