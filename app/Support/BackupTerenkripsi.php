@@ -107,10 +107,14 @@ class BackupTerenkripsi
     }
 
     /**
+     * Daftar tabel milik database aplikasi saja (bukan semua database di server MySQL).
+     *
      * @return array<int, string>
      */
     private static function daftarTabel(): array
     {
-        return array_values(array_diff(array_column(Schema::getTables(), 'name'), self::LEWATI));
+        $tabel = array_column(Schema::getTables(DB::getDatabaseName()), 'name');
+
+        return array_values(array_diff(array_unique($tabel), self::LEWATI));
     }
 }
