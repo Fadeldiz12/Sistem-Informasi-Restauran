@@ -188,6 +188,9 @@ class BackupTerenkripsi
             if (! $path) {
                 throw new RuntimeException('Belum ada file backup. Jalankan "php artisan resto:backup" dulu.');
             }
+            if (! extension_loaded('pdo_sqlite')) {
+                throw new RuntimeException('Uji pemulihan memakai database SQLite sementara dan butuh ekstensi pdo_sqlite: di php.ini hapus tanda ; di depan "extension=pdo_sqlite", lalu jalankan ulang. Database utama (MySQL) tidak terpengaruh.');
+            }
             $data = self::baca($path);
             File::put($dbUji, '');
             config(['database.connections.uji_backup' => ['driver' => 'sqlite', 'database' => $dbUji, 'prefix' => '', 'foreign_key_constraints' => true]]);
