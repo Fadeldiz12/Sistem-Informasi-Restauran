@@ -26,7 +26,11 @@ class UserSeeder extends Seeder
             User::updateOrCreate(
                 ['email' => $data['email']],
                 $data + ['password' => 'password', 'alamat' => null],
-            )->forceFill(['email_verified_at' => now()])->save();
+            )->forceFill([
+                'email_verified_at' => now(),
+                // DatabaseSeeder mematikan event model, jadi sidik nomor HP (untuk pencarian) diisi di sini
+                'no_hp_hash' => User::hashHp($data['no_hp']),
+            ])->save();
         }
     }
 }

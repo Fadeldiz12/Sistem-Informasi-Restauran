@@ -7,6 +7,7 @@ use App\Models\Pengiriman;
 use App\Models\Pesanan;
 use App\Models\User;
 use App\Support\BackupTerenkripsi;
+use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
@@ -138,6 +139,30 @@ class EnkripsiDataTest extends TestCase
         $this->assertFalse(BackupTerenkripsi::hasilUjiTerakhir()['ok']);
 
         File::deleteDirectory($salinan);
+    }
+
+    public function test_data_contoh_dari_seeder_tersimpan_terenkripsi_dan_bisa_dicari(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $this->assertNotEmpty(Pengiriman::pluck('alamat')->filter()); // terbaca tanpa DecryptException
+        $this->assertStringNotContainsString('Jl. Contoh', (string) DB::table('pengiriman')->value('alamat'));
+        $this->assertSame(0, User::whereNotNull('no_hp')->whereNull('no_hp_hash')->count());
+        $admin = User::firstWhere('role', User::ROLE_ADMIN);
+        $this->actingAs($admin)->get('/admin/pengguna?q=085266123344')->assertSee('Bima Saputra');
+    }
+
+    public function test_migrasi_perbaikan_mengenkripsi_data_lama_yang_masih_teks_biasa(): void
+    {
+        $u = User::factory()->create(['no_hp' => '081234567890']);
+        DB::table('users')->where('id', $u->id)->update(['alamat' => 'Jl. Melati 7', 'no_hp_hash' => null]);
+
+        (require database_path('migrations/2026_11_19_150227_perbaiki_data_pribadi_belum_terenkripsi.php'))->up();
+        (require database_path('migrations/2026_11_19_150227_perbaiki_data_pribadi_belum_terenkripsi.php'))->up(); // aman dijalankan ulang
+
+        $this->assertSame('Jl. Melati 7', $u->fresh()->alamat);
+        $this->assertStringNotContainsString('Melati', DB::table('users')->where('id', $u->id)->value('alamat'));
+        $this->assertSame(User::hashHp('081234567890'), DB::table('users')->where('id', $u->id)->value('no_hp_hash'));
     }
 
     /**

@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\ZonaPengiriman;
 use App\Services\PesananService;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -98,7 +99,7 @@ class PenjualanContohSeeder extends Seeder
 
                     if ($z) {
                         DB::table('pengiriman')->insert([
-                            'id_pesanan' => $idPesanan, 'id_kurir' => $kurir, 'id_zona' => $z->id, 'alamat' => 'Jl. Contoh No. '.mt_rand(1, 99).', Medan',
+                            'id_pesanan' => $idPesanan, 'id_kurir' => $kurir, 'id_zona' => $z->id, 'alamat' => Crypt::encryptString('Jl. Contoh No. '.mt_rand(1, 99).', Medan'), // kolom terenkripsi (insert langsung tidak lewat cast model)
                             'jarak_km' => $z->radius_km, 'waktu_siap' => $waktu->copy()->addMinutes(25), 'status_kirim' => 'diterima',
                             'bukti_kirim' => null, 'created_at' => $waktu, 'updated_at' => $waktu->copy()->addMinutes(55),
                         ]);
