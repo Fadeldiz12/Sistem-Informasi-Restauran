@@ -245,10 +245,18 @@ class BackupTerenkripsi
     }
 
     /**
+     * Daftar tabel milik database aplikasi saja (bukan semua database di server MySQL).
+     *
      * @return array<int, string>
      */
     private static function daftarTabel(?string $koneksi = null): array
     {
-        return array_values(array_diff(array_column(Schema::connection($koneksi)->getTables(), 'name'), self::LEWATI));
+        $db = DB::connection($koneksi);
+        // MySQL/MariaDB: batasi ke database aplikasi (satu server bisa berisi banyak database).
+        // SQLite: nama database berupa path file, bukan nama skema, jadi tidak dipakai sebagai filter.
+        $skema = in_array($db->getDriverName(), ['mysql', 'mariadb'], true) ? $db->getDatabaseName() : null;
+        $tabel = array_column(Schema::connection($koneksi)->getTables($skema), 'name');
+
+        return array_values(array_diff(array_unique($tabel), self::LEWATI));
     }
 }
