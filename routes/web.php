@@ -241,6 +241,7 @@ Route::middleware(['auth', 'role:'.User::ROLE_OWNER])->prefix('owner')->name('ow
 
     // Keamanan outlet: lokasi, perangkat terdaftar, jadwal shift, kode darurat
     Route::get('/keamanan', [Owner\KeamananOutletController::class, 'index'])->name('keamanan');
+    Route::get('/keamanan/pemeriksaan-server', [Owner\KeamananOutletController::class, 'pemeriksaanServer'])->name('keamanan.server');
     Route::middleware('konfirmasi')->group(function () {
         Route::put('/keamanan', [Owner\KeamananOutletController::class, 'simpanAturan'])->name('keamanan.aturan');
         Route::post('/keamanan/perangkat', [Owner\KeamananOutletController::class, 'daftarPerangkat'])->name('keamanan.perangkat');

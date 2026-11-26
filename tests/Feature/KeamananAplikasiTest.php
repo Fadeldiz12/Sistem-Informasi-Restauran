@@ -86,7 +86,15 @@ class KeamananAplikasiTest extends TestCase
         $owner = User::factory()->create(['role' => User::ROLE_OWNER]);
         config(['app.debug' => true]);
 
+        // tersembunyi secara bawaan: halaman hanya memuat tombol, isinya belum diperiksa
         $this->actingAs($owner)->get('/owner/keamanan')->assertOk()
-            ->assertSee('Pemeriksaan Server')->assertSee('Mode debug mati')->assertSee('APP_DEBUG=false');
+            ->assertSee('Pemeriksaan Server')->assertSee('id="btnServer"', false)->assertDontSee('Mode debug mati');
+
+        // isi dimuat saat tombol ditekan
+        $this->get('/owner/keamanan/pemeriksaan-server')->assertOk()
+            ->assertSee('Mode debug mati')->assertSee('APP_DEBUG=false')->assertSee('aman');
+
+        $kasir = User::factory()->create(['role' => User::ROLE_KASIR]);
+        $this->actingAs($kasir)->get('/owner/keamanan/pemeriksaan-server')->assertForbidden();
     }
 }

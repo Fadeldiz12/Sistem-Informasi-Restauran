@@ -46,7 +46,6 @@ class KeamananOutletController extends Controller
             'shiftPerHari' => $this->shiftPerHari($staf),
             'kode' => KodeDarurat::aktif()->with('owner')->latest()->get(),
             'semuaStaf' => User::where('role', '!=', User::ROLE_PELANGGAN)->with('wajah')->orderBy('role')->orderBy('nama')->get(),
-            'cekServer' => PemeriksaanServer::daftar($request),
             'titikDefault' => (float) $this->akses->pengaturan()->lat_resto === PengaturanSistem::LAT_AWAL,
         ]);
     }
@@ -67,6 +66,14 @@ class KeamananOutletController extends Controller
         }
 
         return array_map(fn (array $daftar) => collect($daftar)->sortBy(['jam', 'nama'])->values()->all(), $perHari);
+    }
+
+    /**
+     * Isi kartu Pemeriksaan Server, dimuat saat Owner menekan tombolnya (tidak memperlambat halaman Keamanan Outlet).
+     */
+    public function pemeriksaanServer(Request $request): View
+    {
+        return view('owner.partials.pemeriksaan-server', ['cekServer' => PemeriksaanServer::daftar($request)]);
     }
 
     public function simpanAturan(Request $request): RedirectResponse

@@ -8,6 +8,7 @@ use App\Support\RantaiLog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use LogicException;
 use Tests\TestCase;
 
@@ -112,5 +113,22 @@ class RantaiLogTest extends TestCase
 
         DB::table('log_aktivitas')->where('id', $log->id)->update(['data' => '{"b": {"a": 2, "z": 1}, "jarak": 1, "via": "gps"}']);
         $this->assertFalse(RantaiLog::periksa()['utuh']); // isi yang benar-benar diubah tetap ketahuan
+    }
+
+    public function test_sistem_tetap_jalan_bila_migrasi_rantai_belum_dijalankan(): void
+    {
+        Schema::drop('log_rantai');
+        Schema::table('log_aktivitas', fn ($t) => $t->dropColumn('hash'));
+        RantaiLog::lupakanStatus();
+        Cache::forget(RantaiLog::CACHE);
+
+        // login (yang mencatat log) tidak error 500
+        $owner = User::factory()->create(['role' => User::ROLE_OWNER]);
+        $this->post('/login', ['email' => $owner->email, 'password' => 'password'])->assertRedirect('/owner/dashboard');
+        $this->assertDatabaseHas('log_aktivitas', ['aksi' => 'akun.login']);
+
+        $this->get('/owner/aktivitas')->assertOk()->assertSee('php artisan migrate');
+        $this->get('/owner/keamanan/pemeriksaan-server')->assertOk()->assertSee('php artisan migrate');
+        RantaiLog::lupakanStatus();
     }
 }
