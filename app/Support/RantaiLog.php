@@ -5,6 +5,7 @@ namespace App\Support;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Rantai hash log aktivitas (tamper-evident log). Hash tiap baris = HMAC-SHA256 (kunci turunan APP_KEY) atas
@@ -13,6 +14,22 @@ use Illuminate\Support\Facades\DB;
  */
 class RantaiLog
 {
+    private static ?bool $siap = null;
+
+    /**
+     * Tabel rantai sudah dibuat (migrasi 2026_11_26 sudah dijalankan). Bila belum, log tetap dicatat tanpa hash
+     * supaya login dan aksi lain tidak gagal, dan Pemeriksaan Server meminta migrasi dijalankan.
+     */
+    public static function siap(): bool
+    {
+        return self::$siap ??= Schema::hasTable('log_rantai') && Schema::hasColumn('log_aktivitas', 'hash');
+    }
+
+    public static function lupakanStatus(): void
+    {
+        self::$siap = null;
+    }
+
     /** Kunci cache hasil pemeriksaan terakhir (ditampilkan di Log Aktivitas & Pemeriksaan Server). */
     public const CACHE = 'rantai_log_hasil';
 
@@ -23,6 +40,10 @@ class RantaiLog
      */
     public static function hasil(): array
     {
+        if (! self::siap()) {
+            return self::periksa() + ['waktu' => now()->toIso8601String()];
+        }
+
         return Cache::remember(self::CACHE, now()->addMinutes(10), fn () => self::periksa() + ['waktu' => now()->toIso8601String()]);
     }
 
@@ -50,10 +71,14 @@ class RantaiLog
      * Simpan baris log baru di ujung rantai. Ujung rantai dikunci selama penyimpanan supaya dua permintaan
      * yang bersamaan tidak membuat cabang.
      *
-     * @param  callable(string): object  $simpan  menerima hash baris baru, mengembalikan model yang tersimpan
+     * @param  callable(?string): object  $simpan  menerima hash baris baru (null bila migrasi belum dijalankan), mengembalikan model yang tersimpan
      */
     public static function tambah(array $baris, callable $simpan): object
     {
+        if (! self::siap()) {
+            return $simpan(null);
+        }
+
         return DB::transaction(function () use ($baris, $simpan) {
             $ujung = DB::table('log_rantai')->where('id', 1)->lockForUpdate()->first();
             $hash = self::hitung($baris, (string) ($ujung->hash_terakhir ?? ''));
@@ -73,6 +98,9 @@ class RantaiLog
      */
     public static function periksa(): array
     {
+        if (! self::siap()) {
+            return ['utuh' => false, 'jumlah' => 0, 'masalah' => ['Tabel rantai hash belum dibuat. Jalankan "php artisan migrate".']];
+        }
         $masalah = [];
         $sebelum = '';
         $jumlah = 0;

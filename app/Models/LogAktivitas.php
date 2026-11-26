@@ -80,8 +80,10 @@ class LogAktivitas extends Model
         $log->created_at = now();
 
         // nilai mentah persis seperti yang akan disimpan (JSON dari cast), supaya hash bisa dicek ulang dari database
-        return RantaiLog::tambah($log->getAttributes(), function (string $hash) use ($log) {
-            $log->hash = $hash;
+        return RantaiLog::tambah($log->getAttributes(), function (?string $hash) use ($log) {
+            if ($hash !== null) {
+                $log->hash = $hash;
+            }
             $log->save();
 
             return $log;
