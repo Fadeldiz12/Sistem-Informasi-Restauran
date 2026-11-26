@@ -36,6 +36,7 @@ class KeamananAplikasiTest extends TestCase
             ->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
         $this->assertStringContainsString("frame-ancestors 'self'", $r->headers->get('Content-Security-Policy'));
         $this->assertStringContainsString("object-src 'none'", $r->headers->get('Content-Security-Policy'));
+        $this->assertStringNotContainsString('unpkg.com', $r->headers->get('Content-Security-Policy')); // script & CSS hanya dari server sendiri
         $this->assertStringContainsString('camera=(self)', $r->headers->get('Permissions-Policy'));
         $this->assertFalse($r->headers->has('X-Powered-By'));
         $this->assertFalse($r->headers->has('Strict-Transport-Security')); // hanya lewat HTTPS

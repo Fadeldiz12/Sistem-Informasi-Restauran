@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\LogAktivitas;
 use App\Models\User;
 use App\Support\PeringatanKeamanan;
+use App\Support\RantaiLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\View\View;
@@ -51,6 +52,7 @@ class AktivitasController extends Controller
             'terkunci' => User::whereNotNull('terkunci_at')->count(),
             'ringkasan' => PeringatanKeamanan::ringkas(now()->subDay()),
             'peringatan' => $peringatan,
+            'rantai' => RantaiLog::hasil(),
         ]);
     }
 }

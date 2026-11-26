@@ -11,6 +11,24 @@ use Illuminate\Support\Facades\File;
  */
 class PemeriksaanServer
 {
+    /** Scheduler dianggap mati bila penandanya lebih tua dari ini. */
+    public const SCHEDULER_MATI_MENIT = 5;
+
+    public static function catatSchedulerJalan(): void
+    {
+        File::put(self::fileScheduler(), now()->toIso8601String());
+    }
+
+    public static function schedulerJalan(): bool
+    {
+        return File::exists(self::fileScheduler()) && File::lastModified(self::fileScheduler()) > now()->subMinutes(self::SCHEDULER_MATI_MENIT)->getTimestamp();
+    }
+
+    private static function fileScheduler(): string
+    {
+        return storage_path('framework/scheduler-terakhir');
+    }
+
     /**
      * @return array<int, array{label: string, ok: bool, saran: string}>
      */
@@ -23,12 +41,18 @@ class PemeriksaanServer
         $https = $request->isSecure() || str_starts_with((string) config('app.url'), 'https://');
 
         return [
+            ['label' => 'Log aktivitas utuh (rantai hash)', 'ok' => ($rantai = RantaiLog::hasil())['utuh'],
+                'saran' => 'Ada catatan log yang diubah, disisipkan, atau dihapus langsung di database: '.implode(' ', $rantai['masalah'])],
             ['label' => 'APP_KEY terisi', 'ok' => strlen(KunciAplikasi::biner(KunciAplikasi::sekarang())) >= 32, 'saran' => 'Jalankan "php artisan key:generate". Jangan pernah membagikan atau meng-commit file .env ke Git.'],
             ['label' => 'Isi sesi terenkripsi', 'ok' => (bool) config('session.encrypt'), 'saran' => 'Ubah SESSION_ENCRYPT=true di file .env, lalu "php artisan config:clear". Semua pengguna perlu masuk ulang sekali.'],
             ['label' => 'Mode debug mati', 'ok' => ! config('app.debug'), 'saran' => 'Ubah APP_DEBUG=false di file .env supaya pesan error tidak membocorkan isi kode & konfigurasi.'],
             ['label' => 'Mode produksi', 'ok' => app()->environment('production'), 'saran' => 'Ubah APP_ENV=production di file .env saat sudah dipakai sungguhan.'],
             ['label' => 'HTTPS aktif', 'ok' => $https, 'saran' => 'Pasang sertifikat SSL (mis. Let\'s Encrypt) dan ubah APP_URL ke https://. Kamera & GPS di HP/PC lain hanya jalan lewat HTTPS.'],
+            ['label' => 'IP asli pengunjung terbaca (proxy hosting)', 'ok' => ! $request->headers->has('X-Forwarded-For') || filled(config('resto.proxy_tepercaya')),
+                'saran' => 'Server ini berada di belakang proxy, tapi TRUSTED_PROXIES belum diisi: semua pengunjung terbaca dengan IP proxy yang sama, sehingga cek lokasi outlet dan batas percobaan login tidak bekerja. Isi TRUSTED_PROXIES di .env (lihat panduan hosting).'],
             ['label' => 'Cookie sesi hanya lewat HTTPS', 'ok' => (bool) config('session.secure'), 'saran' => 'Setelah HTTPS aktif, ubah APP_URL ke https:// (cookie aman aktif otomatis) atau tambahkan SESSION_SECURE_COOKIE=true di file .env.'],
+            ['label' => 'Scheduler (cron) berjalan', 'ok' => self::schedulerJalan(),
+                'saran' => 'Tugas otomatis (backup, uji backup, cek log, pembersihan data) tidak berjalan. Di hosting tambahkan cron tiap menit: "php artisan schedule:run"; di laptop jalankan "php artisan schedule:work".'],
             ['label' => 'Backup terenkripsi 2 hari terakhir', 'ok' => $backup && $backup > now()->subDays(2)->getTimestamp(), 'saran' => 'Jalankan "php artisan resto:backup", atau jadwalkan "php artisan schedule:run" tiap menit (Task Scheduler Windows / cron).'],
             ['label' => 'Salinan backup di lokasi lain', 'ok' => $salinanBaru, 'saran' => $salinan
                 ? "Folder salinan {$salinan} belum berisi backup 2 hari terakhir. Pastikan folder/flashdisk tersambung lalu jalankan \"php artisan resto:backup\"."

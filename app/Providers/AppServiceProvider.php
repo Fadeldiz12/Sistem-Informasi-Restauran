@@ -12,6 +12,7 @@ use App\Models\TiketDapur;
 use App\Models\User;
 use App\Models\ZonaPengiriman;
 use App\Support\Keranjang;
+use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
@@ -37,6 +38,11 @@ class AppServiceProvider extends ServiceProvider
         // walaupun APP_LOCALE di .env lama masih "en".
         app()->setLocale('id');
         Carbon::setLocale('id');
+
+        // IP asli pengunjung di belakang proxy hosting (dipakai cek lokasi outlet, batas percobaan login, dan log)
+        if (filled($proxy = config('resto.proxy_tepercaya'))) {
+            TrustProxies::at($proxy === '*' ? '*' : array_map('trim', explode(',', (string) $proxy)));
+        }
 
         // Di produksi dengan APP_URL https://, semua tautan & redirect dipaksa memakai HTTPS
         // (mis. bila server berada di balik proxy yang meneruskan permintaan sebagai http).

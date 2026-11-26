@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\RantaiLog;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Attributes\Table;
@@ -9,9 +10,11 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
+use LogicException;
 
 /**
- * Audit log: siapa melakukan apa dan kapan. Baris hanya ditambah, tidak ada fitur ubah atau hapus.
+ * Audit log: siapa melakukan apa dan kapan. Baris hanya ditambah: mengubah atau menghapus lewat aplikasi ditolak,
+ * dan perubahan langsung di database ketahuan lewat rantai hash (App\Support\RantaiLog).
  */
 #[Table('log_aktivitas')]
 #[Fillable(['id_user', 'nama_user', 'role_user', 'aksi', 'keterangan', 'subjek_tipe', 'subjek_id', 'data', 'ip', 'perangkat'])]
@@ -62,7 +65,7 @@ class LogAktivitas extends Model
         $pelaku ??= auth()->user();
         $request = request();
 
-        return static::create([
+        $log = new static([
             'id_user' => $pelaku?->id,
             'nama_user' => $pelaku?->nama,
             'role_user' => $pelaku?->role,
@@ -74,6 +77,24 @@ class LogAktivitas extends Model
             'ip' => $request->ip(),
             'perangkat' => Str::limit((string) $request->userAgent(), 250, ''),
         ]);
+        $log->created_at = now();
+
+        // nilai mentah persis seperti yang akan disimpan (JSON dari cast), supaya hash bisa dicek ulang dari database
+        return RantaiLog::tambah($log->getAttributes(), function (string $hash) use ($log) {
+            $log->hash = $hash;
+            $log->save();
+
+            return $log;
+        });
+    }
+
+    /**
+     * Catatan log tidak boleh diubah atau dihapus lewat aplikasi.
+     */
+    protected static function booted(): void
+    {
+        static::updating(fn () => throw new LogicException('Log aktivitas tidak bisa diubah.'));
+        static::deleting(fn () => throw new LogicException('Log aktivitas tidak bisa dihapus.'));
     }
 
     #[Scope]

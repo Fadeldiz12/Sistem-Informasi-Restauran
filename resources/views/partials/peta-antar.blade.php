@@ -31,7 +31,7 @@
 
 @once
 @push('styles')
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<link rel="stylesheet" href="{{ asset('vendor/leaflet/leaflet.css') }}">
 <style>
   .peta { height: 300px; border-radius: 18px; margin-top: 10px; box-shadow: inset 0 0 0 1.5px var(--m15); z-index: 0; }
   .peta-alat { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
@@ -47,7 +47,7 @@
 </style>
 @endpush
 @push('scripts')
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="{{ asset('vendor/leaflet/leaflet.js') }}"></script>
 <script>
   (function () {
     var RESTO = [{{ (float) ($petaSet->lat_resto ?? \App\Models\PengaturanSistem::LAT_AWAL) }}, {{ (float) ($petaSet->lng_resto ?? \App\Models\PengaturanSistem::LNG_AWAL) }}];

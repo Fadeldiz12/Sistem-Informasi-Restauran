@@ -56,7 +56,9 @@
   </div>
 
   <div class="card" style="margin-top:18px" id="riwayat">
-    <div class="card-head"><div><h2>Riwayat Aktivitas</h2><p>{{ $dari->translatedFormat('j M Y') }} – {{ $sampai->translatedFormat('j M Y') }} · catatan tidak bisa diubah atau dihapus</p></div>
+    <div class="card-head"><div><h2>Riwayat Aktivitas</h2><p>{{ $dari->translatedFormat('j M Y') }} – {{ $sampai->translatedFormat('j M Y') }} · catatan tidak bisa diubah atau dihapus</p>
+        <p style="margin-top:6px"><span @class(['pill', 'b' => $rantai['utuh'], 'm' => ! $rantai['utuh']]) title="Diperiksa {{ \Illuminate\Support\Carbon::parse($rantai['waktu'])->diffForHumans() }}">{{ $rantai['utuh'] ? '✓ Rantai hash utuh · '.number_format($rantai['jumlah'], 0, ',', '.').' catatan' : '✗ Rantai hash RUSAK' }}</span></p>
+        @unless ($rantai['utuh'])<div class="note" style="margin-top:8px;background:var(--m);color:var(--cr)"><svg class="ic"><use href="#i-alert"/></svg><span>{{ implode(' ', $rantai['masalah']) }}</span></div>@endunless</div>
       <form method="get" action="{{ route('owner.aktivitas') }}" class="log-tools">
         @if ($kategori)<input type="hidden" name="kategori" value="{{ $kategori }}">@endif
         @if ($peringatan)<input type="hidden" name="peringatan" value="{{ request('peringatan') }}">@endif

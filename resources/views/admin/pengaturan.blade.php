@@ -68,9 +68,9 @@
   </form>
 @endsection
 
-@push('styles')<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">@endpush
+@push('styles')<link rel="stylesheet" href="{{ asset('vendor/leaflet/leaflet.css') }}">@endpush
 @push('scripts')
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="{{ asset('vendor/leaflet/leaflet.js') }}"></script>
 <script>
   (function () {
     if (!window.L) { document.getElementById('petaResto').textContent = 'Peta gagal dimuat (periksa koneksi internet).'; return; }

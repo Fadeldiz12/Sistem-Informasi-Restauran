@@ -36,6 +36,12 @@ return [
         'pelanggan_hari' => (int) env('RETENSI_PELANGGAN_HARI', 730),
     ],
 
+    // Alamat proxy/load balancer hosting yang dipercaya meneruskan IP asli pengunjung (X-Forwarded-For).
+    // Kosong = tidak ada proxy (IP diambil langsung). "*" = percaya proxy mana pun di depan server
+    // (Cloudflare, Railway, Render, Nginx di server yang sama). JANGAN isi "*" bila server diakses langsung tanpa proxy:
+    // pengunjung bisa memalsukan IP dan melewati cek lokasi outlet.
+    'proxy_tepercaya' => env('TRUSTED_PROXIES'),
+
     'rekening' => [
         'bank' => env('RESTO_BANK', 'Bank Transfer'),
         'nomor' => env('RESTO_NO_REKENING', '1234 5678 9012'),

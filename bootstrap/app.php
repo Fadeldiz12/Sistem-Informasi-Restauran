@@ -6,6 +6,7 @@ use App\Http\Middleware\EnsureUserHasRole;
 use App\Http\Middleware\HeaderKeamanan;
 use App\Http\Middleware\JanganSimpanHalamanBerlogin;
 use App\Http\Middleware\KonfirmasiUlang;
+use App\Http\Middleware\PaksaHttps;
 use App\Http\Middleware\PelangganAtauTamu;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
@@ -26,6 +27,8 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->web(append: [AmankanSesiStaf::class, JanganSimpanHalamanBerlogin::class]);
         $middleware->append(HeaderKeamanan::class);
+        // setelah TrustProxies bawaan, supaya https di belakang proxy hosting terbaca benar (X-Forwarded-Proto)
+        $middleware->append(PaksaHttps::class);
         // pilihan layanan di beranda disimpan JS sebagai cookie biasa
         $middleware->encryptCookies(except: [CheckoutController::COOKIE_LAYANAN]);
 
